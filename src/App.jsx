@@ -8,19 +8,19 @@ const supabase = createClient(
 );
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const APP_NAME = 'NRJ Research'; // CHANGE THIS to your app name
-const SEBI_REG = 'INH000XXXXXX'; // CHANGE to your SEBI RA reg number
-const ANALYST_NAME = 'Your Name'; // CHANGE
-const COMPANY_NAME = 'Your Company Name'; // CHANGE
-const GRIEVANCE_EMAIL = 'grievance@example.com'; // CHANGE
-const CONTACT_EMAIL = 'contact@example.com'; // CHANGE
-const CONTACT_PHONE = '+91-XXXXXXXXXX'; // CHANGE
+const APP_NAME = 'StockVista';
+const SEBI_REG = 'SEBI RA Registration: Pending (Application Under Process)'; // CHANGE once SEBI RA reg. no. is issued
+const ANALYST_NAME = 'Nishit Jain';
+const COMPANY_NAME = 'NRJ Info Edge Pvt Ltd';
+const GRIEVANCE_EMAIL = 'nirmaljain2307@gmail.com';
+const CONTACT_EMAIL = 'nirmaljain2307@gmail.com';
+const CONTACT_PHONE = '+91-7003950585';
 
 const PLANS = {
-  free: { name: 'Free', color: '#64748b', monthly: 0 },
-  silver: { name: 'Silver', color: '#94a3b8', monthly: 999 },
-  gold: { name: 'Gold', color: '#f59e0b', monthly: 2499 },
-  platinum: { name: 'Platinum', color: '#a78bfa', monthly: 4999 },
+  basic: { name: 'Basic Equity', color: '#64748b', monthly: 999 },
+  premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499 },
+  fno: { name: 'F&O Pro', color: '#f59e0b', monthly: 3999 },
+  elite: { name: 'Elite All Access', color: '#a78bfa', monthly: 5999 },
 };
 
 const PLAN_FEATURES = [
@@ -487,7 +487,7 @@ function LandingPage() {
       <section style={{ ...S.section, background: 'linear-gradient(135deg, #0d1a3a 0%, #1a0a2e 100%)' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ ...S.h2, marginBottom: '16px' }}>Ready to Start Your Research Journey?</h2>
-          <p style={{ ...S.muted, marginBottom: '32px', lineHeight: 1.7 }}>Join thousands of informed investors. Start with our free plan and upgrade anytime.</p>
+          <p style={{ ...S.muted, marginBottom: '32px', lineHeight: 1.7 }}>Join thousands of informed investors. Pick the research plan that fits how you trade.</p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
               Start Free Trial →
@@ -579,17 +579,17 @@ function PricingCards({ compact = false }) {
   const [cycle, setCycle] = useState('monthly');
 
   const prices = {
-    free: { monthly: 0, quarterly: 0, halfyearly: 0, yearly: 0 },
-    silver: { monthly: 999, quarterly: 2697, halfyearly: 5094, yearly: 8991 },
-    gold: { monthly: 2499, quarterly: 6747, halfyearly: 12744, yearly: 22491 },
-    platinum: { monthly: 4999, quarterly: 13497, halfyearly: 25494, yearly: 44991 },
+    basic: { monthly: 999, quarterly: 2697, halfyearly: 5094, yearly: 8991 },
+    premium: { monthly: 2499, quarterly: 6747, halfyearly: 12744, yearly: 22491 },
+    fno: { monthly: 3999, quarterly: 10797, halfyearly: 20394, yearly: 35991 },
+    elite: { monthly: 5999, quarterly: 16197, halfyearly: 30594, yearly: 53991 },
   };
 
   const planDefs = [
-    { id: 'free', name: 'Free', desc: 'Basic access to get started', color: '#64748b', features: ['basic_recommendations', 'market_updates', 'blog_access'] },
-    { id: 'silver', name: 'Silver', desc: 'Perfect for equity investors', color: '#94a3b8', popular: false, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'priority_support'] },
-    { id: 'gold', name: 'Gold', desc: 'Most popular for active traders', color: '#f59e0b', popular: true, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'fno_recommendations', 'intraday_calls', 'ipo_recommendations', 'priority_support'] },
-    { id: 'platinum', name: 'Platinum', desc: 'Complete solution for serious investors', color: '#a78bfa', popular: false, features: Object.keys(PLAN_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {})) },
+    { id: 'basic', name: 'Basic Equity', desc: 'Core equity research to get started', color: '#64748b', features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations'] },
+    { id: 'premium', name: 'Premium Equity', desc: 'Deeper research for serious equity investors', color: '#3b82f6', popular: false, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'ipo_recommendations', 'priority_support'] },
+    { id: 'fno', name: 'F&O Pro', desc: 'Most popular for active derivatives traders', color: '#f59e0b', popular: true, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'fno_recommendations', 'intraday_calls', 'options_strategies', 'priority_support'] },
+    { id: 'elite', name: 'Elite All Access', desc: 'Complete research suite across every segment', color: '#a78bfa', popular: false, features: Object.keys(PLAN_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {})) },
   ];
 
   return (
@@ -614,16 +614,14 @@ function PricingCards({ compact = false }) {
                 ⭐ MOST POPULAR
               </div>
             )}
-            <div style={{ fontSize: '24px', marginBottom: '4px' }}>{plan.name === 'Free' ? '🎁' : plan.name === 'Silver' ? '🥈' : plan.name === 'Gold' ? '🥇' : '💎'}</div>
+            <div style={{ fontSize: '24px', marginBottom: '4px' }}>{plan.id === 'basic' ? '📊' : plan.id === 'premium' ? '📈' : plan.id === 'fno' ? '⚡' : '💎'}</div>
             <h3 style={{ ...S.h3, color: plan.color, marginBottom: '4px' }}>{plan.name}</h3>
             <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>{plan.desc}</p>
             <div style={{ marginBottom: '20px' }}>
               <span style={{ fontSize: '32px', fontWeight: 800 }}>
-                {prices[plan.id][compact ? 'monthly' : cycle] === 0 ? 'Free' : fmtCurr(prices[plan.id][compact ? 'monthly' : cycle])}
+                {fmtCurr(prices[plan.id][compact ? 'monthly' : cycle])}
               </span>
-              {prices[plan.id][compact ? 'monthly' : cycle] > 0 && (
-                <span style={{ fontSize: '13px', ...S.muted }}>/{compact ? 'mo' : cycle === 'monthly' ? 'month' : cycle}</span>
-              )}
+              <span style={{ fontSize: '13px', ...S.muted }}>/{compact ? 'mo' : cycle === 'monthly' ? 'month' : cycle}</span>
             </div>
             {!compact && (
               <div style={{ marginBottom: '20px' }}>
@@ -637,9 +635,9 @@ function PricingCards({ compact = false }) {
                 ))}
               </div>
             )}
-            <button onClick={() => navigate(plan.id === 'free' ? '/register' : '/pricing')}
-              style={{ ...S.btn, width: '100%', justifyContent: 'center', background: plan.popular ? '#f59e0b' : plan.id === 'free' ? '#1e293b' : '#1d4ed8', color: plan.popular ? '#000' : '#fff', border: plan.id === 'free' ? '1px solid #334155' : 'none' }}>
-              {plan.id === 'free' ? 'Get Started Free' : compact ? 'Subscribe' : 'Subscribe Now'}
+            <button onClick={() => navigate('/register')}
+              style={{ ...S.btn, width: '100%', justifyContent: 'center', background: plan.popular ? '#f59e0b' : '#1d4ed8', color: plan.popular ? '#000' : '#fff', border: 'none' }}>
+              {compact ? 'Subscribe' : 'Subscribe Now'}
             </button>
           </div>
         ))}
@@ -653,7 +651,7 @@ function PricingPage() {
   const faqs = [
     { q: 'Can I change my plan later?', a: 'Yes, you can upgrade or downgrade at any time. Upgrades are immediate; downgrades apply at next billing cycle.' },
     { q: 'What payment methods do you accept?', a: 'We accept all major credit/debit cards, UPI, Net Banking, Paytm, PhonePe, and Google Pay via Razorpay.' },
-    { q: 'Is there a free trial?', a: 'Yes! Our Free plan gives you access to basic market updates and educational content. Upgrade anytime for full research access.' },
+    { q: 'Is there a free trial?', a: 'We don\'t offer a free trial at this time. All plans start with Basic Equity, our most affordable research tier, so you can upgrade only when you\'re ready.' },
     { q: 'Can I get a refund?', a: 'We offer a 7-day refund policy for paid plans. Contact us within 7 days of payment if you are not satisfied.' },
     { q: 'Are the recommendations guaranteed?', a: 'No. Research analysis is based on technical and fundamental research but does not guarantee returns. Investment is subject to market risk.' },
   ];
@@ -903,8 +901,8 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
     setLoading(false);
   };
 
-  const planLabel = PLANS[userProfile?.plan_id || 'free'];
-  const isSubscribed = userProfile?.plan_id && userProfile.plan_id !== 'free' &&
+  const planLabel = PLANS[userProfile?.plan_id || 'basic'];
+  const isSubscribed = !!userProfile?.plan_id &&
     userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
 
   if (!riskAccepted) return <DisclaimerPopup onAccept={() => setRiskAccepted(true)} />;
@@ -1006,11 +1004,12 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
 
 // ─── RECOMMENDATION CARD ──────────────────────────────────────────────────────
 function RecCard({ rec, userProfile, onClick }) {
-  const planRank = { free: 0, silver: 1, gold: 2, platinum: 3 };
-  const userRank = planRank[userProfile?.plan_id || 'free'];
-  const reqRank = planRank[rec.plan_required || 'silver'];
-  const hasAccess = userRank >= reqRank &&
-    (userProfile?.plan_id === 'free' || (userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date()));
+  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
+  const reqRank = planRank[rec.plan_required || 'basic'] ?? 0;
+  const hasActiveSub = !!userProfile?.plan_id &&
+    userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+  const hasAccess = hasActiveSub && userRank >= reqRank;
   const isLocked = !hasAccess;
 
   return (
@@ -1021,7 +1020,7 @@ function RecCard({ rec, userProfile, onClick }) {
       {isLocked && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,15,30,0.88)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', flexDirection: 'column', gap: '8px' }}>
           <span style={{ fontSize: '20px' }}>🔒</span>
-          <p style={{ fontSize: '13px', fontWeight: 700 }}>{(rec.plan_required || 'Silver').charAt(0).toUpperCase() + (rec.plan_required || 'silver').slice(1)} Plan Required</p>
+          <p style={{ fontSize: '13px', fontWeight: 700 }}>{PLANS[rec.plan_required || 'basic']?.name || 'Basic Equity'} Plan Required</p>
           <button onClick={e => { e.stopPropagation(); navigate('/pricing'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>Upgrade</button>
         </div>
       )}
@@ -1301,7 +1300,7 @@ function AdminPanel({ user, userProfile }) {
                       <td style={{ padding: '10px 12px' }}>{u.full_name || '—'}</td>
                       <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{u.email}</td>
                       <td style={{ padding: '10px 12px' }}>
-                        <span style={{ ...S.badge, background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{(u.plan_id || 'free').toUpperCase()}</span>
+                        <span style={{ ...S.badge, background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{(u.plan_id || 'basic').toUpperCase()}</span>
                       </td>
                       <td style={{ padding: '10px 12px' }}>{u.is_admin ? '✅' : '—'}</td>
                       <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
@@ -1319,7 +1318,7 @@ function AdminPanel({ user, userProfile }) {
 
 // ─── ADD RECOMMENDATION FORM ──────────────────────────────────────────────────
 function AddRecForm({ existingRec, onSave, adminId }) {
-  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'silver', rationale: '', technical_notes: '', fundamental_notes: '', status: 'active' };
+  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', status: 'active' };
   const [form, setForm] = useState(existingRec || empty);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
@@ -1355,7 +1354,7 @@ function AddRecForm({ existingRec, onSave, adminId }) {
     { k: 'time_horizon', label: 'Time Horizon', opts: ['intraday', 'swing', 'positional', 'longterm'] },
     { k: 'risk_level', label: 'Risk Level', opts: ['low', 'medium', 'high'] },
     { k: 'conviction', label: 'Conviction', opts: ['low', 'medium', 'high'] },
-    { k: 'plan_required', label: 'Plan Required', opts: ['free', 'silver', 'gold', 'platinum'] },
+    { k: 'plan_required', label: 'Plan Required', opts: ['basic', 'premium', 'fno', 'elite'] },
     { k: 'status', label: 'Status', opts: ['active', 'closed', 'target_hit', 'sl_hit', 'expired', 'updated'] },
   ];
   const priceFields = [
@@ -1640,7 +1639,7 @@ function AboutPage() {
 
 // ─── SUBSCRIPTION PAGE ────────────────────────────────────────────────────────
 function SubscriptionPage({ user, userProfile }) {
-  const plan = PLANS[userProfile?.plan_id || 'free'];
+  const plan = PLANS[userProfile?.plan_id || 'basic'];
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
 
   return (
@@ -1652,7 +1651,7 @@ function SubscriptionPage({ user, userProfile }) {
             <h3 style={{ ...S.h3, marginBottom: '16px' }}>Current Plan</h3>
             <div style={{ ...S.flex, gap: '16px' }}>
               <div style={{ width: '56px', height: '56px', background: 'rgba(245,158,11,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>
-                {userProfile?.plan_id === 'free' ? '🎁' : userProfile?.plan_id === 'silver' ? '🥈' : userProfile?.plan_id === 'gold' ? '🥇' : '💎'}
+                {userProfile?.plan_id === 'basic' ? '📊' : userProfile?.plan_id === 'premium' ? '📈' : userProfile?.plan_id === 'fno' ? '⚡' : '💎'}
               </div>
               <div>
                 <p style={{ fontWeight: 800, fontSize: '20px', color: plan?.color }}>{plan?.name} Plan</p>
