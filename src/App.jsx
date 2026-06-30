@@ -132,6 +132,40 @@ const actionStyle = (a) => {
   return {};
 };
 const riskColor = (r) => r === 'low' ? '#10b981' : r === 'medium' ? '#f59e0b' : '#ef4444';
+
+// Points + % P&L for a recommendation. BUY: CMP - Entry. SELL: Entry - CMP.
+const calcPnL = (rec) => {
+  const entry = parseFloat(rec?.entry_price);
+  const cmp = parseFloat(rec?.cmp);
+  if (!entry || !cmp) return { points: null, pct: null };
+  const points = rec.action === 'SELL' ? entry - cmp : cmp - entry;
+  return { points: +points.toFixed(2), pct: +((points / entry) * 100).toFixed(2) };
+};
+
+// Suggests an effective status from CMP vs target/SL/expiry without overwriting
+// the admin's manually-set status. Used for display badges and the admin
+// "Auto-check Status" bulk action.
+const suggestStatus = (rec) => {
+  if (['closed', 'archived'].includes(rec.status)) return rec.status;
+  if (rec.expiry_at && new Date(rec.expiry_at) < new Date() && !['target_hit', 'sl_hit'].includes(rec.status)) return 'expired';
+  const cmp = parseFloat(rec.cmp);
+  const entry = parseFloat(rec.entry_price);
+  const t1 = parseFloat(rec.target1);
+  const sl = parseFloat(rec.stop_loss);
+  if (!cmp || !entry) return rec.status;
+  const isBuy = rec.action !== 'SELL';
+  if (t1 && (isBuy ? cmp >= t1 : cmp <= t1)) return 'target_hit';
+  if (sl && (isBuy ? cmp <= sl : cmp >= sl)) return 'sl_hit';
+  if (t1) {
+    const distToTarget = Math.abs(t1 - cmp) / Math.abs(t1 - entry || 1);
+    if (distToTarget <= 0.15) return 'near_target';
+  }
+  if (sl) {
+    const distToSL = Math.abs(cmp - sl) / Math.abs(entry - sl || 1);
+    if (distToSL <= 0.15) return 'near_sl';
+  }
+  return 'live';
+};
 const navigate = (path) => { window.history.pushState({}, '', path); window.dispatchEvent(new PopStateEvent('popstate')); };
 const getPath = () => window.location.pathname;
 
@@ -175,7 +209,9 @@ function Navbar({ user, userProfile, onLogout }) {
 
   const navItems = [
     { label: 'Home', path: '/' },
+    { label: 'Live Calls', path: '/live-calls' },
     { label: 'Recommendations', path: '/recommendations' },
+    { label: 'Past Calls', path: '/past-recommendations' },
     { label: 'Pricing', path: '/pricing' },
     { label: 'Blog', path: '/blog' },
     { label: 'Performance', path: '/performance' },
@@ -1027,8 +1063,11 @@ function RecCard({ rec, userProfile, onClick }) {
       <div style={{ ...S.flexBetween, marginBottom: '8px' }}>
         <div style={{ ...S.flex, gap: '8px' }}>
           <span style={{ ...S.badge, ...actionStyle(rec.action) }}>{rec.action}</span>
-          <span style={{ fontSize: '11px', ...S.muted, background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>{rec.segment?.toUpperCase()}</span>
+          <span style={{ fontSize: '11px', ...S.muted, background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>{rec.segment?.toUpperCase()}{rec.commodity_type ? ` · ${rec.commodity_type}` : ''}</span>
           <span style={{ fontSize: '11px', ...S.muted, background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>{rec.time_horizon}</span>
+          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: rec.status === 'target_hit' ? 'rgba(16,185,129,0.15)' : rec.status === 'sl_hit' ? 'rgba(239,68,68,0.15)' : rec.status === 'expired' || rec.status === 'closed' || rec.status === 'archived' ? 'rgba(148,163,184,0.15)' : 'rgba(59,130,246,0.15)', color: rec.status === 'target_hit' ? '#10b981' : rec.status === 'sl_hit' ? '#ef4444' : rec.status === 'expired' || rec.status === 'closed' || rec.status === 'archived' ? '#94a3b8' : '#3b82f6' }}>
+            {(rec.status || 'live').replace('_', ' ').toUpperCase()}
+          </span>
         </div>
         <span style={{ fontSize: '11px', ...S.muted }}>{new Date(rec.published_at).toLocaleDateString('en-IN')}</span>
       </div>
@@ -1046,8 +1085,14 @@ function RecCard({ rec, userProfile, onClick }) {
         <div><p style={{ fontSize: '10px', ...S.muted }}>Entry</p><p style={{ fontSize: '13px', fontWeight: 600 }}>{fmt(rec.entry_price)}</p></div>
         <div><p style={{ fontSize: '10px', ...S.muted }}>SL</p><p style={{ fontSize: '13px', fontWeight: 600, color: '#ef4444' }}>{fmt(rec.stop_loss)}</p></div>
         <div><p style={{ fontSize: '10px', ...S.muted }}>T1</p><p style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>{fmt(rec.target1)}</p></div>
-        <div><p style={{ fontSize: '10px', ...S.muted }}>Upside</p><p style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>{pct(rec.entry_price, rec.target1)}</p></div>
+        <div><p style={{ fontSize: '10px', ...S.muted }}>{rec.exit_price ? 'Exit' : 'Upside'}</p><p style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>{rec.exit_price ? fmt(rec.exit_price) : pct(rec.entry_price, rec.target1)}</p></div>
       </div>
+      {(rec.chart_url || rec.report_url) && (
+        <div style={{ ...S.flex, gap: '12px', marginTop: '10px' }}>
+          {rec.chart_url && <a href={rec.chart_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#3b82f6' }}>📈 Chart</a>}
+          {rec.report_url && <a href={rec.report_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#3b82f6' }}>📄 Report</a>}
+        </div>
+      )}
       {rec.risk_level && (
         <div style={{ ...S.flex, gap: '6px', marginTop: '10px' }}>
           <span style={{ fontSize: '10px', ...S.muted }}>Risk:</span>
@@ -1059,19 +1104,24 @@ function RecCard({ rec, userProfile, onClick }) {
 }
 
 // ─── RECOMMENDATIONS PAGE ─────────────────────────────────────────────────────
-function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted }) {
+function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted, forceStatus }) {
   const [recs, setRecs] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ segment: '', action: '', status: 'active', risk: '' });
+  const [filters, setFilters] = useState({ segment: '', action: '', status: '', risk: '' });
   const [sort, setSort] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+
+  const LIVE_GROUP = ['live', 'near_target', 'near_sl'];
+  const PAST_GROUP = ['target_hit', 'sl_hit', 'expired', 'closed', 'archived'];
 
   useEffect(() => { fetchRecs(); }, []);
 
   useEffect(() => {
     let data = [...recs];
+    if (forceStatus === 'live-group') data = data.filter(r => LIVE_GROUP.includes(r.status));
+    if (forceStatus === 'past-group') data = data.filter(r => PAST_GROUP.includes(r.status));
     if (search) data = data.filter(r => r.symbol?.toLowerCase().includes(search.toLowerCase()) || r.stock_name?.toLowerCase().includes(search.toLowerCase()));
     if (filters.segment) data = data.filter(r => r.segment === filters.segment);
     if (filters.action) data = data.filter(r => r.action === filters.action);
@@ -1080,31 +1130,31 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted 
     if (sort === 'newest') data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
     if (sort === 'oldest') data.sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
     setFiltered(data);
-  }, [recs, search, filters, sort]);
+  }, [recs, search, filters, sort, forceStatus]);
 
   const fetchRecs = async () => {
-    const { data } = await supabase.from('recommendations').select('*').order('published_at', { ascending: false });
+    const { data } = await supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false });
     setRecs(data || []);
     setLoading(false);
   };
 
   if (!riskAccepted && user) return <DisclaimerPopup onAccept={() => setRiskAccepted(true)} />;
 
-  const stats = { active: recs.filter(r => r.status === 'active').length, target_hit: recs.filter(r => r.status === 'target_hit').length, sl_hit: recs.filter(r => r.status === 'sl_hit').length, total: recs.length };
+  const stats = { live: recs.filter(r => r.status === 'live' || r.status === 'near_target' || r.status === 'near_sl').length, target_hit: recs.filter(r => r.status === 'target_hit').length, sl_hit: recs.filter(r => r.status === 'sl_hit').length, total: recs.length };
 
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ marginBottom: '32px' }}>
-            <h1 style={S.h2}>Research Calls</h1>
-            <p style={{ ...S.muted, marginTop: '4px' }}>Expert stock picks with detailed analysis and entry/exit levels</p>
+            <h1 style={S.h2}>{forceStatus === 'live-group' ? 'Live Calls' : forceStatus === 'past-group' ? 'Past Recommendations' : 'Research Calls'}</h1>
+            <p style={{ ...S.muted, marginTop: '4px' }}>{forceStatus === 'past-group' ? 'Closed, expired, target-hit, and stop-loss-hit calls with full track record.' : 'Expert stock picks with detailed analysis and entry/exit levels'}</p>
           </div>
 
           {/* Stats */}
           <div style={{ ...S.grid4, marginBottom: '24px' }}>
             {[
-              { label: 'Active', value: stats.active, color: '#10b981', icon: '📊' },
+              { label: 'Live', value: stats.live, color: '#10b981', icon: '📊' },
               { label: 'Target Hit', value: stats.target_hit, color: '#3b82f6', icon: '🎯' },
               { label: 'SL Hit', value: stats.sl_hit, color: '#ef4444', icon: '⚠️' },
               { label: 'Total Calls', value: stats.total, color: '#94a3b8', icon: '📋' },
@@ -1133,7 +1183,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted 
                 {[
                   { key: 'segment', label: 'Segment', opts: ['equity', 'futures', 'options', 'commodity'] },
                   { key: 'action', label: 'Action', opts: ['BUY', 'SELL', 'HOLD', 'AVOID', 'EXIT'] },
-                  { key: 'status', label: 'Status', opts: ['active', 'closed', 'target_hit', 'sl_hit', 'expired'] },
+                  { key: 'status', label: 'Status', opts: ['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'] },
                   { key: 'risk', label: 'Risk', opts: ['low', 'medium', 'high'] },
                 ].map(f => (
                   <div key={f.key}>
@@ -1145,7 +1195,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted 
                   </div>
                 ))}
                 <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                  <button onClick={() => setFilters({ segment: '', action: '', status: 'active', risk: '' })} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, width: '100%', justifyContent: 'center' }}>
+                  <button onClick={() => setFilters({ segment: '', action: '', status: '', risk: '' })} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, width: '100%', justifyContent: 'center' }}>
                     🔄 Reset
                   </button>
                 </div>
@@ -1160,7 +1210,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted 
               <p style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</p>
               <p style={{ fontWeight: 700, marginBottom: '8px' }}>No recommendations found</p>
               <p style={S.muted}>Try adjusting your search or filters</p>
-              <button onClick={() => { setSearch(''); setFilters({ segment: '', action: '', status: 'active', risk: '' }); }} style={{ ...S.btn, ...S.btnSecondary, marginTop: '16px' }}>Reset Filters</button>
+              <button onClick={() => { setSearch(''); setFilters({ segment: '', action: '', status: '', risk: '' }); }} style={{ ...S.btn, ...S.btnSecondary, marginTop: '16px' }}>Reset Filters</button>
             </div>
           ) : (
             <div style={S.grid2}>
@@ -1170,6 +1220,131 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted 
 
           <div style={{ ...S.disclaimer, marginTop: '32px' }}>
             ⚠️ All research calls are for educational and informational purposes only. Not investment advice. Investment in securities market is subject to market risk. Please read all related documents before investing. SEBI RA Reg: {SEBI_REG}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CHART PLACEHOLDER ────────────────────────────────────────────────────────
+function ChartPlaceholder({ label, icon }) {
+  return (
+    <div style={{ ...S.card, textAlign: 'center', padding: '32px 16px', opacity: 0.7 }}>
+      <div style={{ fontSize: '28px', marginBottom: '8px' }}>{icon}</div>
+      <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '4px' }}>{label}</p>
+      <p style={{ fontSize: '12px', ...S.muted }}>Live charts coming soon.</p>
+    </div>
+  );
+}
+
+// ─── RECOMMENDATION DETAIL PAGE ───────────────────────────────────────────────
+function RecommendationDetailPage({ id, userProfile }) {
+  const [rec, setRec] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from('recommendations').select('*').eq('id', id).single().then(({ data }) => {
+      setRec(data);
+      setLoading(false);
+    });
+  }, [id]);
+
+  if (loading) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Loading...</div>;
+  if (!rec) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Recommendation not found.</div>;
+
+  const pnl = calcPnL(rec);
+  const effStatus = suggestStatus(rec);
+
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
+      <div style={{ ...S.section, paddingTop: '40px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, marginBottom: '20px' }}>← Back</button>
+
+          <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+            <div>
+              <h1 style={S.h2}>{rec.symbol} <span style={{ fontSize: '14px', fontWeight: 400, ...S.muted }}>({rec.exchange})</span></h1>
+              <p style={{ ...S.muted }}>{rec.stock_name}{rec.commodity_type ? ` · ${rec.commodity_type}` : ''}</p>
+            </div>
+            <span style={{ ...S.badge, ...actionStyle(rec.action), fontSize: '14px' }}>{rec.action}</span>
+          </div>
+
+          <div style={{ ...S.grid4, marginBottom: '16px' }}>
+            {[
+              { label: 'Entry', value: fmt(rec.entry_price) },
+              { label: 'CMP', value: fmt(rec.cmp) },
+              { label: 'Target 1', value: fmt(rec.target1) },
+              { label: 'Stop Loss', value: fmt(rec.stop_loss) },
+            ].map((s, i) => (
+              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '14px' }}>
+                <p style={{ fontSize: '11px', ...S.muted }}>{s.label}</p>
+                <p style={{ fontWeight: 700 }}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {pnl.points !== null && (
+            <div style={{ ...S.card, marginBottom: '16px', textAlign: 'center' }}>
+              <p style={{ fontSize: '11px', ...S.muted, marginBottom: '4px' }}>Current P&amp;L</p>
+              <p style={{ fontSize: '22px', fontWeight: 800, color: pnl.points >= 0 ? '#10b981' : '#ef4444' }}>
+                {pnl.points >= 0 ? '+' : ''}{pnl.points} pts ({pnl.pct >= 0 ? '+' : ''}{pnl.pct}%)
+              </p>
+            </div>
+          )}
+
+          <div style={{ ...S.flex, gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <span style={{ ...S.badge, background: '#1e293b' }}>{effStatus.replace('_', ' ').toUpperCase()}</span>
+            <span style={{ ...S.badge, background: '#1e293b' }}>{rec.time_horizon}</span>
+            <span style={{ ...S.badge, background: '#1e293b' }}>Risk: <span style={{ color: riskColor(rec.risk_level) }}>{rec.risk_level}</span></span>
+            <span style={{ ...S.badge, background: '#1e293b' }}>{PLANS[rec.plan_required]?.name}</span>
+          </div>
+
+          {/* Uploaded chart image */}
+          {rec.chart_url ? (
+            <div style={{ ...S.card, marginBottom: '16px', padding: '8px' }}>
+              <img src={rec.chart_url} alt="Chart" style={{ width: '100%', borderRadius: '8px', display: 'block' }} />
+            </div>
+          ) : (
+            <ChartPlaceholder label="Analyst Chart" icon="🖼️" />
+          )}
+
+          {rec.report_url && (
+            <a href={rec.report_url} target="_blank" rel="noreferrer" style={{ ...S.btn, ...S.btnSecondary, marginBottom: '16px', textDecoration: 'none' }}>📄 View Research Report</a>
+          )}
+
+          {rec.technical_notes && (
+            <div style={{ ...S.card, marginBottom: '16px' }}>
+              <h4 style={{ ...S.h4, marginBottom: '8px' }}>Technical View</h4>
+              <p style={{ fontSize: '13px', lineHeight: 1.6, ...S.muted }}>{rec.technical_notes}</p>
+            </div>
+          )}
+          {rec.fundamental_notes && (
+            <div style={{ ...S.card, marginBottom: '16px' }}>
+              <h4 style={{ ...S.h4, marginBottom: '8px' }}>Fundamental View</h4>
+              <p style={{ fontSize: '13px', lineHeight: 1.6, ...S.muted }}>{rec.fundamental_notes}</p>
+            </div>
+          )}
+          {rec.rationale && (
+            <div style={{ ...S.card, marginBottom: '16px' }}>
+              <h4 style={{ ...S.h4, marginBottom: '8px' }}>Research Rationale</h4>
+              <p style={{ fontSize: '13px', lineHeight: 1.6, ...S.muted }}>{rec.rationale}</p>
+            </div>
+          )}
+
+          {/* Chart-ready placeholders, disabled until a live feed is connected */}
+          <h4 style={{ ...S.h4, marginBottom: '12px' }}>Charts</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            <ChartPlaceholder label="Stock Chart" icon="📈" />
+            <ChartPlaceholder label="Technical Chart" icon="📐" />
+            <ChartPlaceholder label="Candlestick Chart" icon="🕯️" />
+            <ChartPlaceholder label="Volume Chart" icon="📊" />
+            <ChartPlaceholder label="Support / Resistance" icon="📏" />
+            <ChartPlaceholder label="Option Chain" icon="⛓️" />
+          </div>
+
+          <div style={{ ...S.disclaimer }}>
+            ⚠️ Investment in securities market is subject to market risk. Past performance does not guarantee future returns. This platform does not provide guaranteed profit. SEBI RA Reg: {SEBI_REG}
           </div>
         </div>
       </div>
@@ -1214,6 +1389,17 @@ function AdminPanel({ user, userProfile }) {
     fetchData();
   };
 
+  const autoCheckStatus = async () => {
+    const { data } = await supabase.from('recommendations').select('*').in('status', ['live', 'near_target', 'near_sl']);
+    const updates = (data || []).map(r => ({ id: r.id, suggested: suggestStatus(r) })).filter(u => u.suggested !== data.find(r => r.id === u.id).status);
+    if (updates.length === 0) { alert('No status changes detected.'); return; }
+    if (!confirm(`Update ${updates.length} call(s) based on current CMP/expiry?`)) return;
+    for (const u of updates) {
+      await supabase.from('recommendations').update({ status: u.suggested, updated_at: new Date().toISOString() }).eq('id', u.id);
+    }
+    fetchData();
+  };
+
   if (!userProfile?.is_admin) return <div style={{ paddingTop: '100px', textAlign: 'center' }}>Access Denied</div>;
 
   const tabs = ['recommendations', 'users', 'add_recommendation'];
@@ -1247,6 +1433,9 @@ function AdminPanel({ user, userProfile }) {
           {activeTab === 'recommendations' && (
             loading ? <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading...</div> :
             <div>
+              <div style={{ ...S.flex, justifyContent: 'flex-end', marginBottom: '12px' }}>
+                <button onClick={autoCheckStatus} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>🔄 Auto-check Status (CMP/Expiry)</button>
+              </div>
               {recs.map(r => (
                 <div key={r.id} style={{ ...S.card, marginBottom: '10px' }}>
                   <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '12px' }}>
@@ -1262,7 +1451,7 @@ function AdminPanel({ user, userProfile }) {
                     <div style={{ ...S.flex, gap: '8px', flexWrap: 'wrap' }}>
                       <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)}
                         style={{ ...S.select, width: 'auto', fontSize: '12px', padding: '6px 10px' }}>
-                        {['active', 'closed', 'target_hit', 'sl_hit', 'expired', 'updated'].map(s => (
+                        {['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'].map(s => (
                           <option key={s} value={s}>{s.replace('_', ' ').toUpperCase()}</option>
                         ))}
                       </select>
@@ -1318,7 +1507,7 @@ function AdminPanel({ user, userProfile }) {
 
 // ─── ADD RECOMMENDATION FORM ──────────────────────────────────────────────────
 function AddRecForm({ existingRec, onSave, adminId }) {
-  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', status: 'active' };
+  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '' };
   const [form, setForm] = useState(existingRec || empty);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
@@ -1355,7 +1544,7 @@ function AddRecForm({ existingRec, onSave, adminId }) {
     { k: 'risk_level', label: 'Risk Level', opts: ['low', 'medium', 'high'] },
     { k: 'conviction', label: 'Conviction', opts: ['low', 'medium', 'high'] },
     { k: 'plan_required', label: 'Plan Required', opts: ['basic', 'premium', 'fno', 'elite'] },
-    { k: 'status', label: 'Status', opts: ['active', 'closed', 'target_hit', 'sl_hit', 'expired', 'updated'] },
+    { k: 'status', label: 'Status', opts: ['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'] },
   ];
   const priceFields = [
     { k: 'entry_price', label: 'Entry Price' },
@@ -1363,8 +1552,18 @@ function AddRecForm({ existingRec, onSave, adminId }) {
     { k: 'target2', label: 'Target 2' },
     { k: 'target3', label: 'Target 3' },
     { k: 'stop_loss', label: 'Stop Loss' },
+    { k: 'exit_price', label: 'Exit Price' },
     { k: 'cmp', label: 'CMP (Current)' },
   ];
+
+  const uploadFile = async (file, kind) => {
+    if (!file) return;
+    const path = `${kind}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from('rec-media').upload(path, file, { upsert: true });
+    if (error) { setMsg('Upload failed: ' + error.message); return; }
+    const { data } = supabase.storage.from('rec-media').getPublicUrl(path);
+    set(kind === 'charts' ? 'chart_url' : 'report_url', data.publicUrl);
+  };
 
   return (
     <div style={S.card}>
@@ -1400,12 +1599,40 @@ function AddRecForm({ existingRec, onSave, adminId }) {
         ))}
       </div>
 
+      {form.segment === 'commodity' && (
+        <div style={S.formGroup}>
+          <label style={S.label}>Commodity</label>
+          <select style={S.select} value={form.commodity_type} onChange={e => set('commodity_type', e.target.value)}>
+            <option value="">Select commodity</option>
+            {['Gold', 'Silver', 'Crude Oil', 'Natural Gas'].map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div style={S.formGroup}>
+        <label style={S.label}>Expiry Date/Time (call auto-marks expired after this)</label>
+        <input style={S.input} type="datetime-local" value={form.expiry_at || ''} onChange={e => set('expiry_at', e.target.value)} />
+      </div>
+
       {['rationale', 'technical_notes', 'fundamental_notes'].map(k => (
         <div key={k} style={S.formGroup}>
           <label style={S.label}>{k.replace('_', ' ').toUpperCase()}</label>
           <textarea style={S.textarea} placeholder={`Enter ${k.replace('_', ' ')}...`} value={form[k]} onChange={e => set(k, e.target.value)} />
         </div>
       ))}
+
+      <div style={S.grid2}>
+        <div style={S.formGroup}>
+          <label style={S.label}>Chart Image</label>
+          <input style={S.input} type="file" accept="image/*" onChange={e => uploadFile(e.target.files[0], 'charts')} />
+          {form.chart_url && <p style={{ fontSize: '11px', color: '#10b981', marginTop: '4px' }}>✓ Uploaded</p>}
+        </div>
+        <div style={S.formGroup}>
+          <label style={S.label}>Research Report (PDF)</label>
+          <input style={S.input} type="file" accept="application/pdf" onChange={e => uploadFile(e.target.files[0], 'reports')} />
+          {form.report_url && <p style={{ fontSize: '11px', color: '#10b981', marginTop: '4px' }}>✓ Uploaded</p>}
+        </div>
+      </div>
 
       <div style={{ ...S.flex, gap: '12px', marginTop: '8px' }}>
         <button onClick={handleSave} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, opacity: loading ? 0.7 : 1 }}>
@@ -1761,6 +1988,9 @@ export default function App() {
     if (path === '/register') return <RegisterPage setUser={setUser} setUserProfile={setUserProfile} />;
     if (path === '/pricing') return <PricingPage />;
     if (path === '/recommendations') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} />;
+    if (path === '/live-calls') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="live-group" />;
+    if (path === '/past-recommendations') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="past-group" />;
+    if (path.startsWith('/recommendations/')) return <RecommendationDetailPage id={path.split('/recommendations/')[1]} userProfile={userProfile} />;
     if (path === '/performance') return <PerformancePage />;
     if (path === '/about') return <AboutPage />;
     if (path === '/disclaimer') return <DisclaimerPage />;
