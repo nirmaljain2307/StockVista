@@ -1938,9 +1938,10 @@ export default function App() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        const { data: profile, error } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-        if (error) console.error('profile error:', error.message);
-        setUserProfile(profile);
+        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+        // Merge is_admin from both sources to survive RLS
+        const { data: adminCheck } = await supabase.rpc('get_my_is_admin').catch(() => ({ data: null }));
+        setUserProfile({ ...profile, is_admin: profile?.is_admin || adminCheck === true });
       }
       setAuthLoading(false);
     });
@@ -1948,7 +1949,8 @@ export default function App() {
       if (session?.user) {
         setUser(session.user);
         const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-        setUserProfile(profile);
+        const { data: adminCheck } = await supabase.rpc('get_my_is_admin').catch(() => ({ data: null }));
+        setUserProfile({ ...profile, is_admin: profile?.is_admin || adminCheck === true });
       } else {
         setUser(null);
         setUserProfile(null);
