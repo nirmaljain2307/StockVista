@@ -1938,7 +1938,8 @@ export default function App() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+        const { data: profile, error } = await supabase.from('users').select('id, email, full_name, mobile, plan_id, plan_expires_at, is_admin, risk_accepted, risk_accepted_at, created_at').eq('id', session.user.id).single();
+        console.log('profile loaded:', profile, 'error:', error);
         setUserProfile(profile);
       }
       setAuthLoading(false);
@@ -1946,7 +1947,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+        const { data: profile } = await supabase.from('users').select('id, email, full_name, mobile, plan_id, plan_expires_at, is_admin, risk_accepted, risk_accepted_at, created_at').eq('id', session.user.id).single();
         setUserProfile(profile);
       } else {
         setUser(null);
