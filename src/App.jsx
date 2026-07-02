@@ -47,60 +47,60 @@ const BILLING_CYCLES = [
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const S = {
   // Layout
-  page: { minHeight: '100vh', background: '#0a0f1e', color: '#e2e8f0', fontFamily: "'Inter', sans-serif" },
+  page: { minHeight: '100vh', background: '#f0f4f8', color: '#1e293b', fontFamily: "'Inter', sans-serif" },
   container: { maxWidth: '1200px', margin: '0 auto', padding: '0 20px' },
   section: { padding: '80px 20px' },
 
   // Navbar
-  nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'rgba(10,15,30,0.95)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #1e293b', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' },
-  navLogo: { fontSize: '20px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
+  nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' },
+  navLogo: { fontSize: '20px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
   navLogoIcon: { width: '32px', height: '32px', background: 'linear-gradient(135deg, #1d4ed8, #f59e0b)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' },
   navLinks: { display: 'flex', gap: '24px', alignItems: 'center' },
-  navLink: { color: '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'color 0.2s', padding: '4px 0', border: 'none', background: 'none' },
+  navLink: { color: '#475569', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'color 0.2s', padding: '4px 0', border: 'none', background: 'none' },
   navBtn: { background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' },
 
   // Buttons
   btn: { border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' },
   btnPrimary: { background: 'linear-gradient(135deg, #1d4ed8, #2563eb)', color: '#fff' },
-  btnSecondary: { background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' },
+  btnSecondary: { background: '#e2e8f0', color: '#1e293b', border: '1px solid #cbd5e1' },
   btnGold: { background: 'linear-gradient(135deg, #d97706, #f59e0b)', color: '#fff' },
   btnSm: { padding: '8px 16px', fontSize: '13px' },
   btnDanger: { background: '#ef4444', color: '#fff' },
   btnGreen: { background: '#10b981', color: '#fff' },
 
   // Cards
-  card: { background: '#111827', border: '1px solid #1e293b', borderRadius: '12px', padding: '24px' },
+  card: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' },
   cardHover: { transition: 'border-color 0.2s, transform 0.2s' },
 
   // Form
   formGroup: { marginBottom: '16px' },
-  label: { display: 'block', fontSize: '13px', fontWeight: 600, color: '#94a3b8', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  input: { width: '100%', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#e2e8f0', outline: 'none', fontFamily: 'Inter, sans-serif' },
-  select: { width: '100%', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#e2e8f0', outline: 'none', fontFamily: 'Inter, sans-serif' },
-  textarea: { width: '100%', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#e2e8f0', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical', minHeight: '80px' },
+  label: { display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  input: { width: '100%', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#1e293b', outline: 'none', fontFamily: 'Inter, sans-serif' },
+  select: { width: '100%', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#1e293b', outline: 'none', fontFamily: 'Inter, sans-serif' },
+  textarea: { width: '100%', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#1e293b', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical', minHeight: '80px' },
 
   // Tags / Badges
   badge: { display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 },
-  badgeBuy: { background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' },
-  badgeSell: { background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' },
-  badgeHold: { background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' },
-  badgeAvoid: { background: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.3)' },
-  badgeExit: { background: 'rgba(168,85,247,0.15)', color: '#a78bfa', border: '1px solid rgba(168,85,247,0.3)' },
-  badgeActive: { background: 'rgba(16,185,129,0.15)', color: '#10b981' },
-  badgeClosed: { background: 'rgba(100,116,139,0.15)', color: '#94a3b8' },
+  badgeBuy: { background: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)' },
+  badgeSell: { background: 'rgba(239,68,68,0.12)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.3)' },
+  badgeHold: { background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' },
+  badgeAvoid: { background: 'rgba(100,116,139,0.12)', color: '#64748b', border: '1px solid rgba(100,116,139,0.3)' },
+  badgeExit: { background: 'rgba(168,85,247,0.12)', color: '#7c3aed', border: '1px solid rgba(168,85,247,0.3)' },
+  badgeActive: { background: 'rgba(16,185,129,0.12)', color: '#059669' },
+  badgeClosed: { background: 'rgba(100,116,139,0.12)', color: '#64748b' },
 
   // Text
   h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em' },
   h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.2 },
   h3: { fontSize: '20px', fontWeight: 700 },
   h4: { fontSize: '16px', fontWeight: 600 },
-  muted: { color: '#94a3b8' },
-  gold: { color: '#f59e0b' },
-  green: { color: '#10b981' },
-  red: { color: '#ef4444' },
+  muted: { color: '#64748b' },
+  gold: { color: '#d97706' },
+  green: { color: '#059669' },
+  red: { color: '#dc2626' },
 
   // Disclaimer
-  disclaimer: { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px 16px', fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 },
+  disclaimer: { background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px 16px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 },
 
   // Grid
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' },
@@ -116,7 +116,7 @@ const S = {
   mt32: { marginTop: '32px' },
   mb8: { marginBottom: '8px' },
   mb16: { marginBottom: '16px' },
-  divider: { height: '1px', background: '#1e293b', margin: '24px 0' },
+  divider: { height: '1px', background: '#e2e8f0', margin: '24px 0' },
 };
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ function Navbar({ user, userProfile, onLogout }) {
                 <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
               </button>
               {notifOpen && (
-                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '16px', width: '300px', zIndex: 100 }}>
+                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#e2e8f0', border: '1px solid #334155', borderRadius: '12px', padding: '16px', width: '300px', zIndex: 100 }}>
                   <p style={{ fontWeight: 700, marginBottom: '12px' }}>Notifications</p>
                   {[
                     { title: 'New Recommendation', msg: 'RELIANCE BUY call published', type: '📊' },
@@ -269,7 +269,7 @@ function Navbar({ user, userProfile, onLogout }) {
                 {(userProfile?.full_name || user.email || 'U')[0].toUpperCase()}
               </button>
               {userMenu && (
-                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '8px', width: '200px', zIndex: 100 }}>
+                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#e2e8f0', border: '1px solid #334155', borderRadius: '12px', padding: '8px', width: '200px', zIndex: 100 }}>
                   <p style={{ padding: '8px 12px', fontSize: '12px', ...S.muted }}>{user.email}</p>
                   <div style={{ height: '1px', background: '#334155', margin: '4px 0' }} />
                   {[
@@ -279,7 +279,7 @@ function Navbar({ user, userProfile, onLogout }) {
                     ...(userProfile?.is_admin ? [{ label: '🛡️ Admin Panel', path: '/admin' }] : []),
                   ].map(item => (
                     <button key={item.path} onClick={() => { navigate(item.path); setUserMenu(false); }}
-                      style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#e2e8f0' }}>
+                      style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#1e293b' }}>
                       {item.label}
                     </button>
                   ))}
@@ -305,7 +305,7 @@ function Navbar({ user, userProfile, onLogout }) {
 
       {/* Mobile Menu Drawer */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, background: '#0a0f1e', zIndex: 999, padding: '24px' }}>
+        <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, background: '#f0f4f8', zIndex: 999, padding: '24px' }}>
           <button onClick={() => setMenuOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer' }}>✕</button>
           {navItems.map(item => (
             <button key={item.path} onClick={() => { navigate(item.path); setMenuOpen(false); }}
@@ -347,10 +347,10 @@ function LandingPage() {
   return (
     <div>
       {/* Hero */}
-      <section style={{ paddingTop: '140px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(180deg, #0d1a3a 0%, #0a0f1e 100%)', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ paddingTop: '140px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(180deg, #e8f0fe 0%, #f0f4f8 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(29,78,216,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(245,158,11,0.1) 0%, transparent 50%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', maxWidth: '800px', margin: '0 auto', padding: '0 20px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#94a3b8' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#64748b' }}>
             <span style={{ color: '#10b981' }}>●</span> SEBI Registered Research Analyst · {SEBI_REG}
           </div>
           <h1 style={{ ...S.h1, marginBottom: '24px' }}>
@@ -377,7 +377,7 @@ function LandingPage() {
       </section>
 
       {/* Stats Bar */}
-      <section style={{ background: '#111827', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b', padding: '32px 20px' }}>
+      <section style={{ background: '#ffffff', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b', padding: '32px 20px' }}>
         <div style={{ ...S.grid4, maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
           {stats.map((s, i) => (
             <div key={i}>
@@ -389,7 +389,7 @@ function LandingPage() {
       </section>
 
       {/* Latest Calls Preview */}
-      <section style={{ ...S.section, background: '#0a0f1e' }}>
+      <section style={{ ...S.section, background: '#f0f4f8' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ ...S.flexBetween, marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
@@ -421,7 +421,7 @@ function LandingPage() {
                 <div style={{ ...S.flexBetween, marginBottom: '12px' }}>
                   <div style={{ ...S.flex, gap: '8px' }}>
                     <span style={{ ...S.badge, ...actionStyle(r.action) }}>{r.action}</span>
-                    <span style={{ fontSize: '11px', ...S.muted, background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>{r.segment}</span>
+                    <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>{r.segment}</span>
                   </div>
                   <span style={{ fontWeight: 700, color: r.action === 'SELL' ? '#ef4444' : '#10b981', fontSize: '14px' }}>{r.pct}</span>
                 </div>
@@ -444,7 +444,7 @@ function LandingPage() {
       </section>
 
       {/* Features */}
-      <section style={{ ...S.section, background: '#080d1a' }}>
+      <section style={{ ...S.section, background: '#e8edf3' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>WHY CHOOSE US</p>
           <h2 style={{ ...S.h2, marginBottom: '48px' }}>Research-First Approach</h2>
@@ -463,7 +463,7 @@ function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section style={{ ...S.section, background: '#0a0f1e' }}>
+      <section style={{ ...S.section, background: '#f0f4f8' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>HOW IT WORKS</p>
           <h2 style={{ ...S.h2, marginBottom: '48px' }}>Simple Steps to Start</h2>
@@ -480,7 +480,7 @@ function LandingPage() {
       </section>
 
       {/* Pricing Preview */}
-      <section style={{ ...S.section, background: '#080d1a' }}>
+      <section style={{ ...S.section, background: '#e8edf3' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>PRICING</p>
           <h2 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h2>
@@ -491,7 +491,7 @@ function LandingPage() {
       </section>
 
       {/* Risk Management */}
-      <section style={{ ...S.section, background: '#0a0f1e' }}>
+      <section style={{ ...S.section, background: '#f0f4f8' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h2 style={S.h2}>Risk Management Framework</h2>
@@ -569,7 +569,7 @@ function Footer() {
   };
 
   return (
-    <footer style={{ background: '#080d1a', borderTop: '1px solid #1e293b', padding: '60px 20px 0' }}>
+    <footer style={{ background: '#e8edf3', borderTop: '1px solid #1e293b', padding: '60px 20px 0' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '40px', marginBottom: '48px' }}>
           <div>
@@ -584,7 +584,7 @@ function Footer() {
           </div>
           {Object.entries(links).map(([section, items]) => (
             <div key={section}>
-              <p style={{ fontWeight: 700, fontSize: '13px', color: '#e2e8f0', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{section}</p>
+              <p style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{section}</p>
               {items.map(item => (
                 <button key={item.path} onClick={() => navigate(item.path)}
                   style={{ display: 'block', background: 'none', border: 'none', color: '#64748b', fontSize: '13px', cursor: 'pointer', padding: '4px 0', textAlign: 'left', transition: 'color 0.2s' }}
@@ -631,7 +631,7 @@ function PricingCards({ compact = false }) {
   return (
     <div>
       {!compact && (
-        <div style={{ display: 'flex', gap: '4px', background: '#111827', padding: '4px', borderRadius: '10px', width: 'fit-content', margin: '0 auto 40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '4px', background: '#ffffff', padding: '4px', borderRadius: '10px', width: 'fit-content', margin: '0 auto 40px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {BILLING_CYCLES.map(b => (
             <button key={b.key} onClick={() => setCycle(b.key)}
               style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: cycle === b.key ? '#1d4ed8' : 'transparent', color: cycle === b.key ? '#fff' : '#94a3b8', transition: 'all 0.2s' }}>
@@ -704,14 +704,14 @@ function PricingPage() {
       </section>
 
       {/* Feature comparison table */}
-      <section style={{ ...S.section, background: '#080d1a', paddingTop: '0' }}>
+      <section style={{ ...S.section, background: '#e8edf3', paddingTop: '0' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <h3 style={{ ...S.h3, textAlign: 'center', marginBottom: '24px' }}>Full Feature Comparison</h3>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>Feature</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#64748b' }}>Feature</th>
                   {['Free', 'Silver', 'Gold', 'Platinum'].map(p => (
                     <th key={p} style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '1px solid #1e293b', color: p === 'Gold' ? '#f59e0b' : '#e2e8f0' }}>{p}</th>
                   ))}
@@ -734,7 +734,7 @@ function PricingPage() {
                   };
                   return (
                     <tr key={f.key} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(30,41,59,0.3)' }}>
-                      <td style={{ padding: '12px 16px', color: '#e2e8f0' }}>{f.label}</td>
+                      <td style={{ padding: '12px 16px', color: '#1e293b' }}>{f.label}</td>
                       {matrix[f.key].map((has, j) => (
                         <td key={j} style={{ padding: '12px 16px', textAlign: 'center', color: has ? '#10b981' : '#334155', fontSize: '18px' }}>
                           {has ? '✓' : '✕'}
@@ -750,7 +750,7 @@ function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ ...S.section, background: '#0a0f1e' }}>
+      <section style={{ ...S.section, background: '#f0f4f8' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '40px' }}>Frequently Asked Questions</h2>
           {faqs.map((faq, i) => (
@@ -1018,7 +1018,7 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
                   { label: '💳 Manage Subscription', path: '/subscription' },
                 ].map(item => (
                   <button key={item.path} onClick={() => navigate(item.path)}
-                    style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#e2e8f0', fontSize: '14px', padding: '10px 0', cursor: 'pointer', borderBottom: '1px solid #1e293b' }}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#1e293b', fontSize: '14px', padding: '10px 0', cursor: 'pointer', borderBottom: '1px solid #1e293b' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'}
                     onMouseLeave={e => e.currentTarget.style.color = '#e2e8f0'}>
                     {item.label}
@@ -1063,8 +1063,8 @@ function RecCard({ rec, userProfile, onClick }) {
       <div style={{ ...S.flexBetween, marginBottom: '8px' }}>
         <div style={{ ...S.flex, gap: '8px' }}>
           <span style={{ ...S.badge, ...actionStyle(rec.action) }}>{rec.action}</span>
-          <span style={{ fontSize: '11px', ...S.muted, background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>{rec.segment?.toUpperCase()}{rec.commodity_type ? ` · ${rec.commodity_type}` : ''}</span>
-          <span style={{ fontSize: '11px', ...S.muted, background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>{rec.time_horizon}</span>
+          <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>{rec.segment?.toUpperCase()}{rec.commodity_type ? ` · ${rec.commodity_type}` : ''}</span>
+          <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>{rec.time_horizon}</span>
           <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: rec.status === 'target_hit' ? 'rgba(16,185,129,0.15)' : rec.status === 'sl_hit' ? 'rgba(239,68,68,0.15)' : rec.status === 'expired' || rec.status === 'closed' || rec.status === 'archived' ? 'rgba(148,163,184,0.15)' : 'rgba(59,130,246,0.15)', color: rec.status === 'target_hit' ? '#10b981' : rec.status === 'sl_hit' ? '#ef4444' : rec.status === 'expired' || rec.status === 'closed' || rec.status === 'archived' ? '#94a3b8' : '#3b82f6' }}>
             {(rec.status || 'live').replace('_', ' ').toUpperCase()}
           </span>
@@ -1157,7 +1157,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
               { label: 'Live', value: stats.live, color: '#10b981', icon: '📊' },
               { label: 'Target Hit', value: stats.target_hit, color: '#3b82f6', icon: '🎯' },
               { label: 'SL Hit', value: stats.sl_hit, color: '#ef4444', icon: '⚠️' },
-              { label: 'Total Calls', value: stats.total, color: '#94a3b8', icon: '📋' },
+              { label: 'Total Calls', value: stats.total, color: '#64748b', icon: '📋' },
             ].map((s, i) => (
               <div key={i} style={{ ...S.card }}>
                 <div style={{ fontSize: '24px' }}>{s.icon}</div>
@@ -1294,10 +1294,10 @@ function RecommendationDetailPage({ id, userProfile }) {
           )}
 
           <div style={{ ...S.flex, gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <span style={{ ...S.badge, background: '#1e293b' }}>{effStatus.replace('_', ' ').toUpperCase()}</span>
-            <span style={{ ...S.badge, background: '#1e293b' }}>{rec.time_horizon}</span>
-            <span style={{ ...S.badge, background: '#1e293b' }}>Risk: <span style={{ color: riskColor(rec.risk_level) }}>{rec.risk_level}</span></span>
-            <span style={{ ...S.badge, background: '#1e293b' }}>{PLANS[rec.plan_required]?.name}</span>
+            <span style={{ ...S.badge, background: '#e2e8f0' }}>{effStatus.replace('_', ' ').toUpperCase()}</span>
+            <span style={{ ...S.badge, background: '#e2e8f0' }}>{rec.time_horizon}</span>
+            <span style={{ ...S.badge, background: '#e2e8f0' }}>Risk: <span style={{ color: riskColor(rec.risk_level) }}>{rec.risk_level}</span></span>
+            <span style={{ ...S.badge, background: '#e2e8f0' }}>{PLANS[rec.plan_required]?.name}</span>
           </div>
 
           {/* Uploaded chart image */}
@@ -1416,7 +1416,7 @@ function AdminPanel({ user, userProfile }) {
           </div>
 
           {/* Tabs */}
-          <div style={{ ...S.flex, gap: '4px', background: '#111827', padding: '4px', borderRadius: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ ...S.flex, gap: '4px', background: '#ffffff', padding: '4px', borderRadius: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
             {[
               { key: 'recommendations', label: '📊 Recommendations' },
               { key: 'add_recommendation', label: '➕ Add Call' },
@@ -1479,7 +1479,7 @@ function AdminPanel({ user, userProfile }) {
                 <thead>
                   <tr>
                     {['Name', 'Email', 'Plan', 'Admin', 'Joined'].map(h => (
-                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#94a3b8', fontWeight: 600 }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#64748b', fontWeight: 600 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1487,12 +1487,12 @@ function AdminPanel({ user, userProfile }) {
                   {users.map(u => (
                     <tr key={u.id} style={{ borderBottom: '1px solid #1e293b' }}>
                       <td style={{ padding: '10px 12px' }}>{u.full_name || '—'}</td>
-                      <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{u.email}</td>
+                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{u.email}</td>
                       <td style={{ padding: '10px 12px' }}>
                         <span style={{ ...S.badge, background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{(u.plan_id || 'basic').toUpperCase()}</span>
                       </td>
                       <td style={{ padding: '10px 12px' }}>{u.is_admin ? '✅' : '—'}</td>
-                      <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1670,7 +1670,7 @@ function PerformancePage() {
 
           <div style={{ ...S.grid4, marginBottom: '32px' }}>
             {[
-              { label: 'Total Calls', value: recs.length, color: '#94a3b8' },
+              { label: 'Total Calls', value: recs.length, color: '#64748b' },
               { label: 'Target Hit', value: targets.length, color: '#10b981' },
               { label: 'Stop Loss Hit', value: slHit.length, color: '#ef4444' },
               { label: 'Win Rate', value: winRate + '%', color: '#f59e0b' },
@@ -1695,7 +1695,7 @@ function PerformancePage() {
                 <thead>
                   <tr>
                     {['Stock', 'Action', 'Entry', 'Exit', 'Return', 'Status', 'Date'].map(h => (
-                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#94a3b8', fontWeight: 600 }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#64748b', fontWeight: 600 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1717,7 +1717,7 @@ function PerformancePage() {
                             {r.status.replace('_', ' ').toUpperCase()}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{new Date(r.closed_at || r.updated_at).toLocaleDateString('en-IN')}</td>
+                        <td style={{ padding: '10px 12px', color: '#64748b' }}>{new Date(r.closed_at || r.updated_at).toLocaleDateString('en-IN')}</td>
                       </tr>
                     );
                   })}
