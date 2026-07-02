@@ -17,7 +17,7 @@ const CONTACT_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_PHONE = '+91-7003950585';
 
 const PLANS = {
-  basic: { name: 'Basic Equity', color: '#64748b', monthly: 999 },
+  basic: { name: 'Basic Equity', color: '#334155', monthly: 999 },
   premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499 },
   fno: { name: 'F&O Pro', color: '#f59e0b', monthly: 3999 },
   elite: { name: 'Elite All Access', color: '#a78bfa', monthly: 5999 },
@@ -74,7 +74,7 @@ const S = {
 
   // Form
   formGroup: { marginBottom: '16px' },
-  label: { display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' },
+  label: { display: 'block', fontSize: '12px', fontWeight: 700, color: '#1e293b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' },
   input: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 500 },
   select: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 500 },
   textarea: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
@@ -84,23 +84,23 @@ const S = {
   badgeBuy: { background: 'rgba(16,185,129,0.12)', color: '#047857', border: '1px solid rgba(16,185,129,0.3)' },
   badgeSell: { background: 'rgba(239,68,68,0.12)', color: '#b91c1c', border: '1px solid rgba(239,68,68,0.3)' },
   badgeHold: { background: 'rgba(245,158,11,0.12)', color: '#b45309', border: '1px solid rgba(245,158,11,0.3)' },
-  badgeAvoid: { background: 'rgba(100,116,139,0.12)', color: '#475569', border: '1px solid rgba(100,116,139,0.3)' },
+  badgeAvoid: { background: 'rgba(100,116,139,0.12)', color: '#1e293b', border: '1px solid rgba(100,116,139,0.3)' },
   badgeExit: { background: 'rgba(124,58,237,0.12)', color: '#6d28d9', border: '1px solid rgba(124,58,237,0.3)' },
   badgeActive: { background: 'rgba(16,185,129,0.12)', color: '#047857' },
-  badgeClosed: { background: 'rgba(100,116,139,0.12)', color: '#475569' },
+  badgeClosed: { background: 'rgba(100,116,139,0.12)', color: '#0f172a' },
 
   // Text
   h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0f172a' },
   h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.2, color: '#0f172a' },
   h3: { fontSize: '20px', fontWeight: 700, color: '#0f172a' },
-  h4: { fontSize: '16px', fontWeight: 600, color: '#1e293b' },
-  muted: { color: '#64748b' },
+  h4: { fontSize: '16px', fontWeight: 600, color: '#0f172a' },
+  muted: { color: '#334155' },
   gold: { color: '#d97706' },
   green: { color: '#047857' },
   red: { color: '#b91c1c' },
 
   // Disclaimer
-  disclaimer: { background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', padding: '12px 16px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 },
+  disclaimer: { background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', padding: '12px 16px', fontSize: '12px', color: '#334155', lineHeight: 1.6 },
 
   // Grid
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' },
@@ -279,7 +279,7 @@ function Navbar({ user, userProfile, onLogout }) {
                     ...(userProfile?.is_admin ? [{ label: '🛡️ Admin Panel', path: '/admin' }] : []),
                   ].map(item => (
                     <button key={item.path} onClick={() => { navigate(item.path); setUserMenu(false); }}
-                      style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#1e293b' }}>
+                      style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#0f172a' }}>
                       {item.label}
                     </button>
                   ))}
@@ -350,7 +350,7 @@ function LandingPage() {
       <section style={{ paddingTop: '140px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 60%, #fefce8 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(29,78,216,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(245,158,11,0.1) 0%, transparent 50%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', maxWidth: '800px', margin: '0 auto', padding: '0 20px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#64748b' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#334155' }}>
             <span style={{ color: '#10b981' }}>●</span> SEBI Registered Research Analyst · {SEBI_REG}
           </div>
           <h1 style={{ ...S.h1, marginBottom: '24px' }}>
@@ -580,14 +580,14 @@ function Footer() {
             <p style={{ fontSize: '13px', ...S.muted, lineHeight: 1.7, marginBottom: '12px' }}>
               Your trusted partner for stock market research. SEBI Registered Research Analyst.
             </p>
-            <p style={{ fontSize: '11px', color: '#475569' }}>SEBI RA Reg: {SEBI_REG}</p>
+            <p style={{ fontSize: '11px', color: '#0f172a' }}>SEBI RA Reg: {SEBI_REG}</p>
           </div>
           {Object.entries(links).map(([section, items]) => (
             <div key={section}>
               <p style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{section}</p>
               {items.map(item => (
                 <button key={item.path} onClick={() => navigate(item.path)}
-                  style={{ display: 'block', background: 'none', border: 'none', color: '#64748b', fontSize: '13px', cursor: 'pointer', padding: '4px 0', textAlign: 'left', transition: 'color 0.2s' }}
+                  style={{ display: 'block', background: 'none', border: 'none', color: '#334155', fontSize: '13px', cursor: 'pointer', padding: '4px 0', textAlign: 'left', transition: 'color 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
                   onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
                   {item.label}
@@ -601,8 +601,8 @@ function Footer() {
             <strong>SEBI Research Analyst Registration:</strong> Investment in securities market is subject to market risks. Read all the related documents carefully before investing. The securities quoted are exemplary and are not recommendatory. Past performance is not indicative of future results. The content provided is for educational and informational purposes only. {COMPANY_NAME} | SEBI RA Reg: {SEBI_REG} | Analyst: {ANALYST_NAME}
           </div>
           <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '8px' }}>
-            <p style={{ fontSize: '12px', color: '#475569' }}>© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</p>
-            <p style={{ fontSize: '12px', color: '#475569' }}>Made with ❤️ in India</p>
+            <p style={{ fontSize: '12px', color: '#0f172a' }}>© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</p>
+            <p style={{ fontSize: '12px', color: '#0f172a' }}>Made with ❤️ in India</p>
           </div>
         </div>
       </div>
@@ -622,7 +622,7 @@ function PricingCards({ compact = false }) {
   };
 
   const planDefs = [
-    { id: 'basic', name: 'Basic Equity', desc: 'Core equity research to get started', color: '#64748b', features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations'] },
+    { id: 'basic', name: 'Basic Equity', desc: 'Core equity research to get started', color: '#334155', features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations'] },
     { id: 'premium', name: 'Premium Equity', desc: 'Deeper research for serious equity investors', color: '#3b82f6', popular: false, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'ipo_recommendations', 'priority_support'] },
     { id: 'fno', name: 'F&O Pro', desc: 'Most popular for active derivatives traders', color: '#f59e0b', popular: true, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'fno_recommendations', 'intraday_calls', 'options_strategies', 'priority_support'] },
     { id: 'elite', name: 'Elite All Access', desc: 'Complete research suite across every segment', color: '#a78bfa', popular: false, features: Object.keys(PLAN_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {})) },
@@ -666,7 +666,7 @@ function PricingCards({ compact = false }) {
                     <span style={{ color: plan.features.includes(f.key) ? '#10b981' : '#334155', fontSize: '15px' }}>
                       {plan.features.includes(f.key) ? '✓' : '✕'}
                     </span>
-                    <span style={{ color: plan.features.includes(f.key) ? '#e2e8f0' : '#475569' }}>{f.label}</span>
+                    <span style={{ color: plan.features.includes(f.key) ? '#0f172a' : '#94a3b8' }}>{f.label}</span>
                   </div>
                 ))}
               </div>
@@ -711,7 +711,7 @@ function PricingPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#64748b' }}>Feature</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#334155' }}>Feature</th>
                   {['Free', 'Silver', 'Gold', 'Platinum'].map(p => (
                     <th key={p} style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '1px solid #1e293b', color: p === 'Gold' ? '#f59e0b' : '#e2e8f0' }}>{p}</th>
                   ))}
@@ -734,7 +734,7 @@ function PricingPage() {
                   };
                   return (
                     <tr key={f.key} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(30,41,59,0.3)' }}>
-                      <td style={{ padding: '12px 16px', color: '#1e293b' }}>{f.label}</td>
+                      <td style={{ padding: '12px 16px', color: '#0f172a' }}>{f.label}</td>
                       {matrix[f.key].map((has, j) => (
                         <td key={j} style={{ padding: '12px 16px', textAlign: 'center', color: has ? '#10b981' : '#334155', fontSize: '18px' }}>
                           {has ? '✓' : '✕'}
@@ -1157,7 +1157,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
               { label: 'Live', value: stats.live, color: '#10b981', icon: '📊' },
               { label: 'Target Hit', value: stats.target_hit, color: '#3b82f6', icon: '🎯' },
               { label: 'SL Hit', value: stats.sl_hit, color: '#ef4444', icon: '⚠️' },
-              { label: 'Total Calls', value: stats.total, color: '#64748b', icon: '📋' },
+              { label: 'Total Calls', value: stats.total, color: '#334155', icon: '📋' },
             ].map((s, i) => (
               <div key={i} style={{ ...S.card }}>
                 <div style={{ fontSize: '24px' }}>{s.icon}</div>
@@ -1479,7 +1479,7 @@ function AdminPanel({ user, userProfile }) {
                 <thead>
                   <tr>
                     {['Name', 'Email', 'Plan', 'Admin', 'Joined'].map(h => (
-                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#64748b', fontWeight: 600 }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#334155', fontWeight: 600 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1487,12 +1487,12 @@ function AdminPanel({ user, userProfile }) {
                   {users.map(u => (
                     <tr key={u.id} style={{ borderBottom: '1px solid #1e293b' }}>
                       <td style={{ padding: '10px 12px' }}>{u.full_name || '—'}</td>
-                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{u.email}</td>
+                      <td style={{ padding: '10px 12px', color: '#334155' }}>{u.email}</td>
                       <td style={{ padding: '10px 12px' }}>
                         <span style={{ ...S.badge, background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{(u.plan_id || 'basic').toUpperCase()}</span>
                       </td>
                       <td style={{ padding: '10px 12px' }}>{u.is_admin ? '✅' : '—'}</td>
-                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+                      <td style={{ padding: '10px 12px', color: '#334155' }}>{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1670,7 +1670,7 @@ function PerformancePage() {
 
           <div style={{ ...S.grid4, marginBottom: '32px' }}>
             {[
-              { label: 'Total Calls', value: recs.length, color: '#64748b' },
+              { label: 'Total Calls', value: recs.length, color: '#334155' },
               { label: 'Target Hit', value: targets.length, color: '#10b981' },
               { label: 'Stop Loss Hit', value: slHit.length, color: '#ef4444' },
               { label: 'Win Rate', value: winRate + '%', color: '#f59e0b' },
@@ -1695,7 +1695,7 @@ function PerformancePage() {
                 <thead>
                   <tr>
                     {['Stock', 'Action', 'Entry', 'Exit', 'Return', 'Status', 'Date'].map(h => (
-                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#64748b', fontWeight: 600 }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#334155', fontWeight: 600 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1717,7 +1717,7 @@ function PerformancePage() {
                             {r.status.replace('_', ' ').toUpperCase()}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#64748b' }}>{new Date(r.closed_at || r.updated_at).toLocaleDateString('en-IN')}</td>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>{new Date(r.closed_at || r.updated_at).toLocaleDateString('en-IN')}</td>
                       </tr>
                     );
                   })}
