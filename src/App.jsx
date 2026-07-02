@@ -1228,12 +1228,155 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
 }
 
 // ─── CHART PLACEHOLDER ────────────────────────────────────────────────────────
+// ─── TRADINGVIEW SYMBOL MAPPER ────────────────────────────────────────────────
+// Maps our symbols/exchanges/commodities to TradingView symbol format
+function getTVSymbol(rec) {
+  if (!rec) return 'NSE:NIFTY';
+  const sym = (rec.symbol || '').toUpperCase().trim();
+  const exch = (rec.exchange || 'NSE').toUpperCase();
+  const seg = (rec.segment || 'equity').toLowerCase();
+  const comm = (rec.commodity_type || '').toLowerCase();
+
+  // MCX Commodity mapping
+  if (exch === 'MCX' || seg === 'commodity') {
+    if (comm.includes('gold')) return 'MCX:GOLD1!';
+    if (comm.includes('silver')) return 'MCX:SILVER1!';
+    if (comm.includes('crude')) return 'MCX:CRUDEOIL1!';
+    if (comm.includes('natural') || comm.includes('gas')) return 'MCX:NATURALGAS1!';
+    if (sym) return `MCX:${sym}1!`;
+    return 'MCX:GOLD1!';
+  }
+  // F&O / Index
+  if (seg === 'futures' || seg === 'options') {
+    if (sym === 'NIFTY' || sym === 'NIFTY50') return 'NSE:NIFTY50';
+    if (sym === 'BANKNIFTY') return 'NSE:BANKNIFTY';
+    return `NSE:${sym}`;
+  }
+  // BSE
+  if (exch === 'BSE') return `BSE:${sym}`;
+  // Default NSE equity
+  return `NSE:${sym || 'NIFTY'}`;
+}
+
+// TradingView Advanced Chart (main chart - full)
+function TVAdvancedChart({ rec }) {
+  const containerId = `tv-adv-${rec?.id || 'main'}`;
+  const symbol = getTVSymbol(rec);
+
+  useEffect(() => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol,
+      interval: 'D',
+      timezone: 'Asia/Kolkata',
+      theme: 'light',
+      style: '1',
+      locale: 'en',
+      enable_publishing: false,
+      allow_symbol_change: true,
+      calendar: false,
+      hide_side_toolbar: false,
+      studies: ['RSI@tv-basicstudies', 'MACD@tv-basicstudies', 'BB@tv-basicstudies'],
+    });
+    container.appendChild(script);
+  }, [symbol]);
+
+  return (
+    <div style={{ ...S.card, padding: '0', overflow: 'hidden', marginBottom: '16px' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
+        <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>📈 Live Chart — {symbol}</p>
+        <p style={{ fontSize: '11px', color: '#64748b' }}>Powered by TradingView · RSI · MACD · Bollinger Bands</p>
+      </div>
+      <div className="tradingview-widget-container" id={containerId} style={{ height: '500px', width: '100%' }} />
+    </div>
+  );
+}
+
+// TradingView Mini Chart
+function TVMiniChart({ rec, label }) {
+  const containerId = `tv-mini-${rec?.id || 'x'}-${label}`;
+  const symbol = getTVSymbol(rec);
+
+  useEffect(() => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      symbol,
+      width: '100%',
+      height: '220',
+      locale: 'en',
+      dateRange: '3M',
+      colorTheme: 'light',
+      isTransparent: true,
+      autosize: true,
+      largeChartUrl: `https://www.tradingview.com/chart/?symbol=${symbol}`,
+    });
+    container.appendChild(script);
+  }, [symbol]);
+
+  return (
+    <div style={{ ...S.card, padding: '0', overflow: 'hidden' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0' }}>
+        <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{label}</p>
+      </div>
+      <div className="tradingview-widget-container" id={containerId} style={{ height: '220px', width: '100%' }} />
+    </div>
+  );
+}
+
+// TradingView Technical Analysis widget
+function TVTechnicalAnalysis({ rec }) {
+  const containerId = `tv-tech-${rec?.id || 'ta'}`;
+  const symbol = getTVSymbol(rec);
+
+  useEffect(() => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      interval: '1D',
+      width: '100%',
+      isTransparent: true,
+      height: 350,
+      symbol,
+      showIntervalTabs: true,
+      locale: 'en',
+      colorTheme: 'light',
+    });
+    container.appendChild(script);
+  }, [symbol]);
+
+  return (
+    <div style={{ ...S.card, padding: '0', overflow: 'hidden' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0' }}>
+        <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>📐 Technical Analysis</p>
+        <p style={{ fontSize: '11px', color: '#64748b' }}>Buy/Sell/Neutral signals across timeframes</p>
+      </div>
+      <div className="tradingview-widget-container" id={containerId} style={{ height: '350px', width: '100%' }} />
+    </div>
+  );
+}
+
+// ChartPlaceholder — only used for Option Chain (no free widget)
 function ChartPlaceholder({ label, icon }) {
   return (
     <div style={{ ...S.card, textAlign: 'center', padding: '32px 16px', opacity: 0.7 }}>
       <div style={{ fontSize: '28px', marginBottom: '8px' }}>{icon}</div>
       <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '4px' }}>{label}</p>
-      <p style={{ fontSize: '12px', ...S.muted }}>Live charts coming soon.</p>
+      <p style={{ fontSize: '12px', ...S.muted }}>Coming soon.</p>
     </div>
   );
 }
@@ -1332,15 +1475,22 @@ function RecommendationDetailPage({ id, userProfile }) {
             </div>
           )}
 
-          {/* Chart-ready placeholders, disabled until a live feed is connected */}
-          <h4 style={{ ...S.h4, marginBottom: '12px' }}>Charts</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-            <ChartPlaceholder label="Stock Chart" icon="📈" />
-            <ChartPlaceholder label="Technical Chart" icon="📐" />
-            <ChartPlaceholder label="Candlestick Chart" icon="🕯️" />
-            <ChartPlaceholder label="Volume Chart" icon="📊" />
-            <ChartPlaceholder label="Support / Resistance" icon="📏" />
-            <ChartPlaceholder label="Option Chain" icon="⛓️" />
+          {/* TradingView Live Charts */}
+          <h4 style={{ ...S.h4, marginBottom: '12px', marginTop: '8px' }}>Live Charts</h4>
+
+          {/* Main advanced chart */}
+          <TVAdvancedChart rec={rec} />
+
+          {/* Technical Analysis */}
+          <div style={{ marginBottom: '16px' }}>
+            <TVTechnicalAnalysis rec={rec} />
+          </div>
+
+          {/* Mini charts grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            <TVMiniChart rec={rec} label="📊 3-Month Overview" />
+            <TVMiniChart rec={{ ...rec, symbol: rec.symbol }} label="📉 Price Action" />
+            <ChartPlaceholder label="⛓️ Option Chain" icon="⛓️" />
           </div>
 
           <div style={{ ...S.disclaimer }}>
