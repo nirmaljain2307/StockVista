@@ -728,58 +728,89 @@ function PricingPage() {
     { q: 'Are the recommendations guaranteed?', a: 'No. Research analysis is based on technical and fundamental research but does not guarantee returns. Investment is subject to market risk.' },
   ];
 
+  const planCols = [
+    { key: 'basic', name: 'Basic Equity', color: '#64748b' },
+    { key: 'premium', name: 'Premium Equity', color: '#1d4ed8' },
+    { key: 'fno', name: 'F&O Pro', color: '#d97706' },
+    { key: 'elite', name: 'Elite All Access', color: '#7c3aed' },
+  ];
+
+  const matrix = {
+    basic_recommendations:  [true,  true,  true,  true],
+    market_updates:         [true,  true,  true,  true],
+    blog_access:            [true,  true,  true,  true],
+    equity_recommendations: [true,  true,  true,  true],
+    fno_recommendations:    [false, false, true,  true],
+    intraday_calls:         [false, false, true,  true],
+    options_strategies:     [false, false, true,  true],
+    ipo_recommendations:    [false, true,  true,  true],
+    telegram_signals:       [false, false, false, true],
+    priority_support:       [false, true,  true,  true],
+    one_on_one:             [false, false, false, true],
+  };
+
   return (
-    <div style={{ paddingTop: '80px' }}>
-      <section style={{ ...S.section, textAlign: 'center' }}>
+    <div style={{ paddingTop: '80px', background: '#f1f5f9' }}>
+
+      {/* Hero */}
+      <section style={{ ...S.section, textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 60%, #fefce8 100%)' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h1 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h1>
-          <p style={{ ...S.muted, marginBottom: '8px' }}>Flexible plans designed for traders of all experience levels.</p>
-          <p style={{ fontSize: '13px', color: '#3b82f6', marginBottom: '40px' }}>All plans include our core features with SEBI-compliant research disclosures.</p>
+          <div style={{ display: 'inline-block', background: 'rgba(29,78,216,0.08)', color: '#1d4ed8', borderRadius: '20px', padding: '6px 16px', fontSize: '13px', fontWeight: 700, marginBottom: '16px' }}>
+            SEBI Registered Research Analyst · {SEBI_REG}
+          </div>
+          <h1 style={{ ...S.h2, marginBottom: '12px' }}>Choose Your Research Plan</h1>
+          <p style={{ ...S.muted, marginBottom: '40px', fontSize: '15px' }}>Flexible plans for traders of all levels. Cancel anytime.</p>
           <PricingCards compact={false} />
         </div>
       </section>
 
-      {/* Feature comparison table */}
-      <section style={{ ...S.section, background: '#0f172a', paddingTop: '0' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h3 style={{ ...S.h3, textAlign: 'center', marginBottom: '24px' }}>Full Feature Comparison</h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+      {/* Feature Comparison Table */}
+      <section style={{ ...S.section, background: '#ffffff', paddingTop: '60px' }}>
+        <div style={{ maxWidth: '950px', margin: '0 auto' }}>
+          <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '8px' }}>Full Feature Comparison</h2>
+          <p style={{ textAlign: 'center', ...S.muted, marginBottom: '40px' }}>See exactly what each plan includes</p>
+
+          <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', minWidth: '600px' }}>
               <thead>
-                <tr>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#334155' }}>Feature</th>
-                  {['Free', 'Silver', 'Gold', 'Platinum'].map(p => (
-                    <th key={p} style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '1px solid #1e293b', color: p === 'Gold' ? '#f59e0b' : '#e2e8f0' }}>{p}</th>
+                <tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '16px 20px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#0f172a', fontWeight: 700, fontSize: '13px', width: '35%' }}>Feature</th>
+                  {planCols.map(p => (
+                    <th key={p.key} style={{ padding: '16px 12px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', color: p.color, fontWeight: 800, fontSize: '13px' }}>
+                      {p.key === 'fno' ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: '6px', fontSize: '11px' }}>⭐ POPULAR</span> : ''}
+                      <div style={{ marginTop: p.key === 'fno' ? '4px' : '0' }}>{p.name}</div>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {PLAN_FEATURES.map((f, i) => {
-                  const matrix = {
-                    basic_recommendations: [true, true, true, true],
-                    market_updates: [true, true, true, true],
-                    blog_access: [true, true, true, true],
-                    equity_recommendations: [false, true, true, true],
-                    fno_recommendations: [false, false, true, true],
-                    intraday_calls: [false, false, true, true],
-                    options_strategies: [false, false, false, true],
-                    ipo_recommendations: [false, false, true, true],
-                    telegram_signals: [false, false, false, true],
-                    priority_support: [false, false, true, true],
-                    one_on_one: [false, false, false, true],
-                  };
-                  return (
-                    <tr key={f.key} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(30,41,59,0.3)' }}>
-                      <td style={{ padding: '12px 16px', color: '#0f172a' }}>{f.label}</td>
-                      {matrix[f.key].map((has, j) => (
-                        <td key={j} style={{ padding: '12px 16px', textAlign: 'center', color: has ? '#10b981' : '#334155', fontSize: '18px' }}>
+                {PLAN_FEATURES.map((f, i) => (
+                  <tr key={f.key} style={{ background: i % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                    <td style={{ padding: '13px 20px', color: '#1e293b', fontWeight: 500, borderBottom: '1px solid #f1f5f9' }}>{f.label}</td>
+                    {(matrix[f.key] || [false,false,false,false]).map((has, j) => (
+                      <td key={j} style={{ padding: '13px 12px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: '26px', height: '26px', borderRadius: '50%',
+                          background: has ? 'rgba(5,150,105,0.1)' : 'rgba(185,28,28,0.08)',
+                          color: has ? '#047857' : '#b91c1c',
+                          fontSize: '14px', fontWeight: 800
+                        }}>
                           {has ? '✓' : '✕'}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
+                        </span>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
+              <tfoot>
+                <tr style={{ background: '#f8fafc' }}>
+                  <td style={{ padding: '16px 20px', fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>Monthly Price</td>
+                  {[{ price: '₹999', color: '#64748b' }, { price: '₹2,499', color: '#1d4ed8' }, { price: '₹3,999', color: '#d97706' }, { price: '₹5,999', color: '#7c3aed' }].map((p, i) => (
+                    <td key={i} style={{ padding: '16px 12px', textAlign: 'center', fontWeight: 800, fontSize: '16px', color: p.color }}>{p.price}</td>
+                  ))}
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
