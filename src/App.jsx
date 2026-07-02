@@ -1258,8 +1258,10 @@ function getTVSymbol(rec) {
   return `NSE:${sym || 'NIFTY'}`;
 }
 
-// TradingView Advanced Chart (main chart - full)
+// TradingView Advanced Chart with dropdown controls
 function TVAdvancedChart({ rec }) {
+  const [tvInterval, setTvInterval] = useState('D');
+  const [chartStyle, setChartStyle] = useState('1');
   const containerId = `tv-adv-${rec?.id || 'main'}`;
   const symbol = getTVSymbol(rec);
 
@@ -1267,33 +1269,60 @@ function TVAdvancedChart({ rec }) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'tradingview-widget-container';
+    wrapper.style.height = '480px';
+    wrapper.style.width = '100%';
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.async = true;
     script.innerHTML = JSON.stringify({
       autosize: true,
       symbol,
-      interval: 'D',
+      interval: tvInterval,
       timezone: 'Asia/Kolkata',
       theme: 'light',
-      style: '1',
+      style: chartStyle,
       locale: 'en',
       enable_publishing: false,
-      allow_symbol_change: true,
-      calendar: false,
+      allow_symbol_change: false,
       hide_side_toolbar: false,
-      studies: ['RSI@tv-basicstudies', 'MACD@tv-basicstudies', 'BB@tv-basicstudies'],
+      studies: ['RSI@tv-basicstudies', 'MACD@tv-basicstudies'],
     });
-    container.appendChild(script);
-  }, [symbol]);
+    wrapper.appendChild(script);
+    container.appendChild(wrapper);
+  }, [symbol, tvInterval, chartStyle]);
+
+  const selStyle = { padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 600, background: '#f8fafc', color: '#0f172a', cursor: 'pointer' };
 
   return (
     <div style={{ ...S.card, padding: '0', overflow: 'hidden', marginBottom: '16px' }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
-        <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>📈 Live Chart — {symbol}</p>
-        <p style={{ fontSize: '11px', color: '#64748b' }}>Powered by TradingView · RSI · MACD · Bollinger Bands</p>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>📈 Live Chart — {symbol}</p>
+          <p style={{ fontSize: '11px', color: '#64748b' }}>Powered by TradingView</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <select style={selStyle} value={tvInterval} onChange={e => setTvInterval(e.target.value)}>
+            <option value="1">1 Min</option>
+            <option value="5">5 Min</option>
+            <option value="15">15 Min</option>
+            <option value="30">30 Min</option>
+            <option value="60">1 Hour</option>
+            <option value="D">Daily</option>
+            <option value="W">Weekly</option>
+            <option value="M">Monthly</option>
+          </select>
+          <select style={selStyle} value={chartStyle} onChange={e => setChartStyle(e.target.value)}>
+            <option value="1">Candlestick</option>
+            <option value="0">Bars</option>
+            <option value="2">Line</option>
+            <option value="3">Area</option>
+            <option value="8">Heiken Ashi</option>
+          </select>
+        </div>
       </div>
-      <div className="tradingview-widget-container" id={containerId} style={{ height: '500px', width: '100%' }} />
+      <div id={containerId} style={{ height: '480px', width: '100%' }} />
     </div>
   );
 }
