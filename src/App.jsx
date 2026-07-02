@@ -47,60 +47,60 @@ const BILLING_CYCLES = [
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const S = {
   // Layout
-  page: { minHeight: '100vh', background: '#f0f4f8', color: '#1e293b', fontFamily: "'Inter', sans-serif" },
+  page: { minHeight: '100vh', background: '#f1f5f9', color: '#0f172a', fontFamily: "'Inter', sans-serif" },
   container: { maxWidth: '1200px', margin: '0 auto', padding: '0 20px' },
   section: { padding: '80px 20px' },
 
   // Navbar
-  nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' },
-  navLogo: { fontSize: '20px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
+  nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' },
+  navLogo: { fontSize: '20px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
   navLogoIcon: { width: '32px', height: '32px', background: 'linear-gradient(135deg, #1d4ed8, #f59e0b)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' },
   navLinks: { display: 'flex', gap: '24px', alignItems: 'center' },
-  navLink: { color: '#475569', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'color 0.2s', padding: '4px 0', border: 'none', background: 'none' },
+  navLink: { color: '#334155', cursor: 'pointer', fontSize: '14px', fontWeight: 600, transition: 'color 0.2s', padding: '4px 0', border: 'none', background: 'none' },
   navBtn: { background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' },
 
   // Buttons
   btn: { border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' },
-  btnPrimary: { background: 'linear-gradient(135deg, #1d4ed8, #2563eb)', color: '#fff' },
-  btnSecondary: { background: '#e2e8f0', color: '#1e293b', border: '1px solid #cbd5e1' },
-  btnGold: { background: 'linear-gradient(135deg, #d97706, #f59e0b)', color: '#fff' },
+  btnPrimary: { background: 'linear-gradient(135deg, #1d4ed8, #2563eb)', color: '#fff', boxShadow: '0 2px 8px rgba(29,78,216,0.25)' },
+  btnSecondary: { background: '#fff', color: '#1e293b', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' },
+  btnGold: { background: 'linear-gradient(135deg, #d97706, #f59e0b)', color: '#fff', boxShadow: '0 2px 8px rgba(217,119,6,0.25)' },
   btnSm: { padding: '8px 16px', fontSize: '13px' },
   btnDanger: { background: '#ef4444', color: '#fff' },
   btnGreen: { background: '#10b981', color: '#fff' },
 
   // Cards
-  card: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' },
-  cardHover: { transition: 'border-color 0.2s, transform 0.2s' },
+  card: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  cardHover: { transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s' },
 
   // Form
   formGroup: { marginBottom: '16px' },
-  label: { display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  input: { width: '100%', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#1e293b', outline: 'none', fontFamily: 'Inter, sans-serif' },
-  select: { width: '100%', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#1e293b', outline: 'none', fontFamily: 'Inter, sans-serif' },
-  textarea: { width: '100%', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#1e293b', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical', minHeight: '80px' },
+  label: { display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' },
+  input: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 500 },
+  select: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 500 },
+  textarea: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
 
   // Tags / Badges
   badge: { display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 },
-  badgeBuy: { background: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)' },
-  badgeSell: { background: 'rgba(239,68,68,0.12)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.3)' },
-  badgeHold: { background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' },
-  badgeAvoid: { background: 'rgba(100,116,139,0.12)', color: '#64748b', border: '1px solid rgba(100,116,139,0.3)' },
-  badgeExit: { background: 'rgba(168,85,247,0.12)', color: '#7c3aed', border: '1px solid rgba(168,85,247,0.3)' },
-  badgeActive: { background: 'rgba(16,185,129,0.12)', color: '#059669' },
-  badgeClosed: { background: 'rgba(100,116,139,0.12)', color: '#64748b' },
+  badgeBuy: { background: 'rgba(16,185,129,0.12)', color: '#047857', border: '1px solid rgba(16,185,129,0.3)' },
+  badgeSell: { background: 'rgba(239,68,68,0.12)', color: '#b91c1c', border: '1px solid rgba(239,68,68,0.3)' },
+  badgeHold: { background: 'rgba(245,158,11,0.12)', color: '#b45309', border: '1px solid rgba(245,158,11,0.3)' },
+  badgeAvoid: { background: 'rgba(100,116,139,0.12)', color: '#475569', border: '1px solid rgba(100,116,139,0.3)' },
+  badgeExit: { background: 'rgba(124,58,237,0.12)', color: '#6d28d9', border: '1px solid rgba(124,58,237,0.3)' },
+  badgeActive: { background: 'rgba(16,185,129,0.12)', color: '#047857' },
+  badgeClosed: { background: 'rgba(100,116,139,0.12)', color: '#475569' },
 
   // Text
-  h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em' },
-  h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.2 },
-  h3: { fontSize: '20px', fontWeight: 700 },
-  h4: { fontSize: '16px', fontWeight: 600 },
+  h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0f172a' },
+  h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.2, color: '#0f172a' },
+  h3: { fontSize: '20px', fontWeight: 700, color: '#0f172a' },
+  h4: { fontSize: '16px', fontWeight: 600, color: '#1e293b' },
   muted: { color: '#64748b' },
   gold: { color: '#d97706' },
-  green: { color: '#059669' },
-  red: { color: '#dc2626' },
+  green: { color: '#047857' },
+  red: { color: '#b91c1c' },
 
   // Disclaimer
-  disclaimer: { background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px 16px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 },
+  disclaimer: { background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', padding: '12px 16px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 },
 
   // Grid
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' },
@@ -305,7 +305,7 @@ function Navbar({ user, userProfile, onLogout }) {
 
       {/* Mobile Menu Drawer */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, background: '#f0f4f8', zIndex: 999, padding: '24px' }}>
+        <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, background: '#f1f5f9', zIndex: 999, padding: '24px' }}>
           <button onClick={() => setMenuOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer' }}>✕</button>
           {navItems.map(item => (
             <button key={item.path} onClick={() => { navigate(item.path); setMenuOpen(false); }}
@@ -347,7 +347,7 @@ function LandingPage() {
   return (
     <div>
       {/* Hero */}
-      <section style={{ paddingTop: '140px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(180deg, #e8f0fe 0%, #f0f4f8 100%)', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ paddingTop: '140px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 60%, #fefce8 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(29,78,216,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(245,158,11,0.1) 0%, transparent 50%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', maxWidth: '800px', margin: '0 auto', padding: '0 20px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#64748b' }}>
@@ -389,7 +389,7 @@ function LandingPage() {
       </section>
 
       {/* Latest Calls Preview */}
-      <section style={{ ...S.section, background: '#f0f4f8' }}>
+      <section style={{ ...S.section, background: '#f1f5f9' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ ...S.flexBetween, marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
@@ -444,7 +444,7 @@ function LandingPage() {
       </section>
 
       {/* Features */}
-      <section style={{ ...S.section, background: '#e8edf3' }}>
+      <section style={{ ...S.section, background: '#0f172a' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>WHY CHOOSE US</p>
           <h2 style={{ ...S.h2, marginBottom: '48px' }}>Research-First Approach</h2>
@@ -463,7 +463,7 @@ function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section style={{ ...S.section, background: '#f0f4f8' }}>
+      <section style={{ ...S.section, background: '#f1f5f9' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>HOW IT WORKS</p>
           <h2 style={{ ...S.h2, marginBottom: '48px' }}>Simple Steps to Start</h2>
@@ -480,7 +480,7 @@ function LandingPage() {
       </section>
 
       {/* Pricing Preview */}
-      <section style={{ ...S.section, background: '#e8edf3' }}>
+      <section style={{ ...S.section, background: '#0f172a' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>PRICING</p>
           <h2 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h2>
@@ -491,7 +491,7 @@ function LandingPage() {
       </section>
 
       {/* Risk Management */}
-      <section style={{ ...S.section, background: '#f0f4f8' }}>
+      <section style={{ ...S.section, background: '#f1f5f9' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h2 style={S.h2}>Risk Management Framework</h2>
@@ -569,7 +569,7 @@ function Footer() {
   };
 
   return (
-    <footer style={{ background: '#e8edf3', borderTop: '1px solid #1e293b', padding: '60px 20px 0' }}>
+    <footer style={{ background: '#0f172a', borderTop: '1px solid #1e293b', padding: '60px 20px 0' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '40px', marginBottom: '48px' }}>
           <div>
@@ -704,7 +704,7 @@ function PricingPage() {
       </section>
 
       {/* Feature comparison table */}
-      <section style={{ ...S.section, background: '#e8edf3', paddingTop: '0' }}>
+      <section style={{ ...S.section, background: '#0f172a', paddingTop: '0' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <h3 style={{ ...S.h3, textAlign: 'center', marginBottom: '24px' }}>Full Feature Comparison</h3>
           <div style={{ overflowX: 'auto' }}>
@@ -750,7 +750,7 @@ function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ ...S.section, background: '#f0f4f8' }}>
+      <section style={{ ...S.section, background: '#f1f5f9' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '40px' }}>Frequently Asked Questions</h2>
           {faqs.map((faq, i) => (
