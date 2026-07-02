@@ -662,11 +662,11 @@ function PricingCards({ compact = false }) {
             {!compact && (
               <div style={{ marginBottom: '20px' }}>
                 {PLAN_FEATURES.map(f => (
-                  <div key={f.key} style={{ ...S.flex, gap: '8px', padding: '5px 0', fontSize: '13px' }}>
-                    <span style={{ color: plan.features.includes(f.key) ? '#10b981' : '#334155', fontSize: '15px' }}>
+                  <div key={f.key} style={{ ...S.flex, gap: '8px', padding: '6px 8px', fontSize: '13px', borderRadius: '6px', marginBottom: '2px', background: plan.features.includes(f.key) ? 'rgba(4,120,87,0.06)' : 'rgba(185,28,28,0.05)' }}>
+                    <span style={{ color: plan.features.includes(f.key) ? '#047857' : '#b91c1c', fontSize: '15px', fontWeight: 700 }}>
                       {plan.features.includes(f.key) ? '✓' : '✕'}
                     </span>
-                    <span style={{ color: plan.features.includes(f.key) ? '#0f172a' : '#94a3b8' }}>{f.label}</span>
+                    <span style={{ color: plan.features.includes(f.key) ? '#047857' : '#b91c1c', fontWeight: plan.features.includes(f.key) ? 600 : 500, fontSize: '13px' }}>{f.label}</span>
                   </div>
                 ))}
               </div>
