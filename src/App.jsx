@@ -1935,13 +1935,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Admin user IDs — add more as needed
+    const ADMIN_IDS = ['f81eb797-2fe9-4a4f-b818-381ea74b7414'];
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
         const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-        // Merge is_admin from both sources to survive RLS
-        const { data: adminCheck } = await supabase.rpc('get_my_is_admin').catch(() => ({ data: null }));
-        setUserProfile({ ...profile, is_admin: profile?.is_admin || adminCheck === true });
+        const isAdmin = profile?.is_admin === true || ADMIN_IDS.includes(session.user.id);
+        setUserProfile({ ...(profile || {}), is_admin: isAdmin });
       }
       setAuthLoading(false);
     });
@@ -1949,8 +1951,8 @@ export default function App() {
       if (session?.user) {
         setUser(session.user);
         const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-        const { data: adminCheck } = await supabase.rpc('get_my_is_admin').catch(() => ({ data: null }));
-        setUserProfile({ ...profile, is_admin: profile?.is_admin || adminCheck === true });
+        const isAdmin = profile?.is_admin === true || ADMIN_IDS.includes(session.user.id);
+        setUserProfile({ ...(profile || {}), is_admin: isAdmin });
       } else {
         setUser(null);
         setUserProfile(null);
