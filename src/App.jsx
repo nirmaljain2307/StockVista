@@ -1,7 +1,43 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// ─── SUPABASE ────────────────────────────────────────────────────────────────
+// ─── TELEGRAM BOT ────────────────────────────────────────────────────────────
+// Set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID in Vercel env vars
+const TG_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '';
+const TG_CHAT = import.meta.env.VITE_TELEGRAM_CHAT_ID || '';
+
+const sendTelegramAlert = async (rec) => {
+  if (!TG_TOKEN || !TG_CHAT) return; // silently skip if not configured
+  const statusEmoji = { BUY: '🟢', SELL: '🔴', HOLD: '🟡', AVOID: '⛔', EXIT: '🚪' };
+  const segEmoji = { equity: '📈', futures: '⚡', options: '🎯', commodity: '🏅' };
+  const msg = `
+${statusEmoji[rec.action] || '📊'} *${rec.action} — ${rec.symbol}* (${rec.exchange})
+${segEmoji[rec.segment] || '📋'} ${rec.segment?.toUpperCase()}${rec.commodity_type ? ` · ${rec.commodity_type}` : ''}
+
+💰 *Entry:* ₹${rec.entry_price}
+🎯 *Target 1:* ₹${rec.target1}${rec.target2 ? `\n🎯 *Target 2:* ₹${rec.target2}` : ''}
+🛑 *Stop Loss:* ₹${rec.stop_loss}
+⏳ *Horizon:* ${rec.time_horizon}
+⚠️ *Risk:* ${rec.risk_level}
+
+${rec.rationale ? `📝 ${rec.rationale.slice(0, 200)}${rec.rationale.length > 200 ? '...' : ''}` : ''}
+
+🔗 [View Full Analysis](https://stock-vista-sandy.vercel.app/recommendations)
+
+_Investment in securities market is subject to market risk. This is research, not advice._
+*${APP_NAME} · ${SEBI_REG}*
+`.trim();
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'Markdown', disable_web_page_preview: false }),
+    });
+  } catch (e) {
+    console.warn('Telegram alert failed:', e.message);
+  }
+};
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -1707,6 +1743,10 @@ function AddRecForm({ existingRec, onSave, adminId }) {
     }
     setLoading(false);
     if (error) { setMsg(error.message); return; }
+    // Send Telegram alert when publishing a live call
+    if (form.status === 'live' && !existingRec?.id) {
+      await sendTelegramAlert(form);
+    }
     setMsg('✅ Saved successfully!');
     setTimeout(onSave, 1200);
   };
@@ -1827,9 +1867,10 @@ function AddRecForm({ existingRec, onSave, adminId }) {
 function PerformancePage() {
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    supabase.from('recommendations').select('*').then(({ data }) => {
+    supabase.from('recommendations').select('*').order('published_at', { ascending: true }).then(({ data }) => {
       setRecs(data || []);
       setLoading(false);
     });
@@ -1838,75 +1879,220 @@ function PerformancePage() {
   const closed = recs.filter(r => ['closed', 'target_hit', 'sl_hit', 'expired'].includes(r.status));
   const targets = recs.filter(r => r.status === 'target_hit');
   const slHit = recs.filter(r => r.status === 'sl_hit');
+  const live = recs.filter(r => ['live', 'near_target', 'near_sl'].includes(r.status));
   const winRate = closed.length ? ((targets.length / closed.length) * 100).toFixed(1) : 0;
+
+  // Calculate returns
+  const closedWithReturn = closed.map(r => {
+    const entry = parseFloat(r.entry_price);
+    const exit = parseFloat(r.exit_price) || (r.status === 'target_hit' ? parseFloat(r.target1) : parseFloat(r.stop_loss));
+    if (!entry || !exit) return { ...r, ret: null };
+    const ret = r.action === 'SELL' ? ((entry - exit) / entry * 100) : ((exit - entry) / entry * 100);
+    return { ...r, ret: +ret.toFixed(2) };
+  });
+
+  const withReturn = closedWithReturn.filter(r => r.ret !== null);
+  const avgReturn = withReturn.length ? (withReturn.reduce((s, r) => s + r.ret, 0) / withReturn.length).toFixed(2) : 0;
+  const bestCall = withReturn.length ? withReturn.reduce((a, b) => a.ret > b.ret ? a : b) : null;
+  const worstCall = withReturn.length ? withReturn.reduce((a, b) => a.ret < b.ret ? a : b) : null;
+
+  // Cumulative return chart data
+  let cumulative = 0;
+  const chartData = closedWithReturn.filter(r => r.ret !== null).map((r, i) => {
+    cumulative += r.ret;
+    return { name: r.symbol, cumRet: +cumulative.toFixed(2), callRet: r.ret, index: i + 1 };
+  });
+
+  // Segment breakdown
+  const segments = ['equity', 'futures', 'options', 'commodity'];
+  const segBreakdown = segments.map(seg => {
+    const segCalls = closed.filter(r => r.segment === seg);
+    const segWins = segCalls.filter(r => r.status === 'target_hit');
+    return { seg, total: segCalls.length, wins: segWins.length, rate: segCalls.length ? ((segWins.length / segCalls.length) * 100).toFixed(0) : 0 };
+  }).filter(s => s.total > 0);
+
+  // Filter for table
+  const filteredClosed = filter === 'all' ? closedWithReturn :
+    filter === 'win' ? closedWithReturn.filter(r => r.status === 'target_hit') :
+    filter === 'loss' ? closedWithReturn.filter(r => r.status === 'sl_hit') :
+    closedWithReturn.filter(r => r.segment === filter);
+
+  const statCards = [
+    { label: 'Total Calls', value: recs.length, color: '#1d4ed8', icon: '📋' },
+    { label: 'Live Now', value: live.length, color: '#059669', icon: '🟢' },
+    { label: 'Win Rate', value: winRate + '%', color: '#d97706', icon: '🎯' },
+    { label: 'Avg Return', value: (avgReturn > 0 ? '+' : '') + avgReturn + '%', color: avgReturn >= 0 ? '#059669' : '#b91c1c', icon: '📈' },
+    { label: 'Target Hit', value: targets.length, color: '#059669', icon: '✅' },
+    { label: 'SL Hit', value: slHit.length, color: '#b91c1c', icon: '❌' },
+    { label: 'Best Call', value: bestCall ? (bestCall.ret > 0 ? '+' : '') + bestCall.ret + '%' : '—', color: '#059669', icon: '🏆' },
+    { label: 'Worst Call', value: worstCall ? worstCall.ret + '%' : '—', color: '#b91c1c', icon: '📉' },
+  ];
 
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h1 style={{ ...S.h2, marginBottom: '8px' }}>Performance Report</h1>
-          <p style={{ ...S.muted, marginBottom: '32px' }}>Transparent track record of all research calls published on this platform.</p>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
-          <div style={{ ...S.grid4, marginBottom: '32px' }}>
-            {[
-              { label: 'Total Calls', value: recs.length, color: '#334155' },
-              { label: 'Target Hit', value: targets.length, color: '#10b981' },
-              { label: 'Stop Loss Hit', value: slHit.length, color: '#ef4444' },
-              { label: 'Win Rate', value: winRate + '%', color: '#f59e0b' },
-            ].map((s, i) => (
-              <div key={i} style={{ ...S.card, textAlign: 'center' }}>
-                <div style={{ fontSize: '28px', fontWeight: 800, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: '12px', ...S.muted, marginTop: '4px' }}>{s.label}</div>
+          {/* Header */}
+          <div style={{ marginBottom: '32px' }}>
+            <h1 style={{ ...S.h2, marginBottom: '8px' }}>📊 Performance Report</h1>
+            <p style={{ ...S.muted }}>Complete transparent track record of all research calls. Updated in real-time.</p>
+          </div>
+
+          {/* Stats Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '32px' }}>
+            {statCards.map((s, i) => (
+              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '16px 12px' }}>
+                <div style={{ fontSize: '20px', marginBottom: '4px' }}>{s.icon}</div>
+                <div style={{ fontSize: '22px', fontWeight: 800, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px', fontWeight: 600 }}>{s.label}</div>
               </div>
             ))}
           </div>
 
-          {loading ? (
-            <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading...</div>
-          ) : closed.length === 0 ? (
-            <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
-              <p style={{ fontSize: '32px', marginBottom: '12px' }}>📊</p>
-              <p style={S.muted}>No closed calls yet. Performance data will appear here.</p>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                <thead>
-                  <tr>
-                    {['Stock', 'Action', 'Entry', 'Exit', 'Return', 'Status', 'Date'].map(h => (
-                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#334155', fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {closed.map(r => {
-                    const ret = r.exit_price && r.entry_price ? (((r.exit_price - r.entry_price) / r.entry_price) * 100).toFixed(1) : null;
-                    const isWin = parseFloat(ret) > 0;
+          {/* Cumulative Return Chart */}
+          {chartData.length > 1 && (
+            <div style={{ ...S.card, marginBottom: '24px' }}>
+              <h3 style={{ ...S.h4, marginBottom: '4px' }}>📈 Cumulative Return Curve</h3>
+              <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>Theoretical cumulative % return across all closed calls</p>
+              <div style={{ overflowX: 'auto' }}>
+                <svg width="100%" height="200" viewBox={`0 0 ${Math.max(600, chartData.length * 60)} 200`} preserveAspectRatio="none">
+                  {(() => {
+                    const w = Math.max(600, chartData.length * 60);
+                    const h = 180;
+                    const pad = 40;
+                    const vals = chartData.map(d => d.cumRet);
+                    const minV = Math.min(0, ...vals);
+                    const maxV = Math.max(1, ...vals);
+                    const range = maxV - minV || 1;
+                    const x = (i) => pad + (i / (chartData.length - 1 || 1)) * (w - pad * 2);
+                    const y = (v) => h - pad - ((v - minV) / range) * (h - pad * 2);
+                    const pts = chartData.map((d, i) => `${x(i)},${y(d.cumRet)}`).join(' ');
+                    const zeroY = y(0);
                     return (
-                      <tr key={r.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.symbol}</td>
-                        <td style={{ padding: '10px 12px' }}><span style={{ ...S.badge, ...actionStyle(r.action) }}>{r.action}</span></td>
-                        <td style={{ padding: '10px 12px' }}>{fmt(r.entry_price)}</td>
-                        <td style={{ padding: '10px 12px' }}>{fmt(r.exit_price) || '—'}</td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: ret ? (isWin ? '#10b981' : '#ef4444') : '#94a3b8' }}>
-                          {ret ? (isWin ? '+' : '') + ret + '%' : '—'}
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ ...S.badge, background: r.status === 'target_hit' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: r.status === 'target_hit' ? '#10b981' : '#ef4444' }}>
-                            {r.status.replace('_', ' ').toUpperCase()}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 12px', color: '#334155' }}>{new Date(r.closed_at || r.updated_at).toLocaleDateString('en-IN')}</td>
-                      </tr>
+                      <>
+                        <line x1={pad} y1={zeroY} x2={w - pad} y2={zeroY} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,2" />
+                        <polyline points={pts} fill="none" stroke="#1d4ed8" strokeWidth="2.5" />
+                        {chartData.map((d, i) => (
+                          <circle key={i} cx={x(i)} cy={y(d.cumRet)} r="4" fill={d.cumRet >= 0 ? '#059669' : '#b91c1c'} />
+                        ))}
+                        {chartData.map((d, i) => i % Math.max(1, Math.floor(chartData.length / 8)) === 0 && (
+                          <text key={i} x={x(i)} y={h - 8} textAnchor="middle" fontSize="9" fill="#64748b">{d.name}</text>
+                        ))}
+                      </>
                     );
-                  })}
-                </tbody>
-              </table>
+                  })()}
+                </svg>
+              </div>
             </div>
           )}
 
-          <div style={{ ...S.disclaimer, marginTop: '32px' }}>
-            ⚠️ Past performance is not indicative of future results. Research calls are for educational purposes only. Returns shown are theoretical based on published entry and exit levels and may differ from actual trading outcomes due to slippage, brokerage, and market conditions.
+          {/* Segment Breakdown */}
+          {segBreakdown.length > 0 && (
+            <div style={{ ...S.card, marginBottom: '24px' }}>
+              <h3 style={{ ...S.h4, marginBottom: '16px' }}>Segment-wise Win Rate</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+                {segBreakdown.map(s => (
+                  <div key={s.seg} style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: s.rate >= 60 ? '#059669' : s.rate >= 40 ? '#d97706' : '#b91c1c' }}>{s.rate}%</div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginTop: '2px', textTransform: 'capitalize' }}>{s.seg}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>{s.wins}W / {s.total - s.wins}L of {s.total}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Best / Worst Call Highlight */}
+          {(bestCall || worstCall) && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              {bestCall && (
+                <div style={{ ...S.card, borderLeft: '4px solid #059669' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#059669', marginBottom: '4px' }}>🏆 BEST CALL</div>
+                  <div style={{ fontWeight: 800, fontSize: '18px', color: '#0f172a' }}>{bestCall.symbol}</div>
+                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#059669' }}>+{bestCall.ret}%</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>{bestCall.action} · Entry {fmt(bestCall.entry_price)} → Exit {fmt(bestCall.exit_price || bestCall.target1)}</div>
+                </div>
+              )}
+              {worstCall && (
+                <div style={{ ...S.card, borderLeft: '4px solid #b91c1c' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#b91c1c', marginBottom: '4px' }}>📉 WORST CALL</div>
+                  <div style={{ fontWeight: 800, fontSize: '18px', color: '#0f172a' }}>{worstCall.symbol}</div>
+                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#b91c1c' }}>{worstCall.ret}%</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>{worstCall.action} · Entry {fmt(worstCall.entry_price)} → Exit {fmt(worstCall.exit_price || worstCall.stop_loss)}</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Filter + Table */}
+          <div style={{ ...S.card }}>
+            <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 style={S.h4}>All Closed Calls</h3>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[['all', 'All'], ['win', '✅ Wins'], ['loss', '❌ Losses'], ['equity', 'Equity'], ['futures', 'F&O'], ['commodity', 'Commodity']].map(([val, label]) => (
+                  <button key={val} onClick={() => setFilter(val)}
+                    style={{ ...S.btn, ...S.btnSm, background: filter === val ? '#1d4ed8' : '#f1f5f9', color: filter === val ? '#fff' : '#334155', border: '1px solid #e2e8f0' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading...</div>
+            ) : filteredClosed.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
+                <p>No closed calls yet. Performance data will appear here as calls are closed.</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                      {['#', 'Stock', 'Seg', 'Action', 'Entry', 'Exit/SL', 'Return', 'Status', 'Date'].map(h => (
+                        <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '12px' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredClosed.map((r, idx) => {
+                      const exitVal = r.exit_price || (r.status === 'target_hit' ? r.target1 : r.stop_loss);
+                      const isWin = r.status === 'target_hit';
+                      return (
+                        <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: '11px' }}>{idx + 1}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>
+                            {r.symbol}
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 400 }}>{r.stock_name}</div>
+                          </td>
+                          <td style={{ padding: '10px 12px', fontSize: '11px', color: '#64748b', textTransform: 'capitalize' }}>{r.segment}</td>
+                          <td style={{ padding: '10px 12px' }}><span style={{ ...S.badge, ...actionStyle(r.action) }}>{r.action}</span></td>
+                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>₹{fmt(r.entry_price)}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 600, color: isWin ? '#059669' : '#b91c1c' }}>₹{fmt(exitVal) || '—'}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: '14px', color: r.ret !== null ? (r.ret >= 0 ? '#059669' : '#b91c1c') : '#94a3b8' }}>
+                            {r.ret !== null ? (r.ret >= 0 ? '+' : '') + r.ret + '%' : '—'}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span style={{ ...S.badge, background: isWin ? 'rgba(5,150,105,0.1)' : r.status === 'sl_hit' ? 'rgba(185,28,28,0.1)' : 'rgba(100,116,139,0.1)', color: isWin ? '#059669' : r.status === 'sl_hit' ? '#b91c1c' : '#64748b', fontSize: '11px' }}>
+                              {r.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '12px' }}>{new Date(r.updated_at).toLocaleDateString('en-IN')}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div style={{ ...S.disclaimer, marginTop: '24px' }}>
+            ⚠️ Past performance is not indicative of future results. Returns shown are theoretical based on published entry and exit levels. Actual returns may differ due to slippage, brokerage charges, taxes, and timing of execution. Investment in securities market is subject to market risk. SEBI RA Reg: {SEBI_REG}
           </div>
         </div>
       </div>
