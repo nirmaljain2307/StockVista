@@ -413,12 +413,12 @@ function LandingPage() {
       </section>
 
       {/* Stats Bar */}
-      <section style={{ background: '#ffffff', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b', padding: '32px 20px' }}>
+      <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '32px 20px' }}>
         <div style={{ ...S.grid4, maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
           {stats.map((s, i) => (
             <div key={i}>
-              <div style={{ fontSize: '28px', fontWeight: 800, ...S.gold }}>{s.value}</div>
-              <div style={{ fontSize: '13px', ...S.muted, marginTop: '4px' }}>{s.label}</div>
+              <div style={{ fontSize: '28px', fontWeight: 800, color: '#1d4ed8' }}>{s.value}</div>
+              <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -446,11 +446,11 @@ function LandingPage() {
                 onMouseLeave={e => e.currentTarget.style.borderColor = '#1e293b'}
                 onClick={() => navigate('/register')}>
                 {i >= 2 && (
-                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,15,30,0.85)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(4px)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '16px' }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔒</div>
-                      <p style={{ fontWeight: 700 }}>Subscribe to View</p>
-                      <button onClick={e => { e.stopPropagation(); navigate('/pricing'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm, marginTop: '12px' }}>View Plans</button>
+                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔒</div>
+                      <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Subscribe to View</p>
+                      <button onClick={e => { e.stopPropagation(); navigate('/pricing'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>View Plans</button>
                     </div>
                   </div>
                 )}
@@ -480,35 +480,34 @@ function LandingPage() {
       </section>
 
       {/* Features */}
-      <section style={{ ...S.section, background: '#0f172a' }}>
+      <section style={{ ...S.section, background: '#ffffff' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>WHY CHOOSE US</p>
-          <h2 style={{ ...S.h2, marginBottom: '48px' }}>Research-First Approach</h2>
+          <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>WHY CHOOSE US</p>
+          <h2 style={{ ...S.h2, marginBottom: '48px' }}>Research You Can Trust</h2>
           <div style={S.grid3}>
             {features.map((f, i) => (
-              <div key={i} style={{ ...S.card, textAlign: 'left', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                <div style={{ width: '48px', height: '48px', background: 'rgba(29,78,216,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', marginBottom: '16px' }}>{f.icon}</div>
-                <h3 style={{ ...S.h4, marginBottom: '8px' }}>{f.title}</h3>
-                <p style={{ fontSize: '14px', ...S.muted, lineHeight: 1.6 }}>{f.desc}</p>
+              <div key={i} style={{ ...S.card, textAlign: 'left', transition: 'all 0.2s', borderTop: '3px solid #1d4ed8' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'; }}>
+                <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '16px' }}>{f.icon}</div>
+                <h4 style={{ ...S.h4, marginBottom: '8px', color: '#0f172a' }}>{f.title}</h4>
+                <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7 }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
-
       {/* How It Works */}
-      <section style={{ ...S.section, background: '#f1f5f9' }}>
+      <section style={{ ...S.section, background: '#f8fafc' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>HOW IT WORKS</p>
+          <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>HOW IT WORKS</p>
           <h2 style={{ ...S.h2, marginBottom: '48px' }}>Simple Steps to Start</h2>
           <div style={S.grid4}>
             {steps.map((s, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '24px 16px' }}>
-                <div style={{ fontSize: '48px', fontWeight: 800, color: 'rgba(29,78,216,0.3)', lineHeight: 1, marginBottom: '16px' }}>{s.n}</div>
-                <h3 style={{ ...S.h4, marginBottom: '8px' }}>{s.title}</h3>
-                <p style={{ fontSize: '13px', ...S.muted, lineHeight: 1.6 }}>{s.desc}</p>
+              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '32px 20px', borderTop: '3px solid #e2e8f0' }}>
+                <div style={{ fontSize: '40px', fontWeight: 800, color: '#dbeafe', lineHeight: 1, marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>{s.n}</div>
+                <h3 style={{ ...S.h4, marginBottom: '8px', color: '#0f172a' }}>{s.title}</h3>
+                <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{s.desc}</p>
               </div>
             ))}
           </div>
@@ -516,22 +515,22 @@ function LandingPage() {
       </section>
 
       {/* Pricing Preview */}
-      <section style={{ ...S.section, background: '#0f172a' }}>
+      <section style={{ ...S.section, background: '#ffffff' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#3b82f6', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>PRICING</p>
+          <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>PRICING</p>
           <h2 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h2>
-          <p style={{ ...S.muted, marginBottom: '48px' }}>Flexible plans designed for traders of all experience levels.</p>
+          <p style={{ color: '#64748b', marginBottom: '48px' }}>Flexible plans for traders of all experience levels.</p>
           <PricingCards compact={true} />
           <button onClick={() => navigate('/pricing')} style={{ ...S.btn, ...S.btnSecondary, marginTop: '24px' }}>View Full Plan Comparison →</button>
         </div>
       </section>
 
       {/* Risk Management */}
-      <section style={{ ...S.section, background: '#f1f5f9' }}>
+      <section style={{ ...S.section, background: '#f8fafc' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h2 style={S.h2}>Risk Management Framework</h2>
-            <p style={{ ...S.muted, marginTop: '8px' }}>We follow strict risk management principles in all our research</p>
+            <p style={{ color: '#64748b', marginTop: '8px' }}>We follow strict risk management principles in all our research</p>
           </div>
           <div style={S.grid2}>
             {[
@@ -540,31 +539,31 @@ function LandingPage() {
               { icon: '⚖️', title: 'Risk-Reward Ratio', desc: 'We only publish calls with minimum 1:2 risk-reward ratio. Better setups, better outcomes.' },
               { icon: '🎯', title: 'Capital Allocation', desc: 'Diversify across segments. Avoid concentrating more than 20% in a single stock or sector.' },
             ].map((r, i) => (
-              <div key={i} style={{ ...S.card, ...S.flex, gap: '16px', alignItems: 'flex-start' }}>
+              <div key={i} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'flex-start', borderLeft: '4px solid #1d4ed8' }}>
                 <div style={{ fontSize: '28px', flexShrink: 0 }}>{r.icon}</div>
                 <div>
-                  <h4 style={{ ...S.h4, marginBottom: '4px' }}>{r.title}</h4>
-                  <p style={{ fontSize: '13px', ...S.muted, lineHeight: 1.6 }}>{r.desc}</p>
+                  <h4 style={{ ...S.h4, marginBottom: '4px', color: '#0f172a' }}>{r.title}</h4>
+                  <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{r.desc}</p>
                 </div>
               </div>
             ))}
           </div>
           <div style={{ ...S.disclaimer, marginTop: '24px' }}>
-            ⚠️ <strong>F&O WARNING:</strong> Futures & Options trading involves substantial risk. F&O is a leveraged instrument and can result in losses exceeding your initial investment. Only trade F&O if you have adequate experience and risk capital. This is not suitable for all investors.
+            ⚠️ <strong>F&O WARNING:</strong> Futures & Options trading involves substantial risk. F&O is a leveraged instrument and can result in losses exceeding your initial investment. Only trade F&O if you have adequate experience and risk capital.
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section style={{ ...S.section, background: 'linear-gradient(135deg, #0d1a3a 0%, #1a0a2e 100%)' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ ...S.h2, marginBottom: '16px' }}>Ready to Start Your Research Journey?</h2>
-          <p style={{ ...S.muted, marginBottom: '32px', lineHeight: 1.7 }}>Join thousands of informed investors. Pick the research plan that fits how you trade.</p>
+      <section style={{ ...S.section, background: 'linear-gradient(160deg, #eff6ff 0%, #dbeafe 100%)', textAlign: 'center' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <h2 style={{ ...S.h2, marginBottom: '16px', color: '#0f172a' }}>Ready to Start Your Research Journey?</h2>
+          <p style={{ color: '#334155', marginBottom: '32px', lineHeight: 1.7, fontSize: '15px' }}>Join thousands of informed investors. Pick the research plan that fits how you trade.</p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
               Start Free Trial →
             </button>
-            <button onClick={() => navigate('/contact')} style={{ ...S.btn, ...S.btnSecondary, fontSize: '16px', padding: '14px 32px' }}>
+            <button onClick={() => navigate('/contact')} style={{ ...S.btn, background: '#fff', color: '#1d4ed8', border: '2px solid #1d4ed8', fontSize: '16px', padding: '14px 32px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
               Contact Us
             </button>
           </div>
@@ -605,41 +604,38 @@ function Footer() {
   };
 
   return (
-    <footer style={{ background: '#0f172a', borderTop: '1px solid #1e293b', padding: '60px 20px 0' }}>
+    <footer style={{ background: '#ffffff', borderTop: '2px solid #e2e8f0', padding: '60px 20px 0' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '40px', marginBottom: '48px' }}>
           <div>
-            <div style={{ ...S.navLogo, marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
               <div style={S.navLogoIcon}>📈</div>
-              <span>{APP_NAME}</span>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{APP_NAME}</span>
             </div>
-            <p style={{ fontSize: '13px', ...S.muted, lineHeight: 1.7, marginBottom: '12px' }}>
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7, marginBottom: '12px' }}>
               Your trusted partner for stock market research. SEBI Registered Research Analyst.
             </p>
-            <p style={{ fontSize: '11px', color: '#0f172a' }}>SEBI RA Reg: {SEBI_REG}</p>
+            <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>{SEBI_REG}</p>
           </div>
-          {Object.entries(links).map(([section, items]) => (
-            <div key={section}>
-              <p style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{section}</p>
+          {Object.entries(links).map(([cat, items]) => (
+            <div key={cat}>
+              <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>{cat}</h4>
               {items.map(item => (
                 <button key={item.path} onClick={() => navigate(item.path)}
-                  style={{ display: 'block', background: 'none', border: 'none', color: '#334155', fontSize: '13px', cursor: 'pointer', padding: '4px 0', textAlign: 'left', transition: 'color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                  style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#475569', fontSize: '14px', padding: '6px 0', cursor: 'pointer', fontWeight: 500, transition: 'color 0.15s' }}
+                  onMouseEnter={e => e.target.style.color = '#1d4ed8'}
+                  onMouseLeave={e => e.target.style.color = '#475569'}>
                   {item.label}
                 </button>
               ))}
             </div>
           ))}
         </div>
-        <div style={{ borderTop: '1px solid #1e293b', padding: '24px 0' }}>
-          <div style={{ ...S.disclaimer, marginBottom: '16px' }}>
-            <strong>SEBI Research Analyst Registration:</strong> Investment in securities market is subject to market risks. Read all the related documents carefully before investing. The securities quoted are exemplary and are not recommendatory. Past performance is not indicative of future results. The content provided is for educational and informational purposes only. {COMPANY_NAME} | SEBI RA Reg: {SEBI_REG} | Analyst: {ANALYST_NAME}
-          </div>
-          <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '8px' }}>
-            <p style={{ fontSize: '12px', color: '#0f172a' }}>© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</p>
-            <p style={{ fontSize: '12px', color: '#0f172a' }}>Made with ❤️ in India</p>
-          </div>
+        <div style={{ borderTop: '1px solid #e2e8f0', padding: '24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <p style={{ fontSize: '12px', color: '#94a3b8' }}>© {new Date().getFullYear()} {APP_NAME} · {COMPANY_NAME} · All rights reserved.</p>
+          <p style={{ fontSize: '11px', color: '#94a3b8', maxWidth: '600px', textAlign: 'right', lineHeight: 1.5 }}>
+            Investment in securities market is subject to market risk. Past performance does not guarantee future returns. Not SEBI investment advice.
+          </p>
         </div>
       </div>
     </footer>
