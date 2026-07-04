@@ -121,7 +121,7 @@ const S = {
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const fmt = (n) => n ? Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—';
-const fmtCurr = (n) => n ? '₹' + Number(n).toLocaleString('en-IN') : '₹0';
+const fmtCurr = (n) => n ? Number(n).toLocaleString('en-IN') : '0';
 const pct = (entry, target) => entry && target ? (((target - entry) / entry) * 100).toFixed(1) + '%' : '—';
 const actionStyle = (a) => {
   if (a === 'BUY') return S.badgeBuy;
@@ -677,7 +677,7 @@ function PricingCards({ compact = false }) {
             <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>{plan.desc}</p>
             <div style={{ marginBottom: '20px' }}>
               <span style={{ fontSize: '32px', fontWeight: 800 }}>
-                {fmtCurr(prices[plan.id][compact ? 'monthly' : cycle])}
+                {prices[plan.id][compact ? 'monthly' : cycle] === 0 ? 'Free' : '₹' + fmtCurr(prices[plan.id][compact ? 'monthly' : cycle])}
               </span>
               <span style={{ fontSize: '13px', ...S.muted }}>/{compact ? 'mo' : cycle === 'monthly' ? 'month' : cycle}</span>
             </div>
@@ -1888,7 +1888,176 @@ function ProfilePage({ user, userProfile }) {
   );
 }
 
-// ─── ONBOARDING PAGE ──────────────────────────────────────────────────────────
+// ─── RESEARCH REPORTS PAGE ────────────────────────────────────────────────────
+function ReportsPage({ user, userProfile }) {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+
+  useEffect(() => {
+    supabase.from('recommendations')
+      .select('id, symbol, stock_name, report_url, chart_url, published_at, plan_required, segment, action')
+      .not('report_url', 'is', null)
+      .order('published_at', { ascending: false })
+      .then(({ data }) => { setReports(data || []); setLoading(false); });
+  }, []);
+
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
+      <div style={{ ...S.section, paddingTop: '40px' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <h1 style={{ ...S.h2, marginBottom: '6px' }}>📄 Research Reports</h1>
+          <p style={{ color: '#64748b', marginBottom: '28px' }}>In-depth research reports published with each recommendation.</p>
+
+          {loading ? (
+            <div style={{ ...S.card, textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading reports...</div>
+          ) : reports.length === 0 ? (
+            <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+              <h3 style={{ ...S.h3, marginBottom: '8px' }}>No reports yet</h3>
+              <p style={{ color: '#64748b' }}>Reports are uploaded when recommendations are published.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {reports.map(r => {
+                const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+                const userRank = planRank[userProfile?.plan_id || 'basic'] ?? 0;
+                const reqRank = planRank[r.plan_required || 'basic'] ?? 0;
+                const hasAccess = isActive && userRank >= reqRank;
+                return (
+                  <div key={r.id} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'center', padding: '16px 20px', flexWrap: 'wrap' }}>
+                    <div style={{ width: '48px', height: '48px', background: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>📄</div>
+                    <div style={{ flex: 1, minWidth: '160px' }}>
+                      <p style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{r.symbol} — {r.stock_name}</p>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                        <span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '11px' }}>{r.action}</span>
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{new Date(r.published_at).toLocaleDateString('en-IN')}</span>
+                        <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'capitalize' }}>{r.segment}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {r.chart_url && (
+                        <a href={r.chart_url} target="_blank" rel="noreferrer"
+                          style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, textDecoration: 'none', opacity: hasAccess ? 1 : 0.4, pointerEvents: hasAccess ? 'auto' : 'none' }}>
+                          📈 Chart
+                        </a>
+                      )}
+                      {hasAccess ? (
+                        <a href={r.report_url} target="_blank" rel="noreferrer"
+                          style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm, textDecoration: 'none' }}>
+                          📄 Download PDF
+                        </a>
+                      ) : (
+                        <button onClick={() => navigate('/subscription')} style={{ ...S.btn, ...S.btnGold, ...S.btnSm }}>
+                          🔒 Upgrade to Access
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div style={{ ...S.disclaimer, marginTop: '24px' }}>
+            ⚠️ Research reports are for educational purposes only. Not investment advice. {SEBI_REG}
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+// ─── WATCHLIST PAGE ───────────────────────────────────────────────────────────
+function WatchlistPage({ user }) {
+  const [watchlist, setWatchlist] = useState([]);
+  const [input, setInput] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const w = localStorage.getItem('sv_watchlist_' + user.id);
+      if (w) setWatchlist(JSON.parse(w));
+    } catch(e) {}
+  }, [user]);
+
+  const save = (data) => {
+    try { localStorage.setItem('sv_watchlist_' + user?.id, JSON.stringify(data)); } catch(e) {}
+    setWatchlist(data);
+  };
+
+  const add = () => {
+    const sym = input.trim().toUpperCase();
+    if (!sym || watchlist.includes(sym)) return;
+    save([...watchlist, sym]);
+    setInput('');
+  };
+
+  const remove = (sym) => save(watchlist.filter(s => s !== sym));
+
+  if (!user) return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>👁️</div>
+        <h2 style={S.h3}>Login to manage your watchlist</h2>
+        <button onClick={() => navigate('/login')} style={{ ...S.btn, ...S.btnPrimary, marginTop: '16px' }}>Sign In</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
+      <div style={{ ...S.section, paddingTop: '40px' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <h1 style={{ ...S.h2, marginBottom: '6px' }}>👁️ Watchlist</h1>
+          <p style={{ color: '#64748b', marginBottom: '28px', fontSize: '13px' }}>Track stocks you're watching. Data stored locally on your device.</p>
+
+          {/* Add symbol */}
+          <div style={{ ...S.card, marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <input style={{ ...S.input, flex: 1 }} placeholder="Enter symbol (e.g. RELIANCE, TCS, NIFTY)" value={input}
+              onChange={e => setInput(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && add()} />
+            <button onClick={add} style={{ ...S.btn, ...S.btnPrimary, flexShrink: 0 }}>+ Add</button>
+          </div>
+
+          {watchlist.length === 0 ? (
+            <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>👁️</div>
+              <h3 style={{ ...S.h3, marginBottom: '8px' }}>Watchlist is empty</h3>
+              <p style={{ color: '#64748b' }}>Add symbols above to track them. Press Enter or click Add.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {watchlist.map(sym => (
+                <div key={sym} style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px', color: '#1e40af' }}>
+                      {sym.slice(0, 2)}
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{sym}</p>
+                      <p style={{ fontSize: '12px', color: '#94a3b8' }}>NSE / BSE · Update CMP manually</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button onClick={() => navigate('/live-calls')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, fontSize: '12px' }}>View Calls</button>
+                    <button onClick={() => remove(sym)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', padding: '6px 8px', fontSize: '14px' }}>🗑</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ ...S.disclaimer, marginTop: '20px' }}>
+            ⚠️ Watchlist is for tracking purposes only. Live prices not available — update manually. Not investment advice.
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+
 function OnboardingPage({ user, userProfile }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({ experience: '', horizon: '', capital: '', segments: [], risk: '' });
@@ -3557,6 +3726,8 @@ export default function App() {
     if (path === '/live-calls') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="live-group" />;
     if (path === '/past-recommendations') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="past-group" />;
     if (path.startsWith('/recommendations/')) return <RecommendationDetailPage id={path.split('/recommendations/')[1]} userProfile={userProfile} />;
+    if (path === '/reports') return <ReportsPage user={user} userProfile={userProfile} />;
+    if (path === '/watchlist') return <WatchlistPage user={user} />;
     if (path === '/onboarding') return <OnboardingPage user={user} userProfile={userProfile} />;
     if (path === '/portfolio') return <PortfolioPage user={user} />;
     if (path === '/performance') return <PerformancePage />;
