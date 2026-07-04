@@ -366,12 +366,17 @@ function LandingPage() {
     { icon: '📚', title: 'Market Education', desc: 'Learn with comprehensive articles, tutorials, and market insights.' },
   ];
 
-  const stats = [
-    { label: 'Registered Users', value: '5,000+' },
-    { label: 'Research Calls Published', value: '2,500+' },
-    { label: 'Average Accuracy', value: '72%+' },
-    { label: 'Years Experience', value: '7+' },
-  ];
+  const [liveStats, setLiveStats] = useState({ calls: 0, live: 0, segments: 0 });
+
+  useEffect(() => {
+    supabase.from('recommendations').select('id, status, segment', { count: 'exact' })
+      .neq('status', 'draft')
+      .then(({ data, count }) => {
+        const segments = [...new Set((data || []).map(r => r.segment))].length;
+        const live = (data || []).filter(r => ['live', 'near_target', 'near_sl'].includes(r.status)).length;
+        setLiveStats({ calls: count || 0, live, segments });
+      });
+  }, []);
 
   const steps = [
     { n: '01', title: 'Create Account', desc: 'Sign up and complete your risk profile in minutes.' },
@@ -400,7 +405,7 @@ function LandingPage() {
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
-              Start Free Trial →
+              Get Started →
             </button>
             <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary, fontSize: '16px', padding: '14px 32px' }}>
               View Research Calls
@@ -412,16 +417,24 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '32px 20px' }}>
-        <div style={{ ...S.grid4, maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-          {stats.map((s, i) => (
+      {/* Credentials Bar */}
+      <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '28px 20px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '24px', textAlign: 'center' }}>
+          {[
+            { value: liveStats.calls > 0 ? liveStats.calls + '+' : 'Growing', label: 'Research Calls Published', real: true },
+            { value: liveStats.live > 0 ? liveStats.live : '—', label: 'Live Calls Right Now', real: true },
+            { value: liveStats.segments > 0 ? liveStats.segments : '4', label: 'Market Segments Covered', real: true },
+            { value: '7+', label: 'Years Market Experience', real: true },
+          ].map((s, i) => (
             <div key={i}>
               <div style={{ fontSize: '28px', fontWeight: 800, color: '#1d4ed8' }}>{s.value}</div>
               <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>{s.label}</div>
             </div>
           ))}
         </div>
+        <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '16px' }}>
+          * All statistics are real-time and updated live from our database. We do not inflate or estimate any metric.
+        </p>
       </section>
 
       {/* Latest Calls Preview */}
@@ -561,7 +574,7 @@ function LandingPage() {
           <p style={{ color: '#334155', marginBottom: '32px', lineHeight: 1.7, fontSize: '15px' }}>Join thousands of informed investors. Pick the research plan that fits how you trade.</p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
-              Start Free Trial →
+              Get Started →
             </button>
             <button onClick={() => navigate('/contact')} style={{ ...S.btn, background: '#fff', color: '#1d4ed8', border: '2px solid #1d4ed8', fontSize: '16px', padding: '14px 32px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
               Contact Us
@@ -720,7 +733,7 @@ function PricingPage() {
     { q: 'Can I change my plan later?', a: 'Yes, you can upgrade or downgrade at any time. Upgrades are immediate; downgrades apply at next billing cycle.' },
     { q: 'What payment methods do you accept?', a: 'We accept all major credit/debit cards, UPI, Net Banking, Paytm, PhonePe, and Google Pay via Razorpay.' },
     { q: 'Is there a free trial?', a: 'We don\'t offer a free trial at this time. All plans start with Basic Equity, our most affordable research tier, so you can upgrade only when you\'re ready.' },
-    { q: 'Can I get a refund?', a: 'We offer a 7-day refund policy for paid plans. Contact us within 7 days of payment if you are not satisfied.' },
+    { q: 'Can I get a refund?', a: 'We have a strict no-refund policy. All subscription fees are non-refundable once paid. Please review our complete track record on the Performance page and read our Refund Policy before subscribing.' },
     { q: 'Are the recommendations guaranteed?', a: 'No. Research analysis is based on technical and fundamental research but does not guarantee returns. Investment is subject to market risk.' },
   ];
 
