@@ -648,6 +648,19 @@ function Footer() {
 // ─── PRICING CARDS ────────────────────────────────────────────────────────────
 function PricingCards({ compact = false }) {
   const [cycle, setCycle] = useState('monthly');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUser(data?.user || null));
+  }, []);
+
+  const handleSubscribe = (planId) => {
+    if (currentUser) {
+      navigate('/subscription');
+    } else {
+      navigate('/register');
+    }
+  };
 
   const prices = {
     basic: { monthly: 999, quarterly: 2697, halfyearly: 5094, yearly: 8991 },
@@ -706,9 +719,9 @@ function PricingCards({ compact = false }) {
                 ))}
               </div>
             )}
-            <button onClick={() => navigate('/register')}
+            <button onClick={() => handleSubscribe(plan.id)}
               style={{ ...S.btn, width: '100%', justifyContent: 'center', background: plan.popular ? '#f59e0b' : '#1d4ed8', color: plan.popular ? '#000' : '#fff', border: 'none' }}>
-              {compact ? 'Subscribe' : 'Subscribe Now'}
+              {compact ? 'Subscribe' : currentUser ? 'Manage Subscription' : 'Subscribe Now'}
             </button>
           </div>
         ))}
@@ -2038,7 +2051,7 @@ function OnboardingPage({ user, userProfile }) {
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button onClick={() => navigate('/pricing')} style={{ ...S.btn, ...S.btnPrimary, justifyContent: 'center', width: '100%' }}>Subscribe Now →</button>
+                <button onClick={() => navigate('/subscription')} style={{ ...S.btn, ...S.btnPrimary, justifyContent: 'center', width: '100%' }}>Subscribe Now →</button>
                 <button onClick={() => navigate('/dashboard')} style={{ ...S.btn, ...S.btnSecondary, justifyContent: 'center', width: '100%' }}>Explore Dashboard First</button>
               </div>
             </div>
