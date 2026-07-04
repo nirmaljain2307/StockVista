@@ -1969,8 +1969,8 @@ function ReportsPage({ user, userProfile }) {
 }
 
 // ─── WATCHLIST PAGE ───────────────────────────────────────────────────────────
-function WatchlistTickerWidget({ sym }) {
-  const containerId = `wl-tv-${sym}`;
+function WatchlistTickerWidget({ tvSym }) {
+  const containerId = `wl-tv-${tvSym.replace(/[^a-zA-Z0-9]/g, '_')}`;
   useEffect(() => {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1979,16 +1979,16 @@ function WatchlistTickerWidget({ sym }) {
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js';
     script.async = true;
     script.innerHTML = JSON.stringify({
-      symbol: `NSE:${sym}`,
+      symbol: tvSym,
       width: '100%',
       colorTheme: 'light',
       isTransparent: true,
       locale: 'en',
     });
     container.appendChild(script);
-    return () => { if (container) container.innerHTML = ''; };
-  }, [sym]);
-  return <div id={containerId} style={{ minHeight: '60px', width: '100%' }} />;
+    return () => { try { if (container) container.innerHTML = ''; } catch(e) {} };
+  }, [tvSym]);
+  return <div id={containerId} style={{ minHeight: '64px', width: '100%' }} />;
 }
 
 function WatchlistPage({ user }) {
@@ -2061,12 +2061,11 @@ function WatchlistPage({ user }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {watchlist.map(item => {
-                const sym = typeof item === 'string' ? item : item.sym;
+                const sym = (typeof item === 'string' ? item : item.sym).replace(/\s+/g, '').toUpperCase();
                 const exch = typeof item === 'string' ? 'NSE' : (item.exchange || 'NSE');
                 const tvSym = `${exch}:${sym}`;
                 return (
                   <div key={sym} style={{ ...S.card, padding: '0', overflow: 'hidden' }}>
-                    {/* Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '36px', height: '36px', background: '#eff6ff', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', color: '#1e40af' }}>
@@ -2082,9 +2081,8 @@ function WatchlistPage({ user }) {
                         <button onClick={() => remove(sym)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', padding: '6px 8px', fontSize: '14px' }}>🗑</button>
                       </div>
                     </div>
-                    {/* Live TradingView ticker */}
                     <div style={{ padding: '4px 8px' }}>
-                      <WatchlistTickerWidget sym={`${exch}:${sym}`} />
+                      <WatchlistTickerWidget tvSym={tvSym} />
                     </div>
                   </div>
                 );
@@ -2128,9 +2126,9 @@ function IndexTicker({ sym, id }) {
     script.async = true;
     script.innerHTML = JSON.stringify({ symbol: sym, width: '100%', colorTheme: 'light', isTransparent: true, locale: 'en' });
     container.appendChild(script);
-    return () => { if (container) container.innerHTML = ''; };
+    return () => { try { if (container) container.innerHTML = ''; } catch(e) {} };
   }, [sym]);
-  return <div id={id} style={{ minHeight: '60px' }} />;
+  return <div id={id} style={{ minHeight: '64px' }} />;
 }
 
 
