@@ -105,7 +105,7 @@ const S = {
   btnGreen: { background: '#10b981', color: '#fff' },
 
   // Cards
-  card: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  card: { background: '#ffffff', border: '1.5px solid #bfdbfe', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(29,78,216,0.06)' },
   cardHover: { transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s' },
 
   // Form
@@ -2129,16 +2129,26 @@ function PerformancePage() {
 }
 
 // ─── LEGAL PAGES ──────────────────────────────────────────────────────────────
-function LegalPage({ title, children }) {
+function LegalSection({ title, children, icon }) {
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
+    <div style={{ background: '#fff', border: '2px solid #dbeafe', borderRadius: '12px', padding: '24px', marginBottom: '16px', borderLeft: '4px solid #1d4ed8' }}>
+      {title && <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1d4ed8', marginBottom: '12px' }}>{icon} {title}</h3>}
+      <div style={{ fontSize: '14px', lineHeight: 1.9, color: '#1e293b' }}>{children}</div>
+    </div>
+  );
+}
+
+function LegalPage({ title, icon, children }) {
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
       <div style={{ ...S.section }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h1 style={{ ...S.h2, marginBottom: '8px' }}>{title}</h1>
-          <p style={{ ...S.muted, marginBottom: '32px', fontSize: '13px' }}>Last updated: June 2026</p>
-          <div style={{ ...S.card, fontSize: '14px', lineHeight: 1.9, color: '#cbd5e1' }}>
-            {children}
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+          {/* Header */}
+          <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '2px solid #bfdbfe', borderRadius: '16px', padding: '32px', marginBottom: '32px' }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>{icon} {title}</h1>
+            <p style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Last updated: June 2026 · {COMPANY_NAME} · {SEBI_REG}</p>
           </div>
+          {children}
         </div>
       </div>
       <Footer />
@@ -2148,78 +2158,265 @@ function LegalPage({ title, children }) {
 
 function DisclaimerPage() {
   return (
-    <LegalPage title="⚠️ Disclaimer">
-      <p><strong style={{ color: '#ef4444' }}>IMPORTANT DISCLAIMER — PLEASE READ CAREFULLY</strong></p>
-      <p style={{ marginTop: '16px' }}>{APP_NAME} ({COMPANY_NAME}) is a SEBI Registered Research Analyst (Registration No: {SEBI_REG}). Our research and analysis is provided for educational and informational purposes only.</p>
-      <p style={{ marginTop: '12px' }}><strong>Investment Risk:</strong> Investment in securities market is subject to market risks. Read all related documents carefully before investing. The securities quoted are exemplary and are not recommendatory. Past performance is not indicative of future results.</p>
-      <p style={{ marginTop: '12px' }}><strong>No Guaranteed Returns:</strong> We do not promise, guarantee, or assure any returns or profits. Stock market investments are inherently risky and may result in financial loss.</p>
-      <p style={{ marginTop: '12px' }}><strong>F&O Warning:</strong> Futures and Options trading involves substantial risk and is not suitable for all investors. Options can result in total loss of premium paid. Please assess your risk tolerance before trading F&O.</p>
-      <p style={{ marginTop: '12px' }}><strong>Not Investment Advice:</strong> Content on this platform is research analysis, not personalized investment advice. Consult a SEBI Registered Investment Advisor for personalized advice.</p>
-      <p style={{ marginTop: '12px' }}>For grievances, contact: {GRIEVANCE_EMAIL}</p>
+    <LegalPage title="Disclaimer" icon="⚠️">
+      <LegalSection title="Important Notice" icon="🔴">
+        <p><strong style={{ color: '#b91c1c' }}>PLEASE READ CAREFULLY BEFORE USING THIS PLATFORM</strong></p>
+        <p style={{ marginTop: '12px' }}>{APP_NAME} ({COMPANY_NAME}) is a SEBI Registered Research Analyst (Registration No: {SEBI_REG}). Our research and analysis is provided for educational and informational purposes only and does not constitute investment advice.</p>
+      </LegalSection>
+      <LegalSection title="Investment Risk" icon="📉">
+        <p>Investment in securities market is subject to market risks. Read all related documents carefully before investing. The securities quoted are exemplary and are not recommendatory. <strong>Past performance is not indicative of future results.</strong></p>
+      </LegalSection>
+      <LegalSection title="No Guaranteed Returns" icon="🚫">
+        <p>We do not promise, guarantee, or assure any returns or profits. Stock market investments are inherently risky and may result in financial loss including loss of entire capital invested.</p>
+      </LegalSection>
+      <LegalSection title="F&O Warning" icon="⚡">
+        <p>Futures and Options trading involves substantial risk and is <strong>not suitable for all investors</strong>. Options can result in total loss of premium paid. Futures can result in losses beyond initial margin. Please assess your risk tolerance before trading F&O instruments.</p>
+      </LegalSection>
+      <LegalSection title="Not Investment Advice" icon="📋">
+        <p>Content on this platform is research analysis, not personalized investment advice. For personalized advice, consult a SEBI Registered Investment Advisor (RIA). For grievances, contact: <strong>{GRIEVANCE_EMAIL}</strong></p>
+      </LegalSection>
     </LegalPage>
   );
 }
 
 function PrivacyPage() {
   return (
-    <LegalPage title="🔒 Privacy Policy">
-      <p><strong>Data Collection:</strong> We collect name, email, mobile number, and usage data to provide research services. We do not sell your personal data to third parties.</p>
-      <p style={{ marginTop: '12px' }}><strong>Data Storage:</strong> Your data is stored securely on Supabase (hosted in India/AWS) and protected by industry-standard encryption.</p>
-      <p style={{ marginTop: '12px' }}><strong>Payment Data:</strong> Payment information is processed by Razorpay and is never stored on our servers. We comply with PCI-DSS standards via our payment partner.</p>
-      <p style={{ marginTop: '12px' }}><strong>DPDP Act 2023:</strong> We comply with India's Digital Personal Data Protection Act 2023. You have the right to access, correct, or delete your personal data.</p>
-      <p style={{ marginTop: '12px' }}><strong>Cookies:</strong> We use essential cookies for authentication and analytics cookies to improve the platform.</p>
-      <p style={{ marginTop: '12px' }}>Contact for privacy queries: {CONTACT_EMAIL}</p>
+    <LegalPage title="Privacy Policy" icon="🔒">
+      <LegalSection title="Data Collection" icon="📥">
+        <p>We collect name, email, mobile number, and usage data to provide research services. We do <strong>not sell your personal data</strong> to third parties under any circumstances.</p>
+      </LegalSection>
+      <LegalSection title="Data Storage & Security" icon="🔐">
+        <p>Your data is stored securely on Supabase (hosted in India/AWS region) and protected by industry-standard AES-256 encryption. All data transmission uses HTTPS/TLS.</p>
+      </LegalSection>
+      <LegalSection title="Payment Data" icon="💳">
+        <p>Payment information is processed by Razorpay and is <strong>never stored on our servers</strong>. We comply with PCI-DSS standards via our payment partner. We store only the transaction ID and subscription status.</p>
+      </LegalSection>
+      <LegalSection title="DPDP Act 2023 Compliance" icon="🇮🇳">
+        <p>We comply with India's Digital Personal Data Protection Act 2023 (DPDP Act). You have the right to access, correct, or delete your personal data at any time by contacting us at <strong>{CONTACT_EMAIL}</strong>.</p>
+      </LegalSection>
+      <LegalSection title="Cookies" icon="🍪">
+        <p>We use essential cookies for authentication and session management. Analytics cookies help us improve the platform. You may disable non-essential cookies in your browser settings.</p>
+      </LegalSection>
+      <LegalSection title="Contact" icon="📧">
+        <p>For all privacy queries: <strong>{CONTACT_EMAIL}</strong> · Response within 3 business days.</p>
+      </LegalSection>
     </LegalPage>
   );
 }
 
 function TermsPage() {
   return (
-    <LegalPage title="📋 Terms of Service">
-      <p><strong>Acceptance:</strong> By using {APP_NAME}, you agree to these terms and our Privacy Policy. If you disagree, please do not use this platform.</p>
-      <p style={{ marginTop: '12px' }}><strong>Service:</strong> We provide stock market research and analysis. We are not a stock broker, investment advisor, or portfolio manager.</p>
-      <p style={{ marginTop: '12px' }}><strong>Subscriptions:</strong> Subscription fees are charged in advance. Plans auto-renew unless cancelled before the renewal date.</p>
-      <p style={{ marginTop: '12px' }}><strong>User Obligations:</strong> You must be 18+ years of age, comply with all applicable laws, and not share your account credentials.</p>
-      <p style={{ marginTop: '12px' }}><strong>Intellectual Property:</strong> All research content is owned by {COMPANY_NAME}. You may not reproduce, distribute, or sell our research without written permission.</p>
-      <p style={{ marginTop: '12px' }}><strong>Limitation of Liability:</strong> {COMPANY_NAME} shall not be liable for any financial losses arising from use of our research platform.</p>
+    <LegalPage title="Terms of Service" icon="📋">
+      <LegalSection title="Acceptance" icon="✅">
+        <p>By using {APP_NAME}, you agree to these Terms of Service and our Privacy Policy. If you disagree with any part, please do not use this platform.</p>
+      </LegalSection>
+      <LegalSection title="Nature of Service" icon="📊">
+        <p>We provide stock market research and analysis. We are <strong>not a stock broker, investment advisor, portfolio manager, or SEBI RIA</strong>. Our content is research, not personalized advice.</p>
+      </LegalSection>
+      <LegalSection title="Subscriptions & Billing" icon="💳">
+        <p>Subscription fees are charged in advance. Plans auto-renew on the billing date unless cancelled before. You are responsible for cancelling before renewal. No mid-cycle refunds for cancellations after 7 days.</p>
+      </LegalSection>
+      <LegalSection title="User Obligations" icon="👤">
+        <p>You must be <strong>18+ years of age</strong>, comply with all applicable Indian laws, not share your account credentials, and not redistribute our research content without written permission.</p>
+      </LegalSection>
+      <LegalSection title="Intellectual Property" icon="©️">
+        <p>All research content, reports, analysis, and platform code is owned by {COMPANY_NAME}. Reproduction, distribution, or commercial use without written permission is strictly prohibited.</p>
+      </LegalSection>
+      <LegalSection title="Limitation of Liability" icon="⚖️">
+        <p>{COMPANY_NAME} shall not be liable for any financial losses, trading losses, or consequential damages arising from use of our research platform. Maximum liability is limited to subscription fees paid in the last 30 days.</p>
+      </LegalSection>
+      <LegalSection title="Governing Law" icon="🏛️">
+        <p>These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in Noida, Uttar Pradesh, India.</p>
+      </LegalSection>
     </LegalPage>
   );
 }
 
 function RefundPage() {
   return (
-    <LegalPage title="💳 Refund Policy">
-      <p><strong>7-Day Refund:</strong> We offer a full refund within 7 days of purchase if you are not satisfied with our service and have not accessed more than 5 research calls.</p>
-      <p style={{ marginTop: '12px' }}><strong>Non-Refundable:</strong> Subscriptions older than 7 days are non-refundable. Partial period refunds are not provided for mid-cycle cancellations.</p>
-      <p style={{ marginTop: '12px' }}><strong>Process:</strong> Email {CONTACT_EMAIL} with your registered email and order ID. Refunds are processed within 5-7 business days to the original payment method.</p>
-      <p style={{ marginTop: '12px' }}><strong>Note:</strong> Market losses due to trading based on our research are not eligible for refund. Please read our Disclaimer carefully.</p>
+    <LegalPage title="Refund Policy" icon="💰">
+      <div style={{ background: '#fef2f2', border: '2px solid #fecaca', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
+        <p style={{ fontSize: '15px', fontWeight: 700, color: '#b91c1c' }}>⚠️ No Refund Policy — Please Read Before Subscribing</p>
+        <p style={{ fontSize: '13px', color: '#7f1d1d', marginTop: '8px', lineHeight: 1.7 }}>All subscription fees paid to {APP_NAME} / {COMPANY_NAME} are <strong>strictly non-refundable</strong>. By subscribing, you acknowledge and accept this policy.</p>
+      </div>
+      <LegalSection title="No Refund — All Sales Final" icon="🚫">
+        <p>We operate a <strong>strict no-refund policy</strong>. Once a subscription payment is made, no refunds will be issued under any circumstances, including but not limited to:</p>
+        <ul style={{ marginTop: '12px', paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Change of mind after purchase</li>
+          <li>Non-usage of the platform after subscribing</li>
+          <li>Trading losses incurred based on research calls</li>
+          <li>Technical issues on user's device or internet</li>
+          <li>Early cancellation of subscription</li>
+          <li>Dissatisfaction with research outcomes</li>
+        </ul>
+      </LegalSection>
+      <LegalSection title="Why No Refund?" icon="📋">
+        <p>Research content is delivered immediately upon subscription activation. Our analysts spend significant time preparing research calls, technical analysis, and fundamental reports. The intellectual property delivered cannot be "returned," hence refunds are not operationally feasible.</p>
+      </LegalSection>
+      <LegalSection title="Cancellation" icon="❌">
+        <p>You may cancel your subscription at any time to prevent future renewals. Cancellation stops the next billing cycle but does <strong>not entitle you to a refund</strong> for the current or any past billing period. Access continues until the end of the paid period.</p>
+      </LegalSection>
+      <LegalSection title="Exceptional Circumstances" icon="⚖️">
+        <p>In rare cases of <strong>duplicate payment</strong> due to technical error, we will investigate and process a refund for the duplicate transaction only within 30 business days. Contact us at <strong>{CONTACT_EMAIL}</strong> with your payment ID and bank statement.</p>
+      </LegalSection>
+      <LegalSection title="Contact" icon="📧">
+        <p>For billing queries (not refund requests): <strong>{CONTACT_EMAIL}</strong> | Phone: <strong>{CONTACT_PHONE}</strong></p>
+      </LegalSection>
     </LegalPage>
   );
 }
 
 function GrievancePage() {
   return (
-    <LegalPage title="📮 Grievance Redressal">
-      <p><strong>SEBI Grievance Mechanism:</strong> As a SEBI Registered Research Analyst, we have a formal grievance redressal mechanism in place.</p>
-      <p style={{ marginTop: '12px' }}><strong>Level 1 — Company:</strong> Email: {GRIEVANCE_EMAIL} | Phone: {CONTACT_PHONE} | Response within 3 business days.</p>
-      <p style={{ marginTop: '12px' }}><strong>Level 2 — SEBI SCORES:</strong> If unresolved within 30 days, you may file a complaint at SEBI SCORES portal: <strong>scores.sebi.gov.in</strong></p>
-      <p style={{ marginTop: '12px' }}><strong>Level 3 — Online Dispute Resolution:</strong> You may also file a complaint at <strong>smartodr.in</strong> (SEBI's ODR platform).</p>
-      <p style={{ marginTop: '12px' }}><strong>Grievance Officer:</strong> {ANALYST_NAME} | {COMPANY_NAME} | Email: {GRIEVANCE_EMAIL}</p>
+    <LegalPage title="Grievance Redressal" icon="📮">
+      <LegalSection title="SEBI Grievance Mechanism" icon="🏛️">
+        <p>As a SEBI Registered Research Analyst, {COMPANY_NAME} maintains a formal three-level grievance redressal mechanism in compliance with SEBI (Research Analysts) Regulations, 2014.</p>
+      </LegalSection>
+      <LegalSection title="Level 1 — Company Resolution" icon="1️⃣">
+        <p><strong>Grievance Officer:</strong> {ANALYST_NAME}</p>
+        <p style={{ marginTop: '8px' }}><strong>Email:</strong> {GRIEVANCE_EMAIL}</p>
+        <p><strong>Phone:</strong> {CONTACT_PHONE}</p>
+        <p style={{ marginTop: '8px' }}>Response time: <strong>3 business days</strong>. Resolution: <strong>15 business days</strong>.</p>
+      </LegalSection>
+      <LegalSection title="Level 2 — SEBI SCORES Portal" icon="2️⃣">
+        <p>If your grievance is unresolved within 30 days of filing at Level 1, you may escalate to SEBI's SCORES portal:</p>
+        <p style={{ marginTop: '8px' }}>🔗 <strong>scores.sebi.gov.in</strong></p>
+        <p style={{ marginTop: '4px', fontSize: '13px', color: '#475569' }}>SEBI SCORES (Securities and Exchange Board of India Complaints Redress System) is a web-based centralized grievance redressal system.</p>
+      </LegalSection>
+      <LegalSection title="Level 3 — Online Dispute Resolution" icon="3️⃣">
+        <p>For disputes unresolved via SCORES, you may file at SEBI's designated ODR platform:</p>
+        <p style={{ marginTop: '8px' }}>🔗 <strong>smartodr.in</strong></p>
+        <p style={{ marginTop: '4px', fontSize: '13px', color: '#475569' }}>Smart ODR (Online Dispute Resolution) is SEBI's platform for online resolution of disputes between investors and market intermediaries.</p>
+      </LegalSection>
+      <LegalSection title="Grievance Filing Guidelines" icon="📝">
+        <p>When filing a grievance, please include:</p>
+        <ul style={{ marginTop: '8px', paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Your registered email ID and mobile number</li>
+          <li>Nature of grievance with specific details</li>
+          <li>Date and description of the issue</li>
+          <li>Any supporting documents or screenshots</li>
+          <li>Your expected resolution</li>
+        </ul>
+      </LegalSection>
     </LegalPage>
   );
 }
 
 function SEBIDisclosurePage() {
   return (
-    <LegalPage title="🛡️ SEBI RA Disclosure">
-      <p><strong>Registration Details:</strong></p>
-      <p style={{ marginTop: '8px' }}>Name: {ANALYST_NAME}</p>
-      <p>Company: {COMPANY_NAME}</p>
-      <p>SEBI Registration No: {SEBI_REG}</p>
-      <p>Type: Individual Research Analyst</p>
-      <p style={{ marginTop: '16px' }}><strong>Conflict of Interest Disclosure:</strong> The Research Analyst or his/her associates may or may not hold positions in the securities mentioned in research calls. All disclosures are made in accordance with SEBI (Research Analysts) Regulations, 2014 as amended.</p>
-      <p style={{ marginTop: '12px' }}><strong>Source of Compensation:</strong> The Research Analyst is compensated through subscription fees from users. We do not receive any compensation from companies whose securities are analyzed.</p>
-      <p style={{ marginTop: '12px' }}><strong>Regulatory Compliance:</strong> We comply with SEBI (Research Analysts) Regulations, 2014 and all amendments thereto, including the November 2025 amendment.</p>
+    <LegalPage title="SEBI RA Disclosure" icon="🛡️">
+      <LegalSection title="Registration Details" icon="📜">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
+          {[
+            { label: 'Analyst Name', value: ANALYST_NAME },
+            { label: 'Company', value: COMPANY_NAME },
+            { label: 'SEBI Registration No.', value: SEBI_REG },
+            { label: 'Registration Type', value: 'Individual Research Analyst' },
+            { label: 'Registered Address', value: 'Noida, Uttar Pradesh, India' },
+            { label: 'Contact Email', value: CONTACT_EMAIL },
+          ].map((item, i) => (
+            <div key={i} style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+              <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</p>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginTop: '4px' }}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </LegalSection>
+      <LegalSection title="Conflict of Interest Disclosure" icon="⚖️">
+        <p>The Research Analyst or his/her associates may or may not hold positions in the securities mentioned in research calls at the time of publication. All disclosures are made in accordance with SEBI (Research Analysts) Regulations, 2014 as amended.</p>
+        <p style={{ marginTop: '12px' }}>The Research Analyst has not received any compensation from the companies covered in the research reports for the past 12 months.</p>
+      </LegalSection>
+      <LegalSection title="Source of Compensation" icon="💰">
+        <p>The Research Analyst is <strong>compensated exclusively through subscription fees from users</strong>. We do not receive any compensation, directly or indirectly, from companies whose securities are analyzed in our research reports.</p>
+      </LegalSection>
+      <LegalSection title="Regulatory Compliance" icon="📋">
+        <p>We comply with SEBI (Research Analysts) Regulations, 2014 and all amendments thereto, including:</p>
+        <ul style={{ marginTop: '8px', paddingLeft: '20px', lineHeight: 2 }}>
+          <li>November 2024 amendment — Enhanced disclosure requirements</li>
+          <li>SEBI Circular SEBI/HO/MIRSD/MIRSD-POD-1/P/CIR/2023/70 on research analyst regulations</li>
+          <li>Mandatory risk disclosures on all research communications</li>
+          <li>Maintenance of records for minimum 5 years</li>
+        </ul>
+      </LegalSection>
+      <LegalSection title="Research Methodology Disclosure" icon="🔬">
+        <p>Our research calls are based on: <strong>Technical Analysis</strong> (price action, chart patterns, indicators including RSI, MACD, Moving Averages), <strong>Fundamental Analysis</strong> (EPS, P/E, revenue growth, sector outlook), and <strong>Risk-Reward Assessment</strong> (minimum 1:2 ratio for all published calls).</p>
+      </LegalSection>
+      <LegalSection title="Mandatory Disclaimer" icon="⚠️">
+        <p style={{ color: '#b91c1c', fontWeight: 600 }}>Investment in securities market is subject to market risk. Past performance is not indicative of future results. This platform provides research reports and not investment advice. Investors are advised to take an informed decision and consult their investment advisor before investing.</p>
+      </LegalSection>
+    </LegalPage>
+  );
+}
+
+function FAQPage() {
+  const faqs = [
+    { q: 'What is StockVista?', a: `${APP_NAME} is a SEBI Registered Research Analyst platform that provides equity, F&O, and commodity research calls backed by technical and fundamental analysis.` },
+    { q: 'Is this investment advice?', a: 'No. StockVista provides research analysis only, not personalized investment advice. We are a SEBI Registered Research Analyst (RA), not a SEBI Registered Investment Advisor (RIA). Always consult a qualified advisor before making investment decisions.' },
+    { q: 'What segments do you cover?', a: 'We cover NSE & BSE equity, NSE F&O (futures and options), and MCX commodities (Gold, Silver, Crude Oil, Natural Gas).' },
+    { q: 'What do the plans include?', a: 'Basic Equity covers equity research calls. Premium Equity adds IPO calls and priority support. F&O Pro adds futures, options, and intraday calls. Elite All Access includes everything including Telegram signals and one-on-one sessions.' },
+    { q: 'Is there a free trial?', a: 'We do not offer free trials. All plans are paid. Please review our track record on the Performance page before subscribing.' },
+    { q: 'What is your refund policy?', a: 'We have a strict no-refund policy. All subscription fees are non-refundable. Please read our complete Refund Policy before subscribing.' },
+    { q: 'How are calls delivered?', a: 'Calls are published on the platform in real-time. Elite plan subscribers also receive Telegram notifications. Login to your dashboard to view all live and past calls.' },
+    { q: 'Can I cancel my subscription?', a: 'Yes, you can cancel anytime. Cancellation prevents future renewals but does not entitle you to a refund for the current period. Access continues until the end of your paid period.' },
+    { q: 'Are your recommendations guaranteed?', a: 'Absolutely not. No stock market research can guarantee profits. All investments carry risk. We provide thorough analysis with clear entry, target, and stop-loss levels — but market outcomes are never guaranteed.' },
+    { q: 'How do I file a grievance?', a: `Contact us at ${GRIEVANCE_EMAIL}. If unresolved within 30 days, escalate to SEBI SCORES (scores.sebi.gov.in) or Smart ODR (smartodr.in).` },
+    { q: 'What is your SEBI registration number?', a: `${SEBI_REG}. We comply with SEBI (Research Analysts) Regulations, 2014 and all amendments.` },
+    { q: 'How do I contact support?', a: `Email: ${CONTACT_EMAIL} | Phone: ${CONTACT_PHONE}. Support hours: Monday to Friday, 9 AM to 6 PM IST.` },
+  ];
+  return (
+    <LegalPage title="Frequently Asked Questions" icon="❓">
+      {faqs.map((f, i) => (
+        <FaqItem key={i} q={f.q} a={f.a} />
+      ))}
+    </LegalPage>
+  );
+}
+
+function RiskDisclosurePage() {
+  return (
+    <LegalPage title="Risk Disclosure Document" icon="⚠️">
+      <div style={{ background: '#fef2f2', border: '2px solid #fecaca', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+        <p style={{ fontWeight: 700, color: '#b91c1c', fontSize: '15px' }}>MANDATORY RISK DISCLOSURE — AS REQUIRED BY SEBI (RESEARCH ANALYSTS) REGULATIONS, 2014</p>
+      </div>
+      <LegalSection title="General Market Risk" icon="📉">
+        <p>Investment in securities market is subject to market risks. The value of investments may increase or decrease based on market conditions, economic factors, political events, and other variables outside our control. <strong>You may lose some or all of your invested capital.</strong></p>
+      </LegalSection>
+      <LegalSection title="Equity Risk" icon="📊">
+        <p>Equity investments are subject to company-specific risks including poor earnings, management changes, regulatory actions, and sector downturns. Small-cap and mid-cap stocks carry higher volatility and liquidity risk compared to large-cap stocks.</p>
+      </LegalSection>
+      <LegalSection title="F&O Risk (High Risk Warning)" icon="⚡">
+        <p><strong style={{ color: '#b91c1c' }}>Futures and Options are highly complex leveraged instruments.</strong></p>
+        <ul style={{ marginTop: '12px', paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Options buyers can lose 100% of the premium paid</li>
+          <li>Futures positions can result in losses exceeding initial margin</li>
+          <li>F&O markets can move against you rapidly due to leverage</li>
+          <li>Theta decay erodes option value daily, even without price movement</li>
+          <li>F&O is not suitable for inexperienced or risk-averse investors</li>
+        </ul>
+      </LegalSection>
+      <LegalSection title="Commodity Risk" icon="🏅">
+        <p>MCX commodity prices (Gold, Silver, Crude Oil, Natural Gas) are influenced by global supply-demand, geopolitical events, currency fluctuations, and weather conditions. Commodity derivatives carry leverage risk similar to equity F&O.</p>
+      </LegalSection>
+      <LegalSection title="Research Risk" icon="🔬">
+        <p>Research calls are based on analysis available at the time of publication. Market conditions can change rapidly and without warning. Past accuracy of research calls does not guarantee future accuracy. Stop-losses must be strictly followed to limit downside.</p>
+      </LegalSection>
+      <LegalSection title="Liquidity Risk" icon="💧">
+        <p>Certain securities, especially small-cap stocks and far-OTM options, may have limited liquidity. You may not be able to exit positions at the recommended prices during high volatility or low-volume periods.</p>
+      </LegalSection>
+      <LegalSection title="Regulatory Risk" icon="🏛️">
+        <p>SEBI, RBI, or government regulatory changes can impact securities markets significantly and without prior notice. Tax laws applicable to securities transactions may change.</p>
+      </LegalSection>
+      <LegalSection title="Investor Acknowledgement" icon="✅">
+        <p>By using {APP_NAME}, you acknowledge that:</p>
+        <ul style={{ marginTop: '8px', paddingLeft: '20px', lineHeight: 2 }}>
+          <li>You have read and understood all risk disclosures above</li>
+          <li>You are making investment decisions at your own risk</li>
+          <li>You will not hold {COMPANY_NAME} liable for any trading losses</li>
+          <li>You are capable of bearing financial losses</li>
+          <li>You have consulted or will consult a qualified financial advisor</li>
+        </ul>
+        <p style={{ marginTop: '12px', fontWeight: 600, color: '#0f172a' }}>SEBI RA Registration: {SEBI_REG} · {COMPANY_NAME} · Analyst: {ANALYST_NAME}</p>
+      </LegalSection>
     </LegalPage>
   );
 }
@@ -2233,21 +2430,21 @@ function AboutPage() {
           <p style={{ ...S.muted, marginBottom: '40px' }}>Our mission is to democratize quality stock market research for Indian retail investors.</p>
           <div style={{ ...S.card, marginBottom: '20px' }}>
             <h3 style={{ ...S.h3, marginBottom: '12px' }}>🎯 Our Mission</h3>
-            <p style={{ fontSize: '14px', lineHeight: 1.8, color: '#cbd5e1' }}>To provide SEBI-compliant, research-backed equity and F&O analysis to retail investors in India, helping them make informed investment decisions based on thorough technical and fundamental analysis — not tips or speculation.</p>
+            <p style={{ fontSize: '14px', lineHeight: 1.8, color: '#1e293b' }}>To provide SEBI-compliant, research-backed equity and F&O analysis to retail investors in India, helping them make informed investment decisions based on thorough technical and fundamental analysis — not tips or speculation.</p>
           </div>
           <div style={{ ...S.card, marginBottom: '20px' }}>
             <h3 style={{ ...S.h3, marginBottom: '12px' }}>📊 Research Methodology</h3>
-            <p style={{ fontSize: '14px', lineHeight: 1.8, color: '#cbd5e1' }}>Every research call is backed by: Technical Analysis (price action, indicators, chart patterns), Fundamental Analysis (earnings, valuations, sector outlook), Risk Assessment (risk-reward ratio minimum 1:2), Clear entry, multiple targets, and stop-loss levels.</p>
+            <p style={{ fontSize: '14px', lineHeight: 1.8, color: '#1e293b' }}>Every research call is backed by: Technical Analysis (price action, indicators, chart patterns), Fundamental Analysis (earnings, valuations, sector outlook), Risk Assessment (risk-reward ratio minimum 1:2), Clear entry, multiple targets, and stop-loss levels.</p>
           </div>
           <div style={{ ...S.card, marginBottom: '20px' }}>
             <h3 style={{ ...S.h3, marginBottom: '12px' }}>🛡️ SEBI Compliance</h3>
-            <p style={{ fontSize: '14px', lineHeight: 1.8, color: '#cbd5e1' }}>We are SEBI Registered Research Analysts (Reg: {SEBI_REG}) complying with SEBI (Research Analysts) Regulations, 2014 and the November 2025 amendments. All research comes with mandatory risk disclosures.</p>
+            <p style={{ fontSize: '14px', lineHeight: 1.8, color: '#1e293b' }}>We are SEBI Registered Research Analysts (Reg: {SEBI_REG}) complying with SEBI (Research Analysts) Regulations, 2014 and the November 2025 amendments. All research comes with mandatory risk disclosures.</p>
           </div>
           <div style={{ ...S.card }}>
             <h3 style={{ ...S.h3, marginBottom: '12px' }}>📞 Contact</h3>
-            <p style={{ fontSize: '14px', color: '#cbd5e1' }}>Email: {CONTACT_EMAIL}</p>
-            <p style={{ fontSize: '14px', color: '#cbd5e1' }}>Grievance: {GRIEVANCE_EMAIL}</p>
-            <p style={{ fontSize: '14px', color: '#cbd5e1' }}>Phone: {CONTACT_PHONE}</p>
+            <p style={{ fontSize: '14px', color: '#1e293b' }}>Email: {CONTACT_EMAIL}</p>
+            <p style={{ fontSize: '14px', color: '#1e293b' }}>Grievance: {GRIEVANCE_EMAIL}</p>
+            <p style={{ fontSize: '14px', color: '#1e293b' }}>Phone: {CONTACT_PHONE}</p>
           </div>
         </div>
       </div>
@@ -2396,6 +2593,9 @@ export default function App() {
     if (path === '/refund') return <RefundPage />;
     if (path === '/grievance') return <GrievancePage />;
     if (path === '/disclosure' || path === '/sebi-disclosure') return <SEBIDisclosurePage />;
+    if (path === '/faq') return <FAQPage />;
+    if (path === '/risk-disclosure') return <RiskDisclosurePage />;
+    if (path === '/disclaimer') return <DisclaimerPage />;
     if (path === '/dashboard') return protectedPage(Dashboard);
     if (path === '/subscription') return protectedPage(SubscriptionPage);
     if (path === '/admin') return protectedPage(AdminPanel);
