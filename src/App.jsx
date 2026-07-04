@@ -75,7 +75,7 @@ const S = {
   btnDanger: { background: '#dc2626', color: '#fff' },
   btnGreen: { background: '#059669', color: '#fff' },
 
-  card: { background: '#ffffff', border: '1px solid #e8edf3', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03)' },
+  card: { background: '#ffffff', border: '1.5px solid #bfdbfe', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(29,78,216,0.05), 0 4px 16px rgba(29,78,216,0.04)' },
   cardHover: { transition: 'all 0.18s' },
 
   formGroup: { marginBottom: '16px' },
@@ -2138,8 +2138,8 @@ function PortfolioPage({ user }) {
   const realisedPnL = soldHistory.reduce((s, t) => s + t.realised_pnl, 0);
   const totalPnL = unrealisedPnL + realisedPnL;
 
-  const thStyle = { padding: '11px 14px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' };
-  const tdStyle = { padding: '12px 14px', fontSize: '13px' };
+  const thStyle = { padding: '10px 14px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.07em', background: '#f8fafc' };
+  const tdStyle = { padding: '12px 14px', fontSize: '13px', color: '#0f172a' };
 
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
@@ -2155,23 +2155,49 @@ function PortfolioPage({ user }) {
             <button onClick={() => setShowAdd(true)} style={{ ...S.btn, ...S.btnPrimary }}>+ Add Holding</button>
           </div>
 
-          {/* Summary cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-            {[
-              { label: 'Invested', value: '₹' + fmtCurr(totalInvested), color: '#1d4ed8' },
-              { label: 'Current Value', value: '₹' + fmtCurr(totalCurrent), color: '#0f172a' },
-              { label: 'Unrealised P&L', value: (unrealisedPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(unrealisedPnL)), color: unrealisedPnL >= 0 ? '#059669' : '#dc2626' },
-              { label: 'Realised P&L', value: (realisedPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(realisedPnL)), color: realisedPnL >= 0 ? '#059669' : '#dc2626' },
-              { label: 'Total P&L', value: (totalPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(totalPnL)), color: totalPnL >= 0 ? '#059669' : '#dc2626' },
-              { label: 'Return %', value: (unrealisedPct >= 0 ? '+' : '') + unrealisedPct + '%', color: unrealisedPct >= 0 ? '#059669' : '#dc2626' },
-              { label: 'Open Holdings', value: holdings.length, color: '#64748b' },
-              { label: 'Trades Closed', value: soldHistory.length, color: '#64748b' },
-            ].map((s, i) => (
-              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '14px 10px' }}>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+          {/* Premium Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            {/* Invested */}
+            <div style={{ ...S.card, padding: '16px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Invested</p>
+              <p style={{ fontSize: '20px', fontWeight: 800, color: '#1e40af' }}>₹{fmtCurr(totalInvested)}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{holdings.length} open positions</p>
+            </div>
+            {/* Current Value */}
+            <div style={{ ...S.card, padding: '16px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Current Value</p>
+              <p style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>₹{fmtCurr(totalCurrent)}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>as of latest CMP</p>
+            </div>
+            {/* Unrealised P&L with progress bar */}
+            <div style={{ ...S.card, padding: '16px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Unrealised P&L</p>
+              <p style={{ fontSize: '20px', fontWeight: 800, color: unrealisedPnL >= 0 ? '#059669' : '#dc2626' }}>
+                {unrealisedPnL >= 0 ? '+₹' : '-₹'}{fmtCurr(Math.abs(unrealisedPnL))}
+              </p>
+              <p style={{ fontSize: '11px', color: unrealisedPnL >= 0 ? '#059669' : '#dc2626', marginTop: '4px', fontWeight: 600 }}>
+                {unrealisedPct >= 0 ? '+' : ''}{unrealisedPct}% overall
+              </p>
+              <div style={{ height: '4px', background: '#f1f5f9', borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
+                <div style={{ height: '4px', borderRadius: '2px', width: `${Math.min(100, Math.max(0, ((totalCurrent / (totalInvested || 1)) * 100)))}%`, background: unrealisedPnL >= 0 ? '#059669' : '#dc2626', transition: 'width 0.4s ease' }} />
               </div>
-            ))}
+            </div>
+            {/* Realised P&L */}
+            <div style={{ ...S.card, padding: '16px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Realised P&L</p>
+              <p style={{ fontSize: '20px', fontWeight: 800, color: realisedPnL >= 0 ? '#059669' : '#dc2626' }}>
+                {realisedPnL >= 0 ? '+₹' : '-₹'}{fmtCurr(Math.abs(realisedPnL))}
+              </p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{soldHistory.length} trade{soldHistory.length !== 1 ? 's' : ''} closed</p>
+            </div>
+            {/* Total P&L */}
+            <div style={{ ...S.card, padding: '16px', borderLeft: '3px solid ' + (totalPnL >= 0 ? '#059669' : '#dc2626') }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Total P&L</p>
+              <p style={{ fontSize: '22px', fontWeight: 800, color: totalPnL >= 0 ? '#059669' : '#dc2626' }}>
+                {totalPnL >= 0 ? '+₹' : '-₹'}{fmtCurr(Math.abs(totalPnL))}
+              </p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Unrealised + Realised</p>
+            </div>
           </div>
 
           {/* Add holding form */}
@@ -2200,41 +2226,51 @@ function PortfolioPage({ user }) {
 
           {/* Sell modal */}
           {sellModal && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-              <div style={{ ...S.card, maxWidth: '420px', width: '100%', border: '2px solid #dc2626' }}>
-                <h3 style={{ ...S.h4, marginBottom: '4px', color: '#dc2626' }}>📤 Sell {sellModal.symbol}</h3>
-                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '20px' }}>
-                  Holding: {sellModal.qty} shares · Avg buy: ₹{sellModal.buy_price} · CMP: ₹{sellModal.cmp}
-                </p>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(4px)' }}>
+              <div style={{ ...S.card, maxWidth: '440px', width: '100%', border: '2px solid #fecaca' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                  <div style={{ width: '36px', height: '36px', background: '#fee2e2', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📤</div>
+                  <div>
+                    <h3 style={{ ...S.h4, color: '#dc2626' }}>Sell {sellModal.symbol}</h3>
+                    <p style={{ fontSize: '12px', color: '#94a3b8' }}>Holding: {sellModal.qty} shares · Avg buy ₹{sellModal.buy_price} · CMP ₹{sellModal.cmp}</p>
+                  </div>
+                </div>
+                <div style={{ height: '1px', background: '#fee2e2', margin: '16px 0' }} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
                   <div>
-                    <label style={S.label}>Qty to Sell *</label>
+                    <label style={S.label}>Qty to sell *</label>
                     <input style={S.input} type="number" max={sellModal.qty} placeholder={String(sellModal.qty)} value={sellForm.qty} onChange={e => setSF('qty', e.target.value)} />
-                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Max: {sellModal.qty}</p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Max: {sellModal.qty} shares</p>
                   </div>
                   <div>
-                    <label style={S.label}>Sell Price ₹ *</label>
+                    <label style={S.label}>Sell price ₹ *</label>
                     <input style={S.input} type="number" placeholder={String(sellModal.cmp)} value={sellForm.sell_price} onChange={e => setSF('sell_price', e.target.value)} />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
-                    <label style={S.label}>Sell Date *</label>
+                    <label style={S.label}>Sell date *</label>
                     <input style={S.input} type="date" value={sellForm.sell_date} onChange={e => setSF('sell_date', e.target.value)} />
                   </div>
                 </div>
                 {sellForm.qty && sellForm.sell_price && (
-                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
-                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Estimated Realised P&L</p>
+                  <div style={{ background: '#f8fafc', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>Estimated realised P&L</p>
                     {(() => {
                       const pnl = (parseFloat(sellForm.sell_price) - sellModal.buy_price) * parseFloat(sellForm.qty || 0);
                       const pct = ((pnl / (sellModal.buy_price * parseFloat(sellForm.qty || 1))) * 100).toFixed(2);
-                      return <p style={{ fontSize: '20px', fontWeight: 800, color: pnl >= 0 ? '#059669' : '#dc2626' }}>
-                        {pnl >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(pnl))} ({pct >= 0 ? '+' : ''}{pct}%)
-                      </p>;
+                      const remaining = sellModal.qty - parseFloat(sellForm.qty || 0);
+                      return (
+                        <>
+                          <p style={{ fontSize: '22px', fontWeight: 800, color: pnl >= 0 ? '#059669' : '#dc2626' }}>
+                            {pnl >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(pnl))} <span style={{ fontSize: '14px' }}>({pct >= 0 ? '+' : ''}{pct}%)</span>
+                          </p>
+                          {remaining > 0 && <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{remaining} shares remain open after this sale</p>}
+                        </>
+                      );
                     })()}
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={executeSell} style={{ ...S.btn, ...S.btnDanger, flex: 2, justifyContent: 'center' }}>Confirm Sell</button>
+                  <button onClick={executeSell} style={{ ...S.btn, ...S.btnDanger, flex: 2, justifyContent: 'center', borderRadius: '10px' }}>Confirm Sell</button>
                   <button onClick={() => setSellModal(null)} style={{ ...S.btn, ...S.btnSecondary, flex: 1, justifyContent: 'center' }}>Cancel</button>
                 </div>
               </div>
@@ -2294,9 +2330,13 @@ function PortfolioPage({ user }) {
                           </td>
                           <td style={{ ...tdStyle, fontWeight: 700, color: pct >= 0 ? '#059669' : '#dc2626' }}>{pct >= 0 ? '+' : ''}{pct}%</td>
                           <td style={tdStyle}>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button onClick={() => openSell(h)} style={{ ...S.btn, background: '#fee2e2', color: '#dc2626', border: 'none', padding: '5px 10px', fontSize: '12px', borderRadius: '6px', fontWeight: 600 }}>Sell</button>
-                              <button onClick={() => removeHolding(h.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '16px', padding: '4px' }}>🗑</button>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <button onClick={() => openSell(h)} style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '7px', padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                ↓ Sell
+                              </button>
+                              <button onClick={() => removeHolding(h.id)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', padding: '5px 8px', display: 'flex', alignItems: 'center' }}>
+                                🗑
+                              </button>
                             </div>
                           </td>
                         </tr>
