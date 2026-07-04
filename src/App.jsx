@@ -82,68 +82,58 @@ const BILLING_CYCLES = [
 
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const S = {
-  // Layout
-  page: { minHeight: '100vh', background: '#f1f5f9', color: '#0f172a', fontFamily: "'Inter', sans-serif" },
-  container: { maxWidth: '1200px', margin: '0 auto', padding: '0 20px' },
-  section: { padding: '80px 20px' },
+  page: { minHeight: '100vh', background: '#f0f4f8', color: '#0f172a', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" },
+  container: { maxWidth: '1200px', margin: '0 auto', padding: '0 24px' },
+  section: { padding: '80px 24px' },
 
-  // Navbar
-  nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' },
-  navLogo: { fontSize: '20px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
-  navLogoIcon: { width: '32px', height: '32px', background: 'linear-gradient(135deg, #1d4ed8, #f59e0b)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' },
-  navLinks: { display: 'flex', gap: '24px', alignItems: 'center' },
-  navLink: { color: '#334155', cursor: 'pointer', fontSize: '14px', fontWeight: 600, transition: 'color 0.2s', padding: '4px 0', border: 'none', background: 'none' },
-  navBtn: { background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' },
+  nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(15,23,42,0.07)', padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' },
+  navLogo: { fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', letterSpacing: '-0.02em' },
+  navLogoIcon: { width: '33px', height: '33px', background: '#0f172a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' },
+  navLinks: { display: 'flex', gap: '2px', alignItems: 'center' },
+  navLink: { color: '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: 500, transition: 'color 0.15s', padding: '6px 11px', border: 'none', background: 'none', borderRadius: '6px' },
+  navBtn: { background: '#0f172a', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' },
 
-  // Buttons
-  btn: { border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' },
-  btnPrimary: { background: 'linear-gradient(135deg, #1d4ed8, #2563eb)', color: '#fff', boxShadow: '0 2px 8px rgba(29,78,216,0.25)' },
-  btnSecondary: { background: '#fff', color: '#1e293b', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' },
-  btnGold: { background: 'linear-gradient(135deg, #d97706, #f59e0b)', color: '#fff', boxShadow: '0 2px 8px rgba(217,119,6,0.25)' },
-  btnSm: { padding: '8px 16px', fontSize: '13px' },
-  btnDanger: { background: '#ef4444', color: '#fff' },
-  btnGreen: { background: '#10b981', color: '#fff' },
+  btn: { border: 'none', borderRadius: '10px', padding: '11px 22px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', display: 'inline-flex', alignItems: 'center', gap: '8px', letterSpacing: '0.01em' },
+  btnPrimary: { background: '#1e40af', color: '#fff' },
+  btnSecondary: { background: '#ffffff', color: '#1e293b', border: '1px solid #dde3ed' },
+  btnGold: { background: '#b45309', color: '#fff' },
+  btnSm: { padding: '7px 13px', fontSize: '12px', borderRadius: '8px' },
+  btnDanger: { background: '#dc2626', color: '#fff' },
+  btnGreen: { background: '#059669', color: '#fff' },
 
-  // Cards
-  card: { background: '#ffffff', border: '1.5px solid #bfdbfe', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(29,78,216,0.06)' },
-  cardHover: { transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s' },
+  card: { background: '#ffffff', border: '1px solid #e8edf3', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03)' },
+  cardHover: { transition: 'all 0.18s' },
 
-  // Form
   formGroup: { marginBottom: '16px' },
-  label: { display: 'block', fontSize: '12px', fontWeight: 700, color: '#1e293b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' },
-  input: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 500 },
-  select: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 500 },
-  textarea: { width: '100%', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
+  label: { display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.07em' },
+  input: { width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
+  select: { width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
+  textarea: { width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
 
-  // Tags / Badges
-  badge: { display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 },
-  badgeBuy: { background: 'rgba(16,185,129,0.12)', color: '#047857', border: '1px solid rgba(16,185,129,0.3)' },
-  badgeSell: { background: 'rgba(239,68,68,0.12)', color: '#b91c1c', border: '1px solid rgba(239,68,68,0.3)' },
-  badgeHold: { background: 'rgba(245,158,11,0.12)', color: '#b45309', border: '1px solid rgba(245,158,11,0.3)' },
-  badgeAvoid: { background: 'rgba(100,116,139,0.12)', color: '#1e293b', border: '1px solid rgba(100,116,139,0.3)' },
-  badgeExit: { background: 'rgba(124,58,237,0.12)', color: '#6d28d9', border: '1px solid rgba(124,58,237,0.3)' },
-  badgeActive: { background: 'rgba(16,185,129,0.12)', color: '#047857' },
-  badgeClosed: { background: 'rgba(100,116,139,0.12)', color: '#0f172a' },
+  badge: { display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em' },
+  badgeBuy:  { background: '#dcfce7', color: '#166534' },
+  badgeSell: { background: '#fee2e2', color: '#991b1b' },
+  badgeHold: { background: '#fef9c3', color: '#854d0e' },
+  badgeAvoid:{ background: '#f1f5f9', color: '#475569' },
+  badgeExit: { background: '#ede9fe', color: '#5b21b6' },
+  badgeActive: { background: '#dcfce7', color: '#166534' },
+  badgeClosed: { background: '#f1f5f9', color: '#475569' },
 
-  // Text
-  h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0f172a' },
-  h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.2, color: '#0f172a' },
-  h3: { fontSize: '20px', fontWeight: 700, color: '#0f172a' },
-  h4: { fontSize: '16px', fontWeight: 600, color: '#0f172a' },
-  muted: { color: '#334155' },
-  gold: { color: '#d97706' },
-  green: { color: '#047857' },
-  red: { color: '#b91c1c' },
+  h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.06, letterSpacing: '-0.03em', color: '#0f172a' },
+  h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#0f172a' },
+  h3: { fontSize: '20px', fontWeight: 700, letterSpacing: '-0.01em', color: '#0f172a' },
+  h4: { fontSize: '15px', fontWeight: 600, color: '#0f172a' },
+  muted: { color: '#64748b' },
+  gold: { color: '#b45309' },
+  green: { color: '#059669' },
+  red: { color: '#dc2626' },
 
-  // Disclaimer
-  disclaimer: { background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', padding: '12px 16px', fontSize: '12px', color: '#334155', lineHeight: 1.6 },
+  disclaimer: { background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px 16px', fontSize: '12px', color: '#92400e', lineHeight: 1.6 },
 
-  // Grid
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' },
-  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' },
+  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' },
 
-  // Misc
   flex: { display: 'flex', alignItems: 'center' },
   flexBetween: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   mt8: { marginTop: '8px' },
@@ -152,7 +142,7 @@ const S = {
   mt32: { marginTop: '32px' },
   mb8: { marginBottom: '8px' },
   mb16: { marginBottom: '16px' },
-  divider: { height: '1px', background: '#e2e8f0', margin: '24px 0' },
+  divider: { height: '1px', background: '#f1f5f9', margin: '24px 0' },
 };
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -937,7 +927,7 @@ function RegisterPage({ setUser, setUserProfile }) {
     setUser(data.user);
     const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
     setUserProfile(profile);
-    navigate('/dashboard');
+    navigate('/onboarding');
     setLoading(false);
   };
 
@@ -1904,6 +1894,295 @@ function ProfilePage({ user, userProfile }) {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+// ─── ONBOARDING PAGE ──────────────────────────────────────────────────────────
+function OnboardingPage({ user, userProfile }) {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState({ experience: '', horizon: '', capital: '', segments: [], risk: '' });
+  const [liveCalls, setLiveCalls] = useState([]);
+  const [recommended, setRecommended] = useState(null);
+
+  useEffect(() => {
+    supabase.from('recommendations').select('*').eq('status', 'live').limit(3)
+      .then(({ data }) => setLiveCalls(data || []));
+  }, []);
+
+  const setA = (k, v) => setAnswers(a => ({ ...a, [k]: v }));
+  const toggleSeg = (s) => setAnswers(a => ({ ...a, segments: a.segments.includes(s) ? a.segments.filter(x => x !== s) : [...a.segments, s] }));
+
+  const calcPlan = () => {
+    const { experience, capital, segments, risk } = answers;
+    if (segments.includes('futures') || segments.includes('options') || segments.includes('commodity') || risk === 'high') return 'fno';
+    if (experience === 'advanced' || capital === 'large') return 'premium';
+    return 'basic';
+  };
+
+  const finish = async () => {
+    const plan = calcPlan();
+    setRecommended(plan);
+    if (user) {
+      await supabase.from('users').update({ updated_at: new Date().toISOString() }).eq('id', user.id);
+    }
+    setStep(4);
+  };
+
+  const steps = [
+    { title: 'Welcome to StockVista', sub: "Let's set up your research profile in 3 quick steps" },
+    { title: 'Your Experience', sub: 'Help us understand your trading background' },
+    { title: 'What You Trade', sub: 'Select all that apply' },
+    { title: 'Risk & Capital', sub: 'This helps us recommend the right research plan' },
+    { title: "You're All Set!", sub: 'Your personalised research dashboard is ready' },
+  ];
+
+  const progressW = [5, 33, 66, 90, 100][step] || 5;
+
+  const optBtn = (active, label, onClick) => (
+    <button onClick={onClick} style={{ padding: '12px 20px', borderRadius: '10px', border: `2px solid ${active ? '#1d4ed8' : '#e2e8f0'}`, background: active ? '#eff6ff' : '#fff', color: active ? '#1d4ed8' : '#334155', fontWeight: active ? 700 : 500, fontSize: '14px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', width: '100%' }}>{label}</button>
+  );
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '560px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
+          <div style={S.navLogoIcon}>📈</div>
+          <span style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{APP_NAME}</span>
+        </div>
+        <div style={{ background: '#e2e8f0', borderRadius: '4px', height: '4px', marginBottom: '28px' }}>
+          <div style={{ width: progressW + '%', height: '4px', background: '#1d4ed8', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+        </div>
+        <div style={{ ...S.card, padding: '36px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>{['👋','📊','🎯','💰','🎉'][step]}</div>
+            <h2 style={{ ...S.h3, marginBottom: '6px' }}>{steps[step].title}</h2>
+            <p style={{ color: '#64748b', fontSize: '14px' }}>{steps[step].sub}</p>
+          </div>
+
+          {step === 0 && (
+            <div>
+              <p style={{ color: '#334155', lineHeight: 1.8, marginBottom: '20px', fontSize: '14px' }}>
+                Hi <strong>{userProfile?.full_name || user?.email?.split('@')[0] || 'Investor'}</strong>! StockVista gives you SEBI-compliant research across equity, F&O, and commodities. We'll personalise your dashboard so you see only what's relevant to you.<br /><br /><strong>Takes 60 seconds.</strong>
+              </p>
+              <div style={{ ...S.disclaimer, marginBottom: '20px' }}>⚠️ Research calls are for informational purposes only. Investment involves risk of loss. {SEBI_REG}</div>
+              <button onClick={() => setStep(1)} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center' }}>Let's Start →</button>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div>
+              <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '12px' }}>How long have you been investing/trading?</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                {[{ val: 'beginner', label: '🌱 Beginner — Less than 1 year' }, { val: 'intermediate', label: '📈 Intermediate — 1 to 5 years' }, { val: 'advanced', label: '🏆 Advanced — 5+ years' }].map(o => optBtn(answers.experience === o.val, o.label, () => setA('experience', o.val)))}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setStep(0)} style={{ ...S.btn, ...S.btnSecondary, flex: 1, justifyContent: 'center' }}>← Back</button>
+                <button onClick={() => answers.experience && setStep(2)} style={{ ...S.btn, ...S.btnPrimary, flex: 2, justifyContent: 'center', opacity: answers.experience ? 1 : 0.5 }}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div>
+              <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '12px' }}>Which segments interest you? (Select all that apply)</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
+                {[{ val: 'equity', label: '📊 Equity' }, { val: 'futures', label: '⚡ Futures' }, { val: 'options', label: '🎯 Options' }, { val: 'commodity', label: '🏅 Commodities' }, { val: 'ipo', label: '🆕 IPOs' }, { val: 'intraday', label: '⏱️ Intraday' }].map(o => optBtn(answers.segments.includes(o.val), o.label, () => toggleSeg(o.val)))}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setStep(1)} style={{ ...S.btn, ...S.btnSecondary, flex: 1, justifyContent: 'center' }}>← Back</button>
+                <button onClick={() => answers.segments.length > 0 && setStep(3)} style={{ ...S.btn, ...S.btnPrimary, flex: 2, justifyContent: 'center', opacity: answers.segments.length > 0 ? 1 : 0.5 }}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div>
+              <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '8px' }}>Approximate trading capital?</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                {[{ val: 'small', label: '💵 Under ₹1 lakh' }, { val: 'medium', label: '💰 ₹1 lakh – ₹10 lakh' }, { val: 'large', label: '💎 Above ₹10 lakh' }].map(o => optBtn(answers.capital === o.val, o.label, () => setA('capital', o.val)))}
+              </div>
+              <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '8px' }}>Risk appetite?</p>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                {[{ val: 'low', label: '🟢 Low' }, { val: 'medium', label: '🟡 Medium' }, { val: 'high', label: '🔴 High' }].map(o => optBtn(answers.risk === o.val, o.label, () => setA('risk', o.val)))}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setStep(2)} style={{ ...S.btn, ...S.btnSecondary, flex: 1, justifyContent: 'center' }}>← Back</button>
+                <button onClick={() => answers.capital && answers.risk && finish()} style={{ ...S.btn, ...S.btnPrimary, flex: 2, justifyContent: 'center', opacity: answers.capital && answers.risk ? 1 : 0.5 }}>See My Plan →</button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div>
+              <div style={{ background: '#eff6ff', border: '2px solid #bfdbfe', borderRadius: '12px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Recommended Plan for You</p>
+                <p style={{ fontSize: '24px', fontWeight: 800, color: '#1d4ed8', marginTop: '4px' }}>{PLANS[recommended || 'basic']?.name}</p>
+                <p style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>₹{PLANS[recommended || 'basic']?.monthly}/month</p>
+              </div>
+              {liveCalls.length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🔴 Live Right Now</p>
+                  {liveCalls.slice(0, 2).map(r => (
+                    <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '10px', marginRight: '6px' }}>{r.action}</span>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{r.symbol}</span>
+                        <p style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>₹{r.entry_price} → T1 ₹{r.target1} · SL ₹{r.stop_loss}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={() => navigate('/pricing')} style={{ ...S.btn, ...S.btnPrimary, justifyContent: 'center', width: '100%' }}>Subscribe Now →</button>
+                <button onClick={() => navigate('/dashboard')} style={{ ...S.btn, ...S.btnSecondary, justifyContent: 'center', width: '100%' }}>Explore Dashboard First</button>
+              </div>
+            </div>
+          )}
+        </div>
+        <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '16px' }}>{APP_NAME} · {SEBI_REG}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── PORTFOLIO TRACKER ────────────────────────────────────────────────────────
+function PortfolioPage({ user }) {
+  const [holdings, setHoldings] = useState([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ symbol: '', name: '', qty: '', buy_price: '', cmp: '', segment: 'equity' });
+  const [loading, setLoading] = useState(true);
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (!user) { setLoading(false); return; }
+    try { const s = localStorage.getItem('sv_portfolio_' + user.id); if (s) setHoldings(JSON.parse(s)); } catch(e) {}
+    setLoading(false);
+  }, [user]);
+
+  const save = (data) => {
+    try { localStorage.setItem('sv_portfolio_' + user?.id, JSON.stringify(data)); } catch(e) {}
+    setHoldings(data);
+  };
+
+  const addHolding = () => {
+    if (!form.symbol || !form.qty || !form.buy_price) return;
+    const cmp = parseFloat(form.cmp) || parseFloat(form.buy_price);
+    save([...holdings, { ...form, id: Date.now(), qty: parseFloat(form.qty), buy_price: parseFloat(form.buy_price), cmp }]);
+    setForm({ symbol: '', name: '', qty: '', buy_price: '', cmp: '', segment: 'equity' });
+    setShowAdd(false);
+  };
+
+  const updateCMP = (id, cmp) => save(holdings.map(h => h.id === id ? { ...h, cmp: parseFloat(cmp) || h.cmp } : h));
+  const remove = (id) => { if (window.confirm('Remove this holding?')) save(holdings.filter(h => h.id !== id)); };
+
+  if (!user) return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>💼</div>
+        <h2 style={S.h3}>Login to track your portfolio</h2>
+        <button onClick={() => navigate('/login')} style={{ ...S.btn, ...S.btnPrimary, marginTop: '16px' }}>Sign In</button>
+      </div>
+    </div>
+  );
+
+  const totalInvested = holdings.reduce((s, h) => s + h.qty * h.buy_price, 0);
+  const totalCurrent = holdings.reduce((s, h) => s + h.qty * h.cmp, 0);
+  const totalPnL = totalCurrent - totalInvested;
+  const totalPnLPct = totalInvested > 0 ? ((totalPnL / totalInvested) * 100).toFixed(2) : 0;
+
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+      <div style={{ ...S.section, paddingTop: '40px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <div style={{ ...S.flexBetween, marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h1 style={{ ...S.h2, marginBottom: '4px' }}>💼 Portfolio Tracker</h1>
+              <p style={{ color: '#64748b', fontSize: '13px' }}>Track your holdings. CMP updates are manual — data stored locally on your device.</p>
+            </div>
+            <button onClick={() => setShowAdd(true)} style={{ ...S.btn, ...S.btnPrimary }}>+ Add Holding</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            {[
+              { label: 'Invested', value: '₹' + fmtCurr(totalInvested), color: '#1d4ed8' },
+              { label: 'Current Value', value: '₹' + fmtCurr(totalCurrent), color: '#0f172a' },
+              { label: 'Total P&L', value: (totalPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(totalPnL)), color: totalPnL >= 0 ? '#047857' : '#b91c1c' },
+              { label: 'Return %', value: (totalPnLPct >= 0 ? '+' : '') + totalPnLPct + '%', color: totalPnLPct >= 0 ? '#047857' : '#b91c1c' },
+              { label: 'Holdings', value: holdings.length, color: '#64748b' },
+            ].map((s, i) => (
+              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '16px' }}>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {showAdd && (
+            <div style={{ ...S.card, marginBottom: '20px', border: '2px solid #1d4ed8' }}>
+              <h3 style={{ ...S.h4, marginBottom: '16px' }}>Add Holding</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                <div><label style={S.label}>Symbol *</label><input style={S.input} placeholder="RELIANCE" value={form.symbol} onChange={e => setF('symbol', e.target.value.toUpperCase())} /></div>
+                <div><label style={S.label}>Company</label><input style={S.input} placeholder="Reliance Industries" value={form.name} onChange={e => setF('name', e.target.value)} /></div>
+                <div><label style={S.label}>Quantity *</label><input style={S.input} type="number" placeholder="10" value={form.qty} onChange={e => setF('qty', e.target.value)} /></div>
+                <div><label style={S.label}>Buy Price ₹ *</label><input style={S.input} type="number" placeholder="2450" value={form.buy_price} onChange={e => setF('buy_price', e.target.value)} /></div>
+                <div><label style={S.label}>CMP ₹</label><input style={S.input} type="number" placeholder="2500" value={form.cmp} onChange={e => setF('cmp', e.target.value)} /></div>
+                <div><label style={S.label}>Segment</label><select style={S.select} value={form.segment} onChange={e => setF('segment', e.target.value)}>{['equity','futures','options','commodity','ipo'].map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={addHolding} style={{ ...S.btn, ...S.btnPrimary }}>Add</button>
+                <button onClick={() => setShowAdd(false)} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {holdings.length === 0 ? (
+            <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+              <h3 style={{ ...S.h3, marginBottom: '8px' }}>No holdings yet</h3>
+              <p style={{ color: '#64748b', marginBottom: '20px' }}>Add your first holding to start tracking P&L.</p>
+              <button onClick={() => setShowAdd(true)} style={{ ...S.btn, ...S.btnPrimary }}>+ Add First Holding</button>
+            </div>
+          ) : (
+            <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    {['Symbol', 'Qty', 'Buy ₹', 'CMP ₹', 'Invested', 'Value', 'P&L', '%', ''].map(h => (
+                      <th key={h} style={{ padding: '12px 14px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {holdings.map(h => {
+                    const invested = h.qty * h.buy_price;
+                    const current = h.qty * h.cmp;
+                    const pnl = current - invested;
+                    const pct = invested > 0 ? ((pnl / invested) * 100).toFixed(2) : 0;
+                    return (
+                      <tr key={h.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 14px' }}><p style={{ fontWeight: 700, color: '#0f172a' }}>{h.symbol}</p><p style={{ fontSize: '11px', color: '#94a3b8' }}>{h.name}</p></td>
+                        <td style={{ padding: '12px 14px', fontWeight: 600 }}>{h.qty}</td>
+                        <td style={{ padding: '12px 14px' }}>₹{Number(h.buy_price).toLocaleString('en-IN')}</td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <input type="number" defaultValue={h.cmp} onBlur={e => updateCMP(h.id, e.target.value)} style={{ width: '80px', padding: '4px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px' }} />
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>₹{fmtCurr(invested)}</td>
+                        <td style={{ padding: '12px 14px' }}>₹{fmtCurr(current)}</td>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: pnl >= 0 ? '#047857' : '#b91c1c' }}>{pnl >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(pnl))}</td>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: pct >= 0 ? '#047857' : '#b91c1c' }}>{pct >= 0 ? '+' : ''}{pct}%</td>
+                        <td style={{ padding: '12px 14px' }}><button onClick={() => remove(h.id)} style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '16px' }}>🗑</button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div style={{ ...S.disclaimer, marginTop: '16px' }}>⚠️ Portfolio data is stored locally on your device only. Update CMP manually for accurate P&L. For personal record-keeping only — not financial advice.</div>
         </div>
       </div>
       <Footer />
@@ -2902,6 +3181,8 @@ export default function App() {
     if (path === '/live-calls') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="live-group" />;
     if (path === '/past-recommendations') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="past-group" />;
     if (path.startsWith('/recommendations/')) return <RecommendationDetailPage id={path.split('/recommendations/')[1]} userProfile={userProfile} />;
+    if (path === '/onboarding') return <OnboardingPage user={user} userProfile={userProfile} />;
+    if (path === '/portfolio') return <PortfolioPage user={user} />;
     if (path === '/performance') return <PerformancePage />;
     if (path === '/about') return <AboutPage />;
     if (path === '/contact') return <ContactPage />;
