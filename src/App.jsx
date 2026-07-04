@@ -1607,7 +1607,311 @@ function RecommendationDetailPage({ id, userProfile }) {
   );
 }
 
-// ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
+// ─── CONTACT PAGE ─────────────────────────────────────────────────────────────
+function ContactPage() {
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [sent, setSent] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const handle = () => {
+    if (!form.name || !form.email || !form.message) return;
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('[StockVista] ' + (form.subject || 'General Enquiry'))}&body=${encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`)}`;
+    setSent(true);
+  };
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+      <div style={{ ...S.section, paddingTop: '48px' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <h1 style={{ ...S.h2, marginBottom: '8px' }}>Contact Us</h1>
+            <p style={{ color: '#64748b', fontSize: '15px' }}>We typically respond within 1 business day.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '32px', alignItems: 'start' }}>
+            {/* Info cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { icon: '📧', title: 'Email Support', value: CONTACT_EMAIL, sub: 'Mon–Fri, 9 AM – 6 PM IST' },
+                { icon: '📱', title: 'Phone', value: CONTACT_PHONE, sub: 'Mon–Fri, 10 AM – 5 PM IST' },
+                { icon: '📮', title: 'Grievance Officer', value: ANALYST_NAME, sub: COMPANY_NAME },
+                { icon: '🏛️', title: 'SEBI SCORES', value: 'scores.sebi.gov.in', sub: 'For unresolved complaints' },
+              ].map((c, i) => (
+                <div key={i} style={{ ...S.card, display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '16px' }}>
+                  <div style={{ fontSize: '22px', width: '40px', height: '40px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
+                  <div>
+                    <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{c.title}</p>
+                    <p style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 600 }}>{c.value}</p>
+                    <p style={{ fontSize: '12px', color: '#64748b' }}>{c.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Form */}
+            <div style={{ ...S.card }}>
+              {sent ? (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+                  <h3 style={{ ...S.h3, marginBottom: '8px' }}>Message Sent!</h3>
+                  <p style={{ color: '#64748b' }}>Your email client should have opened. We'll respond within 1 business day.</p>
+                  <button onClick={() => setSent(false)} style={{ ...S.btn, ...S.btnSecondary, marginTop: '20px' }}>Send Another</button>
+                </div>
+              ) : (
+                <>
+                  <h3 style={{ ...S.h3, marginBottom: '20px' }}>Send a Message</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Your Name *</label>
+                      <input style={S.input} placeholder="Nishit Jain" value={form.name} onChange={e => set('name', e.target.value)} />
+                    </div>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Email *</label>
+                      <input style={S.input} type="email" placeholder="you@email.com" value={form.email} onChange={e => set('email', e.target.value)} />
+                    </div>
+                  </div>
+                  <div style={{ ...S.formGroup, marginBottom: '12px' }}>
+                    <label style={S.label}>Subject</label>
+                    <input style={S.input} placeholder="Subscription query / Technical issue / Research feedback" value={form.subject} onChange={e => set('subject', e.target.value)} />
+                  </div>
+                  <div style={{ ...S.formGroup, marginBottom: '20px' }}>
+                    <label style={S.label}>Message *</label>
+                    <textarea style={{ ...S.textarea, minHeight: '120px' }} placeholder="Describe your query in detail..." value={form.message} onChange={e => set('message', e.target.value)} />
+                  </div>
+                  <button onClick={handle} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center' }}>Send Message →</button>
+                  <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '12px', textAlign: 'center' }}>
+                    For billing disputes not resolved within 30 days, escalate to SEBI SCORES: scores.sebi.gov.in
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+// ─── BLOG PAGE ────────────────────────────────────────────────────────────────
+const BLOG_POSTS = [
+  { id: 1, title: 'How to Read a Stock Research Call', date: 'June 28, 2026', tag: 'Education', icon: '📊', mins: '5 min read', summary: 'Understanding entry price, target, stop-loss, and time horizon — what each field means and how to use it in your trading decisions.', content: `A research call is not a guaranteed profit signal. It is a structured analysis that tells you: where to enter, where to book profit, and where to exit if wrong. Entry Price: The recommended buy/sell price range. Do not chase the stock if it has moved more than 2-3% away from the entry. Target 1/2/3: Progressive profit-booking levels. Book partial profits at each target rather than waiting for Target 3. Stop Loss: The maximum loss you should accept. If the price hits stop loss, exit immediately — do not average down. Time Horizon: How long to hold the position. An intraday call should not be converted into a positional trade after it goes wrong.` },
+  { id: 2, title: 'What is Stop Loss and Why You Must Use It', date: 'June 20, 2026', tag: 'Risk', icon: '🛑', mins: '4 min read', summary: 'Stop loss is the single most important risk management tool. Most retail investors lose money not because their analysis is wrong but because they do not use stop loss.', content: `Stop loss is a pre-decided exit price when a trade goes against you. Example: You buy Reliance at ₹2,456 with a stop loss at ₹2,380. If Reliance falls to ₹2,380, you exit immediately — no questions asked. Why most people skip stop loss: Hope — "it will recover." Ego — "I can't be wrong." Averaging — "I'll buy more at lower levels." Why stop loss saves you: A 10% loss needs an 11% gain to recover. A 50% loss needs a 100% gain. Preserving capital is more important than being right.` },
+  { id: 3, title: 'F&O Trading: Understanding the Risks Before You Start', date: 'June 12, 2026', tag: 'F&O', icon: '⚡', mins: '7 min read', summary: 'Futures and options can amplify returns — but they can also wipe out your entire investment. Here is what you must know before trading derivatives.', content: `Futures and Options (F&O) are derivatives — their value derives from an underlying asset like Nifty 50 or a stock. Options buyers can lose 100% of their premium. If you buy a Nifty call option for ₹5,000 and Nifty moves against you, your entire ₹5,000 is gone. Futures have margin calls — if the market moves against your futures position, you must add more money or your position is squared off at a loss. SEBI data shows that over 90% of F&O traders lose money. Start with paper trading before using real capital. Never risk more than you can afford to lose completely.` },
+  { id: 4, title: 'Nifty Technical Levels — How to Read Them', date: 'June 5, 2026', tag: 'Technical', icon: '📈', mins: '6 min read', summary: 'Support, resistance, and key Nifty levels explained. Understanding these helps you time your entries and exits better across all segments.', content: `Support is a price level where buyers are expected to be strong enough to prevent the price from falling further. Resistance is where sellers are expected to be strong enough to prevent further rise. Key Nifty support/resistance levels are often round numbers (22,000, 23,000, 24,000) and previous highs/lows. How to use: If Nifty is near strong support and our call says "BUY," the risk is lower. If Nifty is near strong resistance, wait for a breakout before entering long positions. Moving averages (20 DMA, 50 DMA, 200 DMA) also act as dynamic support/resistance.` },
+];
+
+function BlogPage() {
+  const [selected, setSelected] = useState(null);
+  const post = selected ? BLOG_POSTS.find(p => p.id === selected) : null;
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+      <div style={{ ...S.section, paddingTop: '48px' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          {post ? (
+            <>
+              <button onClick={() => setSelected(null)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, marginBottom: '24px' }}>← Back to Blog</button>
+              <div style={{ ...S.card }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8' }}>{post.tag}</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>{post.date} · {post.mins}</span>
+                </div>
+                <h1 style={{ ...S.h2, marginBottom: '16px' }}>{post.icon} {post.title}</h1>
+                <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.8, marginBottom: '24px', borderLeft: '4px solid #1d4ed8', paddingLeft: '16px', fontStyle: 'italic' }}>{post.summary}</p>
+                <div style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.9 }}>{post.content}</div>
+                <div style={{ ...S.disclaimer, marginTop: '24px' }}>
+                  ⚠️ This article is for educational purposes only. Not investment advice. {SEBI_REG}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h1 style={{ ...S.h2, marginBottom: '8px' }}>Research & Education</h1>
+                <p style={{ color: '#64748b' }}>Market insights, trading education, and research methodology — free for all.</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                {BLOG_POSTS.map(p => (
+                  <div key={p.id} style={{ ...S.card, cursor: 'pointer', transition: 'all 0.2s' }}
+                    onClick={() => setSelected(p.id)}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(29,78,216,0.12)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(29,78,216,0.06)'; }}>
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>{p.icon}</div>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                      <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8', fontSize: '11px' }}>{p.tag}</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>{p.mins}</span>
+                    </div>
+                    <h3 style={{ ...S.h4, marginBottom: '8px', color: '#0f172a' }}>{p.title}</h3>
+                    <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6, marginBottom: '12px' }}>{p.summary}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>{p.date}</span>
+                      <span style={{ fontSize: '12px', color: '#1d4ed8', fontWeight: 600 }}>Read →</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ ...S.disclaimer, marginTop: '32px' }}>
+                ⚠️ All articles are for educational purposes only and do not constitute investment advice. {SEBI_REG}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+// ─── NOTIFICATIONS PAGE ───────────────────────────────────────────────────────
+function NotificationsPage({ user }) {
+  const [recs, setRecs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('recommendations').select('id, symbol, stock_name, action, status, published_at, entry_price, target1, stop_loss')
+      .neq('status', 'draft').order('published_at', { ascending: false }).limit(30)
+      .then(({ data }) => { setRecs(data || []); setLoading(false); });
+  }, [user]);
+  if (!user) return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔔</div>
+        <h2 style={S.h3}>Login to see notifications</h2>
+        <button onClick={() => navigate('/login')} style={{ ...S.btn, ...S.btnPrimary, marginTop: '16px' }}>Sign In</button>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+      <div style={{ ...S.section, paddingTop: '40px' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <h1 style={{ ...S.h2, marginBottom: '4px' }}>🔔 Notifications</h1>
+          <p style={{ color: '#64748b', marginBottom: '28px' }}>Latest research call activity</p>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Loading...</div>
+          ) : recs.length === 0 ? (
+            <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📭</div>
+              <p style={{ color: '#64748b' }}>No notifications yet. Check back when new calls are published.</p>
+            </div>
+          ) : recs.map(r => (
+            <div key={r.id} style={{ ...S.card, marginBottom: '10px', display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '16px', cursor: 'pointer' }}
+              onClick={() => navigate('/recommendations/' + r.id)}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: r.status === 'target_hit' ? '#d1fae5' : r.status === 'sl_hit' ? '#fee2e2' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+                {r.status === 'target_hit' ? '✅' : r.status === 'sl_hit' ? '❌' : r.action === 'BUY' ? '📈' : r.action === 'SELL' ? '📉' : '📊'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{r.action} {r.symbol}</p>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(r.published_at).toLocaleDateString('en-IN')}</span>
+                </div>
+                <p style={{ fontSize: '13px', color: '#475569' }}>{r.stock_name} · Entry ₹{r.entry_price} · T1 ₹{r.target1} · SL ₹{r.stop_loss}</p>
+                <span style={{ ...S.badge, fontSize: '11px', background: r.status === 'live' ? '#eff6ff' : '#f8fafc', color: r.status === 'live' ? '#1d4ed8' : '#64748b', marginTop: '4px' }}>
+                  {r.status?.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+// ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
+function ProfilePage({ user, userProfile }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(userProfile?.full_name || '');
+  const [mobile, setMobile] = useState(userProfile?.mobile || '');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+  const save = async () => {
+    setSaving(true);
+    const { error } = await supabase.from('users').update({ full_name: name, mobile }).eq('id', user.id);
+    setSaving(false);
+    if (error) { setMsg('Error: ' + error.message); return; }
+    setMsg('Profile updated successfully!');
+    setEditing(false);
+  };
+  if (!user) { navigate('/login'); return null; }
+  const plan = PLANS[userProfile?.plan_id || 'basic'];
+  const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+      <div style={{ ...S.section, paddingTop: '40px' }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+          <h1 style={{ ...S.h2, marginBottom: '28px' }}>👤 My Profile</h1>
+          {/* Avatar + plan badge */}
+          <div style={{ ...S.card, marginBottom: '16px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #1d4ed8, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', color: '#fff', fontWeight: 800, flexShrink: 0 }}>
+              {(userProfile?.full_name || user?.email || 'U')[0].toUpperCase()}
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 700, fontSize: '18px', color: '#0f172a' }}>{userProfile?.full_name || 'Investor'}</p>
+              <p style={{ color: '#64748b', fontSize: '13px' }}>{user?.email}</p>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8' }}>{plan?.name || 'Basic Equity'}</span>
+                <span style={{ ...S.badge, background: isActive ? '#d1fae5' : '#fee2e2', color: isActive ? '#065f46' : '#991b1b' }}>
+                  {isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+          </div>
+          {/* Profile details */}
+          <div style={{ ...S.card, marginBottom: '16px' }}>
+            <div style={{ ...S.flexBetween, marginBottom: '16px' }}>
+              <h3 style={S.h4}>Account Details</h3>
+              {!editing && <button onClick={() => setEditing(true)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>✏️ Edit</button>}
+            </div>
+            {msg && <p style={{ color: '#047857', fontSize: '13px', marginBottom: '12px', background: '#d1fae5', padding: '8px 12px', borderRadius: '8px' }}>{msg}</p>}
+            {editing ? (
+              <>
+                <div style={S.formGroup}><label style={S.label}>Full Name</label><input style={S.input} value={name} onChange={e => setName(e.target.value)} /></div>
+                <div style={S.formGroup}><label style={S.label}>Mobile</label><input style={S.input} value={mobile} onChange={e => setMobile(e.target.value)} /></div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button onClick={save} disabled={saving} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>{saving ? 'Saving...' : 'Save Changes'}</button>
+                  <button onClick={() => setEditing(false)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { label: 'Email', value: user?.email },
+                  { label: 'Full Name', value: userProfile?.full_name || '—' },
+                  { label: 'Mobile', value: userProfile?.mobile || '—' },
+                  { label: 'Member Since', value: userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—' },
+                  { label: 'Plan Expires', value: userProfile?.plan_expires_at ? new Date(userProfile.plan_expires_at).toLocaleDateString('en-IN') : '—' },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>{item.label}</span>
+                    <span style={{ fontSize: '13px', color: '#0f172a', fontWeight: 500 }}>{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Quick actions */}
+          <div style={{ ...S.card }}>
+            <h3 style={{ ...S.h4, marginBottom: '16px' }}>Quick Actions</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[
+                { label: '📋 My Subscription', path: '/subscription' },
+                { label: '📊 Live Calls', path: '/live-calls' },
+                { label: '📈 Performance Report', path: '/performance' },
+                { label: '📮 Grievance / Support', path: '/grievance' },
+              ].map((item, i) => (
+                <button key={i} onClick={() => navigate(item.path)}
+                  style={{ ...S.btn, ...S.btnSecondary, justifyContent: 'flex-start', width: '100%' }}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+
 function AdminPanel({ user, userProfile }) {
   const [activeTab, setActiveTab] = useState('recommendations');
   const [recs, setRecs] = useState([]);
@@ -2600,6 +2904,10 @@ export default function App() {
     if (path.startsWith('/recommendations/')) return <RecommendationDetailPage id={path.split('/recommendations/')[1]} userProfile={userProfile} />;
     if (path === '/performance') return <PerformancePage />;
     if (path === '/about') return <AboutPage />;
+    if (path === '/contact') return <ContactPage />;
+    if (path === '/blog') return <BlogPage />;
+    if (path === '/notifications') return <NotificationsPage user={user} />;
+    if (path === '/profile') return <ProfilePage user={user} userProfile={userProfile} />;
     if (path === '/disclaimer') return <DisclaimerPage />;
     if (path === '/privacy') return <PrivacyPage />;
     if (path === '/terms') return <TermsPage />;
@@ -2608,7 +2916,6 @@ export default function App() {
     if (path === '/disclosure' || path === '/sebi-disclosure') return <SEBIDisclosurePage />;
     if (path === '/faq') return <FAQPage />;
     if (path === '/risk-disclosure') return <RiskDisclosurePage />;
-    if (path === '/disclaimer') return <DisclaimerPage />;
     if (path === '/dashboard') return protectedPage(Dashboard);
     if (path === '/subscription') return protectedPage(SubscriptionPage);
     if (path === '/admin') return protectedPage(AdminPanel);
