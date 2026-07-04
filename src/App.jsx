@@ -3064,42 +3064,169 @@ function AboutPage() {
 
 // ─── SUBSCRIPTION PAGE ────────────────────────────────────────────────────────
 function SubscriptionPage({ user, userProfile }) {
-  const plan = PLANS[userProfile?.plan_id || 'basic'];
+  const currentPlanId = userProfile?.plan_id || null;
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [cycle, setCycle] = useState('monthly');
+
+  const prices = {
+    basic:   { monthly: 999,  quarterly: 2697,  yearly: 8991 },
+    premium: { monthly: 2499, quarterly: 6747,  yearly: 22491 },
+    fno:     { monthly: 3999, quarterly: 10797, yearly: 35991 },
+    elite:   { monthly: 5999, quarterly: 16197, yearly: 53991 },
+  };
+
+  const planList = [
+    { id: 'basic',   name: 'Basic Equity',     icon: '📊', color: '#334155', desc: 'Equity research calls' },
+    { id: 'premium', name: 'Premium Equity',    icon: '📈', color: '#1d4ed8', desc: 'Equity + IPO + priority support' },
+    { id: 'fno',     name: 'F&O Pro',           icon: '⚡', color: '#d97706', desc: 'Equity + F&O + intraday', popular: true },
+    { id: 'elite',   name: 'Elite All Access',  icon: '💎', color: '#7c3aed', desc: 'Everything + Telegram + 1-on-1' },
+  ];
+
+  const DEV_BYPASS_CODE = 'NRJDEV2026'; // Remove this before going live
+  const [bypassCode, setBypassCode] = useState('');
+  const [bypassMsg, setBypassMsg] = useState('');
+  const [activating, setActivating] = useState(false);
+
+  const handleSubscribe = async () => {
+    if (!selectedPlan) return;
+
+    // Dev bypass — skip payment
+    if (bypassCode === DEV_BYPASS_CODE) {
+      setActivating(true);
+      const expiry = new Date();
+      expiry.setFullYear(expiry.getFullYear() + 1); // 1 year
+      const { error } = await supabase.from('users').update({
+        plan_id: selectedPlan,
+        plan_expires_at: expiry.toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq('id', user.id);
+      setActivating(false);
+      if (error) { setBypassMsg('Error: ' + error.message); return; }
+      setBypassMsg('✅ Plan activated! Refreshing...');
+      setTimeout(() => window.location.reload(), 1500);
+      return;
+    }
+
+    // Real payment — coming soon
+    const amt = prices[selectedPlan][cycle];
+    alert(`Razorpay integration coming soon!\n\nPlan: ${PLANS[selectedPlan]?.name}\nAmount: ₹${amt}\n\nUse bypass code for testing.`);
+  };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <h1 style={{ ...S.h2, marginBottom: '32px' }}>💳 Subscription</h1>
-          <div style={{ ...S.card, marginBottom: '24px' }}>
-            <h3 style={{ ...S.h3, marginBottom: '16px' }}>Current Plan</h3>
-            <div style={{ ...S.flex, gap: '16px' }}>
-              <div style={{ width: '56px', height: '56px', background: 'rgba(245,158,11,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>
-                {userProfile?.plan_id === 'basic' ? '📊' : userProfile?.plan_id === 'premium' ? '📈' : userProfile?.plan_id === 'fno' ? '⚡' : '💎'}
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+
+          {/* Current plan banner */}
+          <div style={{ ...S.card, marginBottom: '28px', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div style={{ width: '52px', height: '52px', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>
+                {currentPlanId === 'basic' ? '📊' : currentPlanId === 'premium' ? '📈' : currentPlanId === 'fno' ? '⚡' : '💎'}
               </div>
               <div>
-                <p style={{ fontWeight: 800, fontSize: '20px', color: plan?.color }}>{plan?.name} Plan</p>
+                <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current Plan</p>
+                <p style={{ fontWeight: 700, fontSize: '18px', color: '#0f172a' }}>{PLANS[currentPlanId || 'basic']?.name || 'No Active Plan'}</p>
                 {isActive ? (
-                  <p style={{ fontSize: '13px', ...S.muted }}>
-                    Active · Expires {new Date(userProfile.plan_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  <p style={{ fontSize: '13px', color: '#059669', fontWeight: 600 }}>
+                    ✅ Active · Expires {new Date(userProfile.plan_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 ) : (
-                  <p style={{ fontSize: '13px', color: '#ef4444' }}>Free / Inactive</p>
+                  <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 600 }}>⚠️ No active subscription</p>
                 )}
               </div>
             </div>
-            {!isActive && (
-              <button onClick={() => navigate('/pricing')} style={{ ...S.btn, ...S.btnGold, marginTop: '20px', width: '100%', justifyContent: 'center' }}>
-                ⬆️ Upgrade to Premium
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => navigate('/dashboard')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>← Dashboard</button>
+            </div>
+          </div>
+
+          <h2 style={{ ...S.h3, marginBottom: '6px' }}>Choose Your Plan</h2>
+          <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>Select a plan and billing cycle to subscribe.</p>
+
+          {/* Billing cycle */}
+          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+            {[
+              { key: 'monthly', label: 'Monthly' },
+              { key: 'quarterly', label: 'Quarterly', save: '-10%' },
+              { key: 'yearly', label: 'Yearly', save: '-25%' },
+            ].map(b => (
+              <button key={b.key} onClick={() => setCycle(b.key)}
+                style={{ padding: '7px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: cycle === b.key ? '#1e40af' : 'transparent', color: cycle === b.key ? '#fff' : '#64748b', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {b.label} {b.save && <span style={{ fontSize: '10px', color: cycle === b.key ? '#93c5fd' : '#059669', fontWeight: 700 }}>{b.save}</span>}
               </button>
+            ))}
+          </div>
+
+          {/* Plan cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+            {planList.map(p => {
+              const isSelected = selectedPlan === p.id;
+              const isCurrent = currentPlanId === p.id && isActive;
+              return (
+                <div key={p.id} onClick={() => !isCurrent && setSelectedPlan(p.id)}
+                  style={{ ...S.card, cursor: isCurrent ? 'default' : 'pointer', border: isSelected ? `2px solid ${p.color}` : isCurrent ? '2px solid #059669' : '1px solid #e8edf3', position: 'relative', transition: 'all 0.15s', padding: '20px', background: isSelected ? '#fafbff' : '#fff' }}>
+                  {p.popular && !isCurrent && (
+                    <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#d97706', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>MOST POPULAR</div>
+                  )}
+                  {isCurrent && (
+                    <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#059669', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>CURRENT PLAN</div>
+                  )}
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>{p.icon}</div>
+                  <p style={{ fontWeight: 700, fontSize: '14px', color: p.color, marginBottom: '4px' }}>{p.name}</p>
+                  <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.4 }}>{p.desc}</p>
+                  <p style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>₹{prices[p.id][cycle].toLocaleString('en-IN')}</p>
+                  <p style={{ fontSize: '11px', color: '#94a3b8' }}>/{cycle === 'monthly' ? 'month' : cycle === 'quarterly' ? '3 months' : 'year'}</p>
+                  {isSelected && <div style={{ marginTop: '10px', fontSize: '12px', color: p.color, fontWeight: 700 }}>✓ Selected</div>}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Checkout */}
+          <div style={{ ...S.card, border: selectedPlan ? '2px solid #1e40af' : '1px solid #e8edf3' }}>
+            {selectedPlan ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <p style={{ fontWeight: 700, fontSize: '16px', color: '#0f172a' }}>{planList.find(p => p.id === selectedPlan)?.name}</p>
+                    <p style={{ fontSize: '13px', color: '#64748b' }}>{cycle === 'monthly' ? 'Monthly billing' : cycle === 'quarterly' ? 'Quarterly billing' : 'Annual billing · best value'}</p>
+                  </div>
+                  <p style={{ fontSize: '24px', fontWeight: 800, color: '#1e40af' }}>₹{prices[selectedPlan][cycle].toLocaleString('en-IN')}</p>
+                </div>
+                {/* Dev bypass field */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <input
+                    style={{ ...S.input, flex: 1, fontSize: '13px' }}
+                    placeholder="Dev bypass code (testing only)"
+                    value={bypassCode}
+                    onChange={e => { setBypassCode(e.target.value); setBypassMsg(''); }}
+                  />
+                  {bypassCode && (
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px', background: bypassCode === 'NRJDEV2026' ? '#dcfce7' : '#fee2e2', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: bypassCode === 'NRJDEV2026' ? '#166534' : '#991b1b', whiteSpace: 'nowrap' }}>
+                      {bypassCode === 'NRJDEV2026' ? '✓ Valid' : '✕ Invalid'}
+                    </div>
+                  )}
+                </div>
+                {bypassMsg && <p style={{ fontSize: '13px', color: bypassMsg.startsWith('✅') ? '#059669' : '#dc2626', marginBottom: '12px', fontWeight: 600 }}>{bypassMsg}</p>}
+                <button onClick={handleSubscribe} disabled={activating} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', fontSize: '15px', padding: '13px', opacity: activating ? 0.7 : 1 }}>
+                  {activating ? 'Activating...' : bypassCode === 'NRJDEV2026' ? '⚡ Activate Plan (Dev Mode)' : '🔒 Proceed to Payment →'}
+                </button>
+                <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '10px' }}>Secured by Razorpay · UPI · Cards · Net Banking</p>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <p style={{ color: '#94a3b8', fontSize: '14px' }}>← Select a plan above to continue</p>
+              </div>
             )}
           </div>
-          <button onClick={() => navigate('/pricing')} style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center' }}>
-            View All Plans & Upgrade
-          </button>
+
+          <div style={{ ...S.disclaimer, marginTop: '20px' }}>
+            ⚠️ All subscription fees are non-refundable. Please review our <button onClick={() => navigate('/refund')} style={{ background: 'none', border: 'none', color: '#92400e', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline', fontSize: '12px' }}>Refund Policy</button> before subscribing. Investment in securities market is subject to market risk.
+          </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
