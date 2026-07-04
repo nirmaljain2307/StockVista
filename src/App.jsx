@@ -1,47 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// ─── TELEGRAM BOT ────────────────────────────────────────────────────────────
-// Set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID in Vercel env vars
-const TG_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '';
-const TG_CHAT = import.meta.env.VITE_TELEGRAM_CHAT_ID || '';
-
-const sendTelegramAlert = async (rec) => {
-  if (!TG_TOKEN || !TG_CHAT) return; // silently skip if not configured
-  const statusEmoji = { BUY: '🟢', SELL: '🔴', HOLD: '🟡', AVOID: '⛔', EXIT: '🚪' };
-  const segEmoji = { equity: '📈', futures: '⚡', options: '🎯', commodity: '🏅' };
-  const msg = `
-${statusEmoji[rec.action] || '📊'} *${rec.action} — ${rec.symbol}* (${rec.exchange})
-${segEmoji[rec.segment] || '📋'} ${rec.segment?.toUpperCase()}${rec.commodity_type ? ` · ${rec.commodity_type}` : ''}
-
-💰 *Entry:* ₹${rec.entry_price}
-🎯 *Target 1:* ₹${rec.target1}${rec.target2 ? `\n🎯 *Target 2:* ₹${rec.target2}` : ''}
-🛑 *Stop Loss:* ₹${rec.stop_loss}
-⏳ *Horizon:* ${rec.time_horizon}
-⚠️ *Risk:* ${rec.risk_level}
-
-${rec.rationale ? `📝 ${rec.rationale.slice(0, 200)}${rec.rationale.length > 200 ? '...' : ''}` : ''}
-
-🔗 [View Full Analysis](https://stock-vista-sandy.vercel.app/recommendations)
-
-_Investment in securities market is subject to market risk. This is research, not advice._
-*${APP_NAME} · ${SEBI_REG}*
-`.trim();
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'Markdown', disable_web_page_preview: false }),
-    });
-  } catch (e) {
-    console.warn('Telegram alert failed:', e.message);
-  }
-};
+// ─── SUPABASE ────────────────────────────────────────────────────────────────
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
+
+// ─── TELEGRAM ALERT (server-side via Supabase Edge Function) ─────────────────
+// Token is NEVER in the client bundle — Edge Function holds it securely.
+const sendTelegramAlert = async (rec) => {
+  try {
+    await supabase.functions.invoke('telegram-alert', { body: { rec } });
+  } catch (e) {
+    console.warn('Telegram alert skipped:', e.message);
+  }
+};
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const APP_NAME = 'StockVista';
@@ -2066,35 +2040,89 @@ function OnboardingPage({ user, userProfile }) {
 // ─── PORTFOLIO TRACKER ────────────────────────────────────────────────────────
 function PortfolioPage({ user }) {
   const [holdings, setHoldings] = useState([]);
+  const [soldHistory, setSoldHistory] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ symbol: '', name: '', qty: '', buy_price: '', cmp: '', segment: 'equity' });
+  const [sellModal, setSellModal] = useState(null); // holding being sold
+  const [sellForm, setSellForm] = useState({ qty: '', sell_price: '', sell_date: new Date().toISOString().slice(0,10) });
+  const [tab, setTab] = useState('holdings'); // holdings | sold
   const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ symbol: '', name: '', qty: '', buy_price: '', cmp: '', segment: 'equity', buy_date: new Date().toISOString().slice(0,10) });
   const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setSF = (k, v) => setSellForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    try { const s = localStorage.getItem('sv_portfolio_' + user.id); if (s) setHoldings(JSON.parse(s)); } catch(e) {}
+    try {
+      const h = localStorage.getItem('sv_port_h_' + user.id);
+      const s = localStorage.getItem('sv_port_s_' + user.id);
+      if (h) setHoldings(JSON.parse(h));
+      if (s) setSoldHistory(JSON.parse(s));
+    } catch(e) {}
     setLoading(false);
   }, [user]);
 
-  const save = (data) => {
-    try { localStorage.setItem('sv_portfolio_' + user?.id, JSON.stringify(data)); } catch(e) {}
+  const saveH = (data) => {
+    try { localStorage.setItem('sv_port_h_' + user?.id, JSON.stringify(data)); } catch(e) {}
     setHoldings(data);
+  };
+  const saveS = (data) => {
+    try { localStorage.setItem('sv_port_s_' + user?.id, JSON.stringify(data)); } catch(e) {}
+    setSoldHistory(data);
   };
 
   const addHolding = () => {
     if (!form.symbol || !form.qty || !form.buy_price) return;
     const cmp = parseFloat(form.cmp) || parseFloat(form.buy_price);
-    save([...holdings, { ...form, id: Date.now(), qty: parseFloat(form.qty), buy_price: parseFloat(form.buy_price), cmp }]);
-    setForm({ symbol: '', name: '', qty: '', buy_price: '', cmp: '', segment: 'equity' });
+    saveH([...holdings, { ...form, id: Date.now(), qty: parseFloat(form.qty), buy_price: parseFloat(form.buy_price), cmp }]);
+    setForm({ symbol: '', name: '', qty: '', buy_price: '', cmp: '', segment: 'equity', buy_date: new Date().toISOString().slice(0,10) });
     setShowAdd(false);
   };
 
-  const updateCMP = (id, cmp) => save(holdings.map(h => h.id === id ? { ...h, cmp: parseFloat(cmp) || h.cmp } : h));
-  const remove = (id) => { if (window.confirm('Remove this holding?')) save(holdings.filter(h => h.id !== id)); };
+  const updateCMP = (id, cmp) => saveH(holdings.map(h => h.id === id ? { ...h, cmp: parseFloat(cmp) || h.cmp } : h));
+  const removeHolding = (id) => { if (window.confirm('Remove this holding?')) saveH(holdings.filter(h => h.id !== id)); };
+
+  const openSell = (h) => {
+    setSellModal(h);
+    setSellForm({ qty: String(h.qty), sell_price: String(h.cmp), sell_date: new Date().toISOString().slice(0,10) });
+  };
+
+  const executeSell = () => {
+    if (!sellModal || !sellForm.qty || !sellForm.sell_price) return;
+    const sellQty = parseFloat(sellForm.qty);
+    const sellPrice = parseFloat(sellForm.sell_price);
+    const h = sellModal;
+    if (sellQty > h.qty) { alert('Cannot sell more than you hold'); return; }
+
+    const realised = (sellPrice - h.buy_price) * sellQty;
+    const realisedPct = ((realised / (h.buy_price * sellQty)) * 100).toFixed(2);
+
+    // Add to sold history
+    const soldEntry = {
+      id: Date.now(),
+      symbol: h.symbol,
+      name: h.name,
+      segment: h.segment,
+      qty_sold: sellQty,
+      buy_price: h.buy_price,
+      sell_price: sellPrice,
+      buy_date: h.buy_date || '—',
+      sell_date: sellForm.sell_date,
+      realised_pnl: +realised.toFixed(2),
+      realised_pct: +realisedPct,
+    };
+    saveS([soldEntry, ...soldHistory]);
+
+    // Reduce or remove holding
+    if (sellQty >= h.qty) {
+      saveH(holdings.filter(x => x.id !== h.id));
+    } else {
+      saveH(holdings.map(x => x.id === h.id ? { ...x, qty: +(x.qty - sellQty).toFixed(4) } : x));
+    }
+    setSellModal(null);
+  };
 
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>💼</div>
         <h2 style={S.h3}>Login to track your portfolio</h2>
@@ -2105,97 +2133,233 @@ function PortfolioPage({ user }) {
 
   const totalInvested = holdings.reduce((s, h) => s + h.qty * h.buy_price, 0);
   const totalCurrent = holdings.reduce((s, h) => s + h.qty * h.cmp, 0);
-  const totalPnL = totalCurrent - totalInvested;
-  const totalPnLPct = totalInvested > 0 ? ((totalPnL / totalInvested) * 100).toFixed(2) : 0;
+  const unrealisedPnL = totalCurrent - totalInvested;
+  const unrealisedPct = totalInvested > 0 ? ((unrealisedPnL / totalInvested) * 100).toFixed(2) : 0;
+  const realisedPnL = soldHistory.reduce((s, t) => s + t.realised_pnl, 0);
+  const totalPnL = unrealisedPnL + realisedPnL;
+
+  const thStyle = { padding: '11px 14px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' };
+  const tdStyle = { padding: '12px 14px', fontSize: '13px' };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ ...S.flexBetween, marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+
+          {/* Header */}
+          <div style={{ ...S.flexBetween, marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <h1 style={{ ...S.h2, marginBottom: '4px' }}>💼 Portfolio Tracker</h1>
-              <p style={{ color: '#64748b', fontSize: '13px' }}>Track your holdings. CMP updates are manual — data stored locally on your device.</p>
+              <p style={{ color: '#64748b', fontSize: '13px' }}>CMP updates manual · buy date, sell tracking, realised P&L · stored locally</p>
             </div>
             <button onClick={() => setShowAdd(true)} style={{ ...S.btn, ...S.btnPrimary }}>+ Add Holding</button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+
+          {/* Summary cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
             {[
               { label: 'Invested', value: '₹' + fmtCurr(totalInvested), color: '#1d4ed8' },
               { label: 'Current Value', value: '₹' + fmtCurr(totalCurrent), color: '#0f172a' },
-              { label: 'Total P&L', value: (totalPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(totalPnL)), color: totalPnL >= 0 ? '#047857' : '#b91c1c' },
-              { label: 'Return %', value: (totalPnLPct >= 0 ? '+' : '') + totalPnLPct + '%', color: totalPnLPct >= 0 ? '#047857' : '#b91c1c' },
-              { label: 'Holdings', value: holdings.length, color: '#64748b' },
+              { label: 'Unrealised P&L', value: (unrealisedPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(unrealisedPnL)), color: unrealisedPnL >= 0 ? '#059669' : '#dc2626' },
+              { label: 'Realised P&L', value: (realisedPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(realisedPnL)), color: realisedPnL >= 0 ? '#059669' : '#dc2626' },
+              { label: 'Total P&L', value: (totalPnL >= 0 ? '+₹' : '-₹') + fmtCurr(Math.abs(totalPnL)), color: totalPnL >= 0 ? '#059669' : '#dc2626' },
+              { label: 'Return %', value: (unrealisedPct >= 0 ? '+' : '') + unrealisedPct + '%', color: unrealisedPct >= 0 ? '#059669' : '#dc2626' },
+              { label: 'Open Holdings', value: holdings.length, color: '#64748b' },
+              { label: 'Trades Closed', value: soldHistory.length, color: '#64748b' },
             ].map((s, i) => (
-              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '16px' }}>
-                <div style={{ fontSize: '20px', fontWeight: 800, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>{s.label}</div>
+              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '14px 10px' }}>
+                <div style={{ fontSize: '16px', fontWeight: 800, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
               </div>
             ))}
           </div>
 
+          {/* Add holding form */}
           {showAdd && (
             <div style={{ ...S.card, marginBottom: '20px', border: '2px solid #1d4ed8' }}>
-              <h3 style={{ ...S.h4, marginBottom: '16px' }}>Add Holding</h3>
+              <h3 style={{ ...S.h4, marginBottom: '16px' }}>Add New Holding</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '12px' }}>
                 <div><label style={S.label}>Symbol *</label><input style={S.input} placeholder="RELIANCE" value={form.symbol} onChange={e => setF('symbol', e.target.value.toUpperCase())} /></div>
-                <div><label style={S.label}>Company</label><input style={S.input} placeholder="Reliance Industries" value={form.name} onChange={e => setF('name', e.target.value)} /></div>
-                <div><label style={S.label}>Quantity *</label><input style={S.input} type="number" placeholder="10" value={form.qty} onChange={e => setF('qty', e.target.value)} /></div>
-                <div><label style={S.label}>Buy Price ₹ *</label><input style={S.input} type="number" placeholder="2450" value={form.buy_price} onChange={e => setF('buy_price', e.target.value)} /></div>
+                <div><label style={S.label}>Company Name</label><input style={S.input} placeholder="Reliance Industries" value={form.name} onChange={e => setF('name', e.target.value)} /></div>
+                <div><label style={S.label}>Qty *</label><input style={S.input} type="number" placeholder="100" value={form.qty} onChange={e => setF('qty', e.target.value)} /></div>
+                <div><label style={S.label}>Buy Price ₹ *</label><input style={S.input} type="number" placeholder="2456" value={form.buy_price} onChange={e => setF('buy_price', e.target.value)} /></div>
+                <div><label style={S.label}>Buy Date *</label><input style={S.input} type="date" value={form.buy_date} onChange={e => setF('buy_date', e.target.value)} /></div>
                 <div><label style={S.label}>CMP ₹</label><input style={S.input} type="number" placeholder="2500" value={form.cmp} onChange={e => setF('cmp', e.target.value)} /></div>
-                <div><label style={S.label}>Segment</label><select style={S.select} value={form.segment} onChange={e => setF('segment', e.target.value)}>{['equity','futures','options','commodity','ipo'].map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                <div><label style={S.label}>Segment</label>
+                  <select style={S.select} value={form.segment} onChange={e => setF('segment', e.target.value)}>
+                    {['equity','futures','options','commodity','ipo'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={addHolding} style={{ ...S.btn, ...S.btnPrimary }}>Add</button>
+                <button onClick={addHolding} style={{ ...S.btn, ...S.btnPrimary }}>Add Holding</button>
                 <button onClick={() => setShowAdd(false)} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
               </div>
             </div>
           )}
 
-          {holdings.length === 0 ? (
-            <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
-              <h3 style={{ ...S.h3, marginBottom: '8px' }}>No holdings yet</h3>
-              <p style={{ color: '#64748b', marginBottom: '20px' }}>Add your first holding to start tracking P&L.</p>
-              <button onClick={() => setShowAdd(true)} style={{ ...S.btn, ...S.btnPrimary }}>+ Add First Holding</button>
-            </div>
-          ) : (
-            <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc' }}>
-                    {['Symbol', 'Qty', 'Buy ₹', 'CMP ₹', 'Invested', 'Value', 'P&L', '%', ''].map(h => (
-                      <th key={h} style={{ padding: '12px 14px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {holdings.map(h => {
-                    const invested = h.qty * h.buy_price;
-                    const current = h.qty * h.cmp;
-                    const pnl = current - invested;
-                    const pct = invested > 0 ? ((pnl / invested) * 100).toFixed(2) : 0;
-                    return (
-                      <tr key={h.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '12px 14px' }}><p style={{ fontWeight: 700, color: '#0f172a' }}>{h.symbol}</p><p style={{ fontSize: '11px', color: '#94a3b8' }}>{h.name}</p></td>
-                        <td style={{ padding: '12px 14px', fontWeight: 600 }}>{h.qty}</td>
-                        <td style={{ padding: '12px 14px' }}>₹{Number(h.buy_price).toLocaleString('en-IN')}</td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <input type="number" defaultValue={h.cmp} onBlur={e => updateCMP(h.id, e.target.value)} style={{ width: '80px', padding: '4px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px' }} />
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>₹{fmtCurr(invested)}</td>
-                        <td style={{ padding: '12px 14px' }}>₹{fmtCurr(current)}</td>
-                        <td style={{ padding: '12px 14px', fontWeight: 700, color: pnl >= 0 ? '#047857' : '#b91c1c' }}>{pnl >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(pnl))}</td>
-                        <td style={{ padding: '12px 14px', fontWeight: 700, color: pct >= 0 ? '#047857' : '#b91c1c' }}>{pct >= 0 ? '+' : ''}{pct}%</td>
-                        <td style={{ padding: '12px 14px' }}><button onClick={() => remove(h.id)} style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '16px' }}>🗑</button></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {/* Sell modal */}
+          {sellModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <div style={{ ...S.card, maxWidth: '420px', width: '100%', border: '2px solid #dc2626' }}>
+                <h3 style={{ ...S.h4, marginBottom: '4px', color: '#dc2626' }}>📤 Sell {sellModal.symbol}</h3>
+                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '20px' }}>
+                  Holding: {sellModal.qty} shares · Avg buy: ₹{sellModal.buy_price} · CMP: ₹{sellModal.cmp}
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={S.label}>Qty to Sell *</label>
+                    <input style={S.input} type="number" max={sellModal.qty} placeholder={String(sellModal.qty)} value={sellForm.qty} onChange={e => setSF('qty', e.target.value)} />
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Max: {sellModal.qty}</p>
+                  </div>
+                  <div>
+                    <label style={S.label}>Sell Price ₹ *</label>
+                    <input style={S.input} type="number" placeholder={String(sellModal.cmp)} value={sellForm.sell_price} onChange={e => setSF('sell_price', e.target.value)} />
+                  </div>
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={S.label}>Sell Date *</label>
+                    <input style={S.input} type="date" value={sellForm.sell_date} onChange={e => setSF('sell_date', e.target.value)} />
+                  </div>
+                </div>
+                {sellForm.qty && sellForm.sell_price && (
+                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Estimated Realised P&L</p>
+                    {(() => {
+                      const pnl = (parseFloat(sellForm.sell_price) - sellModal.buy_price) * parseFloat(sellForm.qty || 0);
+                      const pct = ((pnl / (sellModal.buy_price * parseFloat(sellForm.qty || 1))) * 100).toFixed(2);
+                      return <p style={{ fontSize: '20px', fontWeight: 800, color: pnl >= 0 ? '#059669' : '#dc2626' }}>
+                        {pnl >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(pnl))} ({pct >= 0 ? '+' : ''}{pct}%)
+                      </p>;
+                    })()}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={executeSell} style={{ ...S.btn, ...S.btnDanger, flex: 2, justifyContent: 'center' }}>Confirm Sell</button>
+                  <button onClick={() => setSellModal(null)} style={{ ...S.btn, ...S.btnSecondary, flex: 1, justifyContent: 'center' }}>Cancel</button>
+                </div>
+              </div>
             </div>
           )}
-          <div style={{ ...S.disclaimer, marginTop: '16px' }}>⚠️ Portfolio data is stored locally on your device only. Update CMP manually for accurate P&L. For personal record-keeping only — not financial advice.</div>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
+            {[['holdings', `Open Holdings (${holdings.length})`], ['sold', `Sold / Closed (${soldHistory.length})`]].map(([t, label]) => (
+              <button key={t} onClick={() => setTab(t)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: tab === t ? '#1e40af' : 'transparent', color: tab === t ? '#fff' : '#64748b', transition: 'all 0.15s' }}>{label}</button>
+            ))}
+          </div>
+
+          {/* Holdings table */}
+          {tab === 'holdings' && (
+            holdings.length === 0 ? (
+              <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+                <h3 style={{ ...S.h3, marginBottom: '8px' }}>No open holdings</h3>
+                <button onClick={() => setShowAdd(true)} style={{ ...S.btn, ...S.btnPrimary, marginTop: '8px' }}>+ Add First Holding</button>
+              </div>
+            ) : (
+              <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                      {['Symbol', 'Buy Date', 'Qty', 'Buy ₹', 'CMP ₹', 'Invested', 'Value', 'Unrealised P&L', '%', 'Actions'].map(h => (
+                        <th key={h} style={thStyle}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {holdings.map(h => {
+                      const invested = h.qty * h.buy_price;
+                      const current = h.qty * h.cmp;
+                      const pnl = current - invested;
+                      const pct = invested > 0 ? ((pnl / invested) * 100).toFixed(2) : 0;
+                      return (
+                        <tr key={h.id} style={{ borderBottom: '1px solid #f1f5f9' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#fafbff'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <td style={tdStyle}>
+                            <p style={{ fontWeight: 700, color: '#0f172a' }}>{h.symbol}</p>
+                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>{h.name} · {h.segment}</p>
+                          </td>
+                          <td style={{ ...tdStyle, fontSize: '12px', color: '#64748b' }}>{h.buy_date || '—'}</td>
+                          <td style={{ ...tdStyle, fontWeight: 600 }}>{h.qty}</td>
+                          <td style={tdStyle}>₹{Number(h.buy_price).toLocaleString('en-IN')}</td>
+                          <td style={tdStyle}>
+                            <input type="number" defaultValue={h.cmp} onBlur={e => updateCMP(h.id, e.target.value)}
+                              style={{ width: '80px', padding: '4px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#0f172a' }} />
+                          </td>
+                          <td style={tdStyle}>₹{fmtCurr(invested)}</td>
+                          <td style={tdStyle}>₹{fmtCurr(current)}</td>
+                          <td style={{ ...tdStyle, fontWeight: 700, color: pnl >= 0 ? '#059669' : '#dc2626' }}>
+                            {pnl >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(pnl))}
+                          </td>
+                          <td style={{ ...tdStyle, fontWeight: 700, color: pct >= 0 ? '#059669' : '#dc2626' }}>{pct >= 0 ? '+' : ''}{pct}%</td>
+                          <td style={tdStyle}>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button onClick={() => openSell(h)} style={{ ...S.btn, background: '#fee2e2', color: '#dc2626', border: 'none', padding: '5px 10px', fontSize: '12px', borderRadius: '6px', fontWeight: 600 }}>Sell</button>
+                              <button onClick={() => removeHolding(h.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '16px', padding: '4px' }}>🗑</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+
+          {/* Sold history table */}
+          {tab === 'sold' && (
+            soldHistory.length === 0 ? (
+              <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                <p style={{ color: '#64748b' }}>No trades closed yet. Use "Sell" button on open holdings.</p>
+              </div>
+            ) : (
+              <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                      {['Symbol', 'Qty Sold', 'Buy Price', 'Sell Price', 'Buy Date', 'Sell Date', 'Realised P&L', '%'].map(h => (
+                        <th key={h} style={thStyle}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {soldHistory.map(t => (
+                      <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={tdStyle}><p style={{ fontWeight: 700, color: '#0f172a' }}>{t.symbol}</p><p style={{ fontSize: '11px', color: '#94a3b8' }}>{t.segment}</p></td>
+                        <td style={{ ...tdStyle, fontWeight: 600 }}>{t.qty_sold}</td>
+                        <td style={tdStyle}>₹{Number(t.buy_price).toLocaleString('en-IN')}</td>
+                        <td style={tdStyle}>₹{Number(t.sell_price).toLocaleString('en-IN')}</td>
+                        <td style={{ ...tdStyle, fontSize: '12px', color: '#64748b' }}>{t.buy_date || '—'}</td>
+                        <td style={{ ...tdStyle, fontSize: '12px', color: '#64748b' }}>{t.sell_date}</td>
+                        <td style={{ ...tdStyle, fontWeight: 800, color: t.realised_pnl >= 0 ? '#059669' : '#dc2626' }}>
+                          {t.realised_pnl >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(t.realised_pnl))}
+                        </td>
+                        <td style={{ ...tdStyle, fontWeight: 700, color: t.realised_pct >= 0 ? '#059669' : '#dc2626' }}>
+                          {t.realised_pct >= 0 ? '+' : ''}{t.realised_pct}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                      <td colSpan={6} style={{ ...tdStyle, fontWeight: 700, color: '#334155' }}>Total Realised P&L</td>
+                      <td style={{ ...tdStyle, fontWeight: 800, fontSize: '15px', color: realisedPnL >= 0 ? '#059669' : '#dc2626' }}>
+                        {realisedPnL >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(realisedPnL))}
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )
+          )}
+
+          <div style={{ ...S.disclaimer, marginTop: '16px' }}>
+            ⚠️ Portfolio data is stored locally on your device only. For personal record-keeping only — not financial advice. Consult a SEBI RIA for personalised advice.
+          </div>
         </div>
       </div>
       <Footer />
@@ -3246,6 +3410,38 @@ function NotFoundPage() {
 }
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
+// ─── PWA INSTALL PROMPT ───────────────────────────────────────────────────────
+function PWAInstallPrompt() {
+  const [prompt, setPrompt] = useState(null);
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setPrompt(e); setShow(true); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+  const install = async () => {
+    if (!prompt) return;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if (outcome === 'accepted') setShow(false);
+    setPrompt(null);
+  };
+  if (!show) return null;
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: '#0f172a', color: '#fff', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', maxWidth: '380px', width: 'calc(100% - 32px)' }}>
+      <div style={{ fontSize: '26px', flexShrink: 0 }}>📲</div>
+      <div style={{ flex: 1 }}>
+        <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '2px' }}>Install StockVista</p>
+        <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.4 }}>Add to homescreen for instant access to live calls</p>
+      </div>
+      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+        <button onClick={() => setShow(false)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px' }}>Later</button>
+        <button onClick={install} style={{ background: '#1d4ed8', border: 'none', color: '#fff', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>Install</button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [path, setPath] = useState(getPath());
   const [user, setUser] = useState(null);
@@ -3347,6 +3543,7 @@ export default function App() {
     <div style={S.page}>
       <Navbar user={user} userProfile={userProfile} onLogout={handleLogout} />
       {renderPage()}
+      <PWAInstallPrompt />
     </div>
   );
 }
