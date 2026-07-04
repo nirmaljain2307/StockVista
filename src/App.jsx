@@ -1969,9 +1969,32 @@ function ReportsPage({ user, userProfile }) {
 }
 
 // ─── WATCHLIST PAGE ───────────────────────────────────────────────────────────
+function WatchlistTickerWidget({ sym }) {
+  const containerId = `wl-tv-${sym}`;
+  useEffect(() => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      symbol: `NSE:${sym}`,
+      width: '100%',
+      colorTheme: 'light',
+      isTransparent: true,
+      locale: 'en',
+    });
+    container.appendChild(script);
+    return () => { if (container) container.innerHTML = ''; };
+  }, [sym]);
+  return <div id={containerId} style={{ minHeight: '60px', width: '100%' }} />;
+}
+
 function WatchlistPage({ user }) {
   const [watchlist, setWatchlist] = useState([]);
   const [input, setInput] = useState('');
+  const [exchange, setExchange] = useState('NSE');
 
   useEffect(() => {
     if (!user) return;
@@ -1988,12 +2011,12 @@ function WatchlistPage({ user }) {
 
   const add = () => {
     const sym = input.trim().toUpperCase();
-    if (!sym || watchlist.includes(sym)) return;
-    save([...watchlist, sym]);
+    if (!sym || watchlist.find(w => w.sym === sym)) return;
+    save([...watchlist, { sym, exchange }]);
     setInput('');
   };
 
-  const remove = (sym) => save(watchlist.filter(s => s !== sym));
+  const remove = (sym) => save(watchlist.filter(s => s.sym !== sym));
 
   if (!user) return (
     <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2008,13 +2031,22 @@ function WatchlistPage({ user }) {
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '6px' }}>👁️ Watchlist</h1>
-          <p style={{ color: '#64748b', marginBottom: '28px', fontSize: '13px' }}>Track stocks you're watching. Data stored locally on your device.</p>
+          <p style={{ color: '#64748b', marginBottom: '28px', fontSize: '13px' }}>
+            Live prices powered by TradingView · Data stored locally
+          </p>
 
           {/* Add symbol */}
-          <div style={{ ...S.card, marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <input style={{ ...S.input, flex: 1 }} placeholder="Enter symbol (e.g. RELIANCE, TCS, NIFTY)" value={input}
+          <div style={{ ...S.card, marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select style={{ ...S.select, width: '100px', flex: '0 0 100px' }} value={exchange} onChange={e => setExchange(e.target.value)}>
+              <option value="NSE">NSE</option>
+              <option value="BSE">BSE</option>
+              <option value="MCX">MCX</option>
+            </select>
+            <input style={{ ...S.input, flex: 1, minWidth: '160px' }}
+              placeholder="Symbol (e.g. RELIANCE, TCS, NIFTY)"
+              value={input}
               onChange={e => setInput(e.target.value.toUpperCase())}
               onKeyDown={e => e.key === 'Enter' && add()} />
             <button onClick={add} style={{ ...S.btn, ...S.btnPrimary, flexShrink: 0 }}>+ Add</button>
@@ -2024,37 +2056,81 @@ function WatchlistPage({ user }) {
             <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>👁️</div>
               <h3 style={{ ...S.h3, marginBottom: '8px' }}>Watchlist is empty</h3>
-              <p style={{ color: '#64748b' }}>Add symbols above to track them. Press Enter or click Add.</p>
+              <p style={{ color: '#64748b' }}>Add NSE/BSE/MCX symbols above. Press Enter or click Add.</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {watchlist.map(sym => (
-                <div key={sym} style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px', color: '#1e40af' }}>
-                      {sym.slice(0, 2)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {watchlist.map(item => {
+                const sym = typeof item === 'string' ? item : item.sym;
+                const exch = typeof item === 'string' ? 'NSE' : (item.exchange || 'NSE');
+                const tvSym = `${exch}:${sym}`;
+                return (
+                  <div key={sym} style={{ ...S.card, padding: '0', overflow: 'hidden' }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', background: '#eff6ff', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', color: '#1e40af' }}>
+                          {sym.slice(0, 2)}
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{sym}</p>
+                          <p style={{ fontSize: '11px', color: '#94a3b8' }}>{tvSym}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => navigate('/live-calls')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, fontSize: '12px' }}>📊 Calls</button>
+                        <button onClick={() => remove(sym)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', padding: '6px 8px', fontSize: '14px' }}>🗑</button>
+                      </div>
                     </div>
-                    <div>
-                      <p style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{sym}</p>
-                      <p style={{ fontSize: '12px', color: '#94a3b8' }}>NSE / BSE · Update CMP manually</p>
+                    {/* Live TradingView ticker */}
+                    <div style={{ padding: '4px 8px' }}>
+                      <WatchlistTickerWidget sym={`${exch}:${sym}`} />
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button onClick={() => navigate('/live-calls')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, fontSize: '12px' }}>View Calls</button>
-                    <button onClick={() => remove(sym)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', padding: '6px 8px', fontSize: '14px' }}>🗑</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
+
+          {/* Index watch */}
+          <div style={{ ...S.card, marginTop: '24px' }}>
+            <h3 style={{ ...S.h4, marginBottom: '16px' }}>📈 Index Watch</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              {['NSE:NIFTY50', 'NSE:BANKNIFTY', 'BSE:SENSEX', 'NSE:CNXMIDCAP'].map(sym => {
+                const id = `idx-${sym.replace(':', '-')}`;
+                return (
+                  <div key={sym} style={{ background: '#f8fafc', borderRadius: '10px', padding: '4px', border: '1px solid #e2e8f0' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', padding: '6px 8px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sym.split(':')[1]}</p>
+                    <IndexTicker sym={sym} id={id} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div style={{ ...S.disclaimer, marginTop: '20px' }}>
-            ⚠️ Watchlist is for tracking purposes only. Live prices not available — update manually. Not investment advice.
+            ⚠️ Live prices powered by TradingView. Prices may be delayed by 15 minutes. Not investment advice. {SEBI_REG}
           </div>
         </div>
       </div>
       <Footer />
     </div>
   );
+}
+
+function IndexTicker({ sym, id }) {
+  useEffect(() => {
+    const container = document.getElementById(id);
+    if (!container) return;
+    container.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js';
+    script.async = true;
+    script.innerHTML = JSON.stringify({ symbol: sym, width: '100%', colorTheme: 'light', isTransparent: true, locale: 'en' });
+    container.appendChild(script);
+    return () => { if (container) container.innerHTML = ''; };
+  }, [sym]);
+  return <div id={id} style={{ minHeight: '60px' }} />;
 }
 
 
