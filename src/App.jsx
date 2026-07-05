@@ -831,6 +831,163 @@ function FaqItem({ q, a }) {
 }
 
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
+// ─── AUTH LAYOUT WRAPPER ──────────────────────────────────────────────────────
+function AuthLayout({ title, subtitle, children }) {
+  return (
+    <div style={{ minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', minHeight: '560px' }}>
+        {/* Left trust panel */}
+        <div style={{ background: '#0f172a', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '48px' }}>
+              <div style={{ ...S.navLogoIcon }}><span>📈</span></div>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{APP_NAME}</span>
+            </div>
+            <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '12px', letterSpacing: '-0.02em' }}>
+              Research-backed stock calls for every trader
+            </h2>
+            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '36px' }}>
+              SEBI Registered Research Analyst providing equity, F&O, and commodity research with complete transparency.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { icon: '🛡️', text: 'SEBI Registered Research Analyst' },
+                { icon: '📊', text: 'Live calls across Equity, F&O & Commodities' },
+                { icon: '📈', text: 'Complete track record — every call logged' },
+                { icon: '🔒', text: 'Transparent research, no guaranteed returns' },
+              ].map((t, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '1px' }}>{t.icon}</span>
+                  <span style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.5 }}>{t.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontSize: '11px', color: '#475569', lineHeight: 1.6 }}>
+            {SEBI_REG} · {COMPANY_NAME}<br />
+            Investment involves risk of loss. Research only, not advice.
+          </p>
+        </div>
+        {/* Right form panel */}
+        <div style={{ background: '#ffffff', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', letterSpacing: '-0.02em' }}>{title}</h1>
+          {subtitle && <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '28px' }}>{subtitle}</p>}
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── FORGOT PASSWORD PAGE ─────────────────────────────────────────────────────
+function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState('');
+
+  const handle = async () => {
+    if (!email) { setErr('Please enter your email address.'); return; }
+    setLoading(true); setErr('');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    setSent(true);
+  };
+
+  return (
+    <AuthLayout title="Forgot your password?" subtitle="Enter your registered email and we'll send a reset link.">
+      {sent ? (
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📧</div>
+          <h3 style={{ ...S.h4, marginBottom: '8px', color: '#059669' }}>Reset link sent!</h3>
+          <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
+            Check your inbox at <strong>{email}</strong>. Click the link in the email to set a new password.
+          </p>
+          <p style={{ fontSize: '12px', color: '#94a3b8' }}>Didn't receive it? Check spam or{' '}
+            <button onClick={() => setSent(false)} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>try again</button>
+          </p>
+        </div>
+      ) : (
+        <>
+          {err && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{err}</div>}
+          <div style={S.formGroup}>
+            <label style={S.label}>Email Address</label>
+            <input style={S.input} type="email" placeholder="you@email.com" value={email}
+              onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handle()} />
+          </div>
+          <button onClick={handle} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '16px', opacity: loading ? 0.7 : 1 }}>
+            {loading ? 'Sending...' : 'Send Reset Link →'}
+          </button>
+          <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
+            Remember your password?{' '}
+            <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Sign in</button>
+          </p>
+        </>
+      )}
+    </AuthLayout>
+  );
+}
+
+// ─── RESET PASSWORD PAGE ──────────────────────────────────────────────────────
+function ResetPasswordPage() {
+  const [pw, setPw] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState('');
+  const [show, setShow] = useState(false);
+
+  const handle = async () => {
+    if (!pw || pw.length < 8) { setErr('Password must be at least 8 characters.'); return; }
+    if (pw !== confirm) { setErr('Passwords do not match.'); return; }
+    setLoading(true); setErr('');
+    const { error } = await supabase.auth.updateUser({ password: pw });
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    setDone(true);
+    setTimeout(() => navigate('/login'), 2000);
+  };
+
+  return (
+    <AuthLayout title="Set new password" subtitle="Choose a strong password for your StockVista account.">
+      {done ? (
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+          <h3 style={{ ...S.h4, color: '#059669', marginBottom: '8px' }}>Password updated!</h3>
+          <p style={{ color: '#64748b', fontSize: '14px' }}>Redirecting to sign in...</p>
+        </div>
+      ) : (
+        <>
+          {err && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{err}</div>}
+          <div style={S.formGroup}>
+            <label style={S.label}>New Password</label>
+            <div style={{ position: 'relative' }}>
+              <input style={{ ...S.input, paddingRight: '44px' }} type={show ? 'text' : 'password'}
+                placeholder="Min 8 characters" value={pw} onChange={e => setPw(e.target.value)} />
+              <button onClick={() => setShow(s => !s)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}>
+                {show ? '🙈' : '👁️'}
+              </button>
+            </div>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Confirm New Password</label>
+            <input style={{ ...S.input, borderColor: confirm && confirm !== pw ? '#fca5a5' : '#e2e8f0' }}
+              type={show ? 'text' : 'password'} placeholder="Re-enter password"
+              value={confirm} onChange={e => setConfirm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handle()} />
+            {confirm && confirm !== pw && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>Passwords don't match</p>}
+          </div>
+          <button onClick={handle} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', opacity: loading ? 0.7 : 1 }}>
+            {loading ? 'Updating...' : 'Update Password →'}
+          </button>
+        </>
+      )}
+    </AuthLayout>
+  );
+}
+
 function LoginPage({ setUser, setUserProfile }) {
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
@@ -854,39 +1011,32 @@ function LoginPage({ setUser, setUserProfile }) {
   };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '100px 20px 40px' }}>
-      <div style={{ ...S.card, maxWidth: '440px', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ ...S.navLogoIcon, margin: '0 auto 16px', width: '48px', height: '48px', fontSize: '24px' }}>📈</div>
-          <h2 style={S.h2}>{APP_NAME}</h2>
-          <p style={{ ...S.muted, marginTop: '4px' }}>Welcome back. Sign in to your account.</p>
-        </div>
-        {err && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#ef4444', marginBottom: '16px' }}>{err}</div>}
-        <div style={S.formGroup}>
-          <label style={S.label}>Email</label>
-          <input style={S.input} type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
-        </div>
-        <div style={S.formGroup}>
-          <div style={{ ...S.flexBetween, marginBottom: '6px' }}>
-            <label style={{ ...S.label, marginBottom: 0 }}>Password</label>
-            <button onClick={() => navigate('/forgot-password')} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '12px', cursor: 'pointer' }}>Forgot password?</button>
-          </div>
-          <input style={S.input} type="password" placeholder="Enter your password" value={pw} onChange={e => setPw(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()} />
-        </div>
-        <button onClick={handleLogin} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '12px', opacity: loading ? 0.7 : 1 }}>
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-        <div style={{ textAlign: 'center', ...S.muted, fontSize: '12px', margin: '12px 0' }}>OR CONTINUE WITH</div>
-        <button onClick={handleGoogle} style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center', marginBottom: '24px' }}>
-          <span>G</span> Continue with Google
-        </button>
-        <p style={{ textAlign: 'center', fontSize: '14px', ...S.muted }}>
-          Don't have an account?{' '}
-          <button onClick={() => navigate('/register')} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: 600 }}>Sign up</button>
-        </p>
+    <AuthLayout title="Welcome back" subtitle="Sign in to your StockVista account.">
+      {err && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{err}</div>}
+      <div style={S.formGroup}>
+        <label style={S.label}>Email</label>
+        <input style={S.input} type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
       </div>
-    </div>
+      <div style={S.formGroup}>
+        <div style={{ ...S.flexBetween, marginBottom: '6px' }}>
+          <label style={{ ...S.label, marginBottom: 0 }}>Password</label>
+          <button onClick={() => navigate('/forgot-password')} style={{ background: 'none', border: 'none', color: '#1e40af', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Forgot password?</button>
+        </div>
+        <input style={S.input} type="password" placeholder="Enter your password" value={pw} onChange={e => setPw(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+      </div>
+      <button onClick={handleLogin} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '12px', opacity: loading ? 0.7 : 1, fontSize: '15px', padding: '13px' }}>
+        {loading ? 'Signing in...' : 'Sign In →'}
+      </button>
+      <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '12px', margin: '14px 0' }}>OR</div>
+      <button onClick={handleGoogle} style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center', marginBottom: '20px', padding: '11px' }}>
+        <span style={{ fontWeight: 800, fontSize: '15px', marginRight: '4px' }}>G</span> Continue with Google
+      </button>
+      <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
+        Don't have an account?{' '}
+        <button onClick={() => navigate('/register')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Create account →</button>
+      </p>
+    </AuthLayout>
   );
 }
 
@@ -921,56 +1071,54 @@ function RegisterPage({ setUser, setUserProfile }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '100px 20px 40px' }}>
-      <div style={{ ...S.card, maxWidth: '460px', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ ...S.navLogoIcon, margin: '0 auto 12px', width: '48px', height: '48px', fontSize: '24px' }}>📈</div>
-          <h2 style={S.h2}>Create Account</h2>
-          <p style={{ ...S.muted, marginTop: '4px', fontSize: '14px' }}>Join thousands of informed investors</p>
-        </div>
-        {err && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#ef4444', marginBottom: '16px' }}>{err}</div>}
+    <AuthLayout title="Create account" subtitle="Start your research journey with StockVista.">
+      {err && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{err}</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <div style={S.formGroup}>
           <label style={S.label}>Full Name *</label>
-          <input style={S.input} type="text" placeholder="Your full name" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
-        </div>
-        <div style={S.formGroup}>
-          <label style={S.label}>Email *</label>
-          <input style={S.input} type="email" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
+          <input style={S.input} placeholder="Nishit Jain" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
         </div>
         <div style={S.formGroup}>
           <label style={S.label}>Mobile (optional)</label>
-          <input style={S.input} type="tel" placeholder="+91 XXXXX XXXXX" value={form.mobile} onChange={e => set('mobile', e.target.value)} />
+          <input style={S.input} type="tel" placeholder="+91 98765 43210" value={form.mobile} onChange={e => set('mobile', e.target.value)} />
         </div>
+      </div>
+      <div style={S.formGroup}>
+        <label style={S.label}>Email *</label>
+        <input style={S.input} type="email" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <div style={S.formGroup}>
           <label style={S.label}>Password *</label>
-          <input style={S.input} type="password" placeholder="Min 8 characters" value={form.password} onChange={e => set('password', e.target.value)} />
+          <input style={S.input} type="password" placeholder="Min 8 chars" value={form.password} onChange={e => set('password', e.target.value)} />
         </div>
         <div style={S.formGroup}>
           <label style={S.label}>Confirm Password *</label>
-          <input style={S.input} type="password" placeholder="Confirm your password" value={form.confirm} onChange={e => set('confirm', e.target.value)} />
+          <input style={{ ...S.input, borderColor: form.confirm && form.confirm !== form.password ? '#fca5a5' : '#e2e8f0' }}
+            type="password" placeholder="Re-enter" value={form.confirm} onChange={e => set('confirm', e.target.value)} />
         </div>
-        <div style={{ ...S.flex, gap: '10px', marginBottom: '20px' }}>
-          <input type="checkbox" id="agree" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-          <label htmlFor="agree" style={{ fontSize: '13px', ...S.muted, cursor: 'pointer' }}>
-            I agree to the{' '}
-            <button onClick={() => navigate('/terms')} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '13px' }}>Terms of Service</button>
-            {' '}and{' '}
-            <button onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '13px' }}>Privacy Policy</button>
-          </label>
-        </div>
-        <button onClick={handleRegister} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '12px', opacity: loading ? 0.7 : 1 }}>
-          {loading ? 'Creating Account...' : 'Create Account'}
-        </button>
-        <button onClick={async () => await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/dashboard' } })}
-          style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center', marginBottom: '20px' }}>
-          G Continue with Google
-        </button>
-        <p style={{ textAlign: 'center', fontSize: '14px', ...S.muted }}>
-          Already have an account?{' '}
-          <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: 600 }}>Sign in</button>
-        </p>
       </div>
-    </div>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '18px' }}>
+        <input type="checkbox" id="agree" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '15px', height: '15px', cursor: 'pointer', marginTop: '2px', flexShrink: 0 }} />
+        <label htmlFor="agree" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
+          I agree to the{' '}
+          <button onClick={() => navigate('/terms')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Terms</button>
+          {' '}and{' '}
+          <button onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Privacy Policy</button>
+        </label>
+      </div>
+      <button onClick={handleRegister} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '10px', opacity: loading ? 0.7 : 1, fontSize: '15px', padding: '13px' }}>
+        {loading ? 'Creating Account...' : 'Create Account →'}
+      </button>
+      <button onClick={async () => await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/dashboard' } })}
+        style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center', marginBottom: '16px', padding: '11px' }}>
+        <span style={{ fontWeight: 800, fontSize: '15px', marginRight: '4px' }}>G</span> Continue with Google
+      </button>
+      <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
+        Already have an account?{' '}
+        <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Sign in →</button>
+      </p>
+    </AuthLayout>
   );
 }
 
@@ -3897,6 +4045,8 @@ export default function App() {
     if (path.startsWith('/recommendations/')) return <RecommendationDetailPage id={path.split('/recommendations/')[1]} userProfile={userProfile} />;
     if (path === '/reports') return <ReportsPage user={user} userProfile={userProfile} />;
     if (path === '/watchlist') return <WatchlistPage user={user} />;
+    if (path === '/forgot-password') return <ForgotPasswordPage />;
+    if (path === '/reset-password') return <ResetPasswordPage />;
     if (path === '/onboarding') return <OnboardingPage user={user} userProfile={userProfile} />;
     if (path === '/portfolio') return <PortfolioPage user={user} />;
     if (path === '/performance') return <PerformancePage />;
