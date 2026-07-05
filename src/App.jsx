@@ -1922,17 +1922,27 @@ function BlogPage() {
 }
 
 // ─── NOTIFICATIONS PAGE ───────────────────────────────────────────────────────
-function NotificationsPage({ user }) {
-  const [recs, setRecs] = useState([]);
+function NotificationsPage({ user, userProfile }) {
+  const [notifs, setNotifs] = useState([]);
+  const [recNotifs, setRecNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     if (!user) return;
-    supabase.from('recommendations').select('id, symbol, stock_name, action, status, published_at, entry_price, target1, stop_loss')
-      .neq('status', 'draft').order('published_at', { ascending: false }).limit(30)
-      .then(({ data }) => { setRecs(data || []); setLoading(false); });
+    Promise.all([
+      supabase.from('admin_notifications').select('*').order('created_at', { ascending: false }).limit(30),
+      supabase.from('recommendations').select('id, symbol, stock_name, action, status, published_at, entry_price, target1, stop_loss').neq('status', 'draft').order('published_at', { ascending: false }).limit(20),
+    ]).then(([n, r]) => {
+      const plan = userProfile?.plan_id || 'basic';
+      const filtered = (n.data || []).filter(notif => notif.plan_target === 'all' || notif.plan_target === plan);
+      setNotifs(filtered);
+      setRecNotifs(r.data || []);
+      setLoading(false);
+    });
   }, [user]);
+
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔔</div>
         <h2 style={S.h3}>Login to see notifications</h2>
@@ -1940,37 +1950,62 @@ function NotificationsPage({ user }) {
       </div>
     </div>
   );
+
+  const typeIcon = { info: 'ℹ️', alert: '🔴', success: '✅', call: '📊', market: '📈' };
+
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '4px' }}>🔔 Notifications</h1>
-          <p style={{ color: '#64748b', marginBottom: '28px' }}>Latest research call activity</p>
+          <p style={{ color: '#64748b', marginBottom: '28px' }}>Platform alerts and latest research call activity</p>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Loading...</div>
-          ) : recs.length === 0 ? (
-            <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📭</div>
-              <p style={{ color: '#64748b' }}>No notifications yet. Check back when new calls are published.</p>
-            </div>
-          ) : recs.map(r => (
-            <div key={r.id} style={{ ...S.card, marginBottom: '10px', display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '16px', cursor: 'pointer' }}
-              onClick={() => navigate('/recommendations/' + r.id)}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: r.status === 'target_hit' ? '#d1fae5' : r.status === 'sl_hit' ? '#fee2e2' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
-                {r.status === 'target_hit' ? '✅' : r.status === 'sl_hit' ? '❌' : r.action === 'BUY' ? '📈' : r.action === 'SELL' ? '📉' : '📊'}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{r.action} {r.symbol}</p>
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(r.published_at).toLocaleDateString('en-IN')}</span>
+          ) : (
+            <>
+              {notifs.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Platform Alerts</p>
+                  {notifs.map(n => (
+                    <div key={n.id} style={{ ...S.card, marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '14px 16px' }}>
+                      <span style={{ fontSize: '20px', flexShrink: 0 }}>{typeIcon[n.type] || 'ℹ️'}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{n.title}</p>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(n.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                        </div>
+                        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6 }}>{n.body}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p style={{ fontSize: '13px', color: '#475569' }}>{r.stock_name} · Entry ₹{r.entry_price} · T1 ₹{r.target1} · SL ₹{r.stop_loss}</p>
-                <span style={{ ...S.badge, fontSize: '11px', background: r.status === 'live' ? '#eff6ff' : '#f8fafc', color: r.status === 'live' ? '#1d4ed8' : '#64748b', marginTop: '4px' }}>
-                  {r.status?.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-            </div>
-          ))}
+              )}
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Recent Research Calls</p>
+              {recNotifs.length === 0 ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+                  <div style={{ fontSize: '40px', marginBottom: '12px' }}>📭</div>
+                  <p style={{ color: '#64748b' }}>No calls published yet.</p>
+                </div>
+              ) : recNotifs.map(r => (
+                <div key={r.id} style={{ ...S.card, marginBottom: '8px', display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '14px 16px', cursor: 'pointer' }}
+                  onClick={() => navigate('/recommendations/' + r.id)}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: r.status === 'target_hit' ? '#d1fae5' : r.status === 'sl_hit' ? '#fee2e2' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
+                    {r.status === 'target_hit' ? '✅' : r.status === 'sl_hit' ? '❌' : r.action === 'BUY' ? '📈' : r.action === 'SELL' ? '📉' : '📊'}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{r.action} {r.symbol}</p>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(r.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#64748b' }}>{r.stock_name} · Entry ₹{r.entry_price} · T1 ₹{r.target1} · SL ₹{r.stop_loss}</p>
+                    <span style={{ ...S.badge, fontSize: '11px', background: r.status === 'live' ? '#eff6ff' : '#f8fafc', color: r.status === 'live' ? '#1d4ed8' : '#64748b', marginTop: '6px' }}>
+                      {r.status?.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
       <Footer />
@@ -1978,7 +2013,7 @@ function NotificationsPage({ user }) {
   );
 }
 
-// ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
+
 function ProfilePage({ user, userProfile }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(userProfile?.full_name || '');
@@ -2936,9 +2971,17 @@ function AdminPanel({ user, userProfile }) {
   const [activeTab, setActiveTab] = useState('recommendations');
   const [recs, setRecs] = useState([]);
   const [users, setUsers] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editRec, setEditRec] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Notification composer state
+  const [notifForm, setNotifForm] = useState({ title: '', body: '', plan_target: 'all', type: 'info' });
+  const [notifSending, setNotifSending] = useState(false);
+  const [notifMsg, setNotifMsg] = useState('');
+  const setNF = (k, v) => setNotifForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
     if (!userProfile?.is_admin) { navigate('/'); return; }
@@ -2953,8 +2996,68 @@ function AdminPanel({ user, userProfile }) {
     } else if (activeTab === 'users') {
       const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
       setUsers(data || []);
+    } else if (activeTab === 'analytics') {
+      await fetchAnalytics();
+    } else if (activeTab === 'notifications') {
+      const { data } = await supabase.from('admin_notifications').select('*').order('created_at', { ascending: false }).limit(50);
+      setNotifications(data || []);
     }
     setLoading(false);
+  };
+
+  const fetchAnalytics = async () => {
+    const [recsRes, usersRes] = await Promise.all([
+      supabase.from('recommendations').select('id, status, segment, entry_price, target1, stop_loss, exit_price, action, published_at'),
+      supabase.from('users').select('id, plan_id, plan_expires_at, created_at'),
+    ]);
+    const allRecs = recsRes.data || [];
+    const allUsers = usersRes.data || [];
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    const closed = allRecs.filter(r => ['target_hit','sl_hit','closed','expired'].includes(r.status));
+    const wins = allRecs.filter(r => r.status === 'target_hit');
+    const live = allRecs.filter(r => ['live','near_target','near_sl'].includes(r.status));
+    const withReturn = closed.map(r => {
+      const e = parseFloat(r.entry_price), x = parseFloat(r.exit_price) || (r.status === 'target_hit' ? parseFloat(r.target1) : parseFloat(r.stop_loss));
+      if (!e || !x) return null;
+      return ((r.action === 'SELL' ? (e - x) : (x - e)) / e) * 100;
+    }).filter(Boolean);
+    const avgReturn = withReturn.length ? (withReturn.reduce((a,b) => a+b,0)/withReturn.length).toFixed(2) : 0;
+    const activeUsers = allUsers.filter(u => u.plan_expires_at && new Date(u.plan_expires_at) > now);
+    const planBreakdown = { basic: 0, premium: 0, fno: 0, elite: 0 };
+    activeUsers.forEach(u => { if (planBreakdown[u.plan_id] !== undefined) planBreakdown[u.plan_id]++; });
+    const planRevenue = { basic: 999, premium: 2499, fno: 3999, elite: 5999 };
+    const mrrEstimate = Object.entries(planBreakdown).reduce((s,[k,v]) => s + (planRevenue[k]||0)*v, 0);
+    setAnalytics({
+      totalRecs: allRecs.length, liveRecs: live.length, closedRecs: closed.length,
+      winRate: closed.length ? ((wins.length/closed.length)*100).toFixed(1) : 0,
+      avgReturn, totalUsers: allUsers.length,
+      newUsersWeek: allUsers.filter(u => new Date(u.created_at) > weekAgo).length,
+      newUsersMonth: allUsers.filter(u => new Date(u.created_at) > monthAgo).length,
+      activeSubscribers: activeUsers.length, planBreakdown, mrrEstimate,
+      segmentBreakdown: ['equity','futures','options','commodity'].map(seg => ({
+        seg, total: allRecs.filter(r=>r.segment===seg).length,
+        wins: allRecs.filter(r=>r.segment===seg && r.status==='target_hit').length,
+      })).filter(s=>s.total>0),
+    });
+  };
+
+  const sendNotification = async () => {
+    if (!notifForm.title || !notifForm.body) { setNotifMsg('Title and message required.'); return; }
+    setNotifSending(true); setNotifMsg('');
+    const payload = { title: notifForm.title, body: notifForm.body, plan_target: notifForm.plan_target, type: notifForm.type, created_by: user.id, created_at: new Date().toISOString() };
+    const { error } = await supabase.from('admin_notifications').insert([payload]);
+    setNotifSending(false);
+    if (error) { setNotifMsg('Error: ' + error.message); return; }
+    setNotifMsg('✅ Notification sent to ' + (notifForm.plan_target === 'all' ? 'all users' : notifForm.plan_target + ' plan users'));
+    setNF('title',''); setNF('body','');
+    fetchData();
+  };
+
+  const deleteNotif = async (id) => {
+    await supabase.from('admin_notifications').delete().eq('id', id);
+    fetchData();
   };
 
   const deleteRec = async (id) => {
@@ -3000,6 +3103,8 @@ function AdminPanel({ user, userProfile }) {
               { key: 'recommendations', label: '📊 Recommendations' },
               { key: 'add_recommendation', label: '➕ Add Call' },
               { key: 'users', label: '👥 Users' },
+              { key: 'analytics', label: '📈 Analytics' },
+              { key: 'notifications', label: '🔔 Notifications' },
             ].map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
                 style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: activeTab === t.key ? '#1d4ed8' : 'transparent', color: activeTab === t.key ? '#fff' : '#94a3b8' }}>
@@ -3078,13 +3183,203 @@ function AdminPanel({ user, userProfile }) {
               </table>
             </div>
           )}
+          {/* ─── ANALYTICS TAB ─── */}
+          {activeTab === 'analytics' && (
+            <div>
+              {loading || !analytics ? (
+                <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading analytics...</div>
+              ) : (
+                <>
+                  {/* KPI Row 1 — Calls */}
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Research Calls</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                    {[
+                      { label: 'Total Calls', value: analytics.totalRecs, color: '#0f172a' },
+                      { label: 'Live Now', value: analytics.liveRecs, color: '#1e40af' },
+                      { label: 'Closed', value: analytics.closedRecs, color: '#64748b' },
+                      { label: 'Win Rate', value: analytics.winRate + '%', color: analytics.winRate >= 50 ? '#059669' : '#dc2626' },
+                      { label: 'Avg Return', value: (analytics.avgReturn >= 0 ? '+' : '') + analytics.avgReturn + '%', color: analytics.avgReturn >= 0 ? '#059669' : '#dc2626' },
+                    ].map((s, i) => (
+                      <div key={i} style={{ ...S.card, padding: '14px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '22px', fontWeight: 800, color: s.color }}>{s.value}</p>
+                        <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* KPI Row 2 — Users */}
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Users & Revenue</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                    {[
+                      { label: 'Total Users', value: analytics.totalUsers, color: '#0f172a' },
+                      { label: 'New This Week', value: analytics.newUsersWeek, color: '#1e40af' },
+                      { label: 'New This Month', value: analytics.newUsersMonth, color: '#1e40af' },
+                      { label: 'Active Subscribers', value: analytics.activeSubscribers, color: '#059669' },
+                      { label: 'Est. MRR', value: '₹' + fmtCurr(analytics.mrrEstimate), color: '#d97706' },
+                    ].map((s, i) => (
+                      <div key={i} style={{ ...S.card, padding: '14px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '22px', fontWeight: 800, color: s.color }}>{s.value}</p>
+                        <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Plan breakdown + Segment breakdown */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ ...S.card }}>
+                      <h3 style={{ ...S.h4, marginBottom: '16px' }}>Subscribers by Plan</h3>
+                      {Object.entries(analytics.planBreakdown).map(([plan, count]) => (
+                        <div key={plan} style={{ marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', textTransform: 'capitalize' }}>{PLANS[plan]?.name || plan}</span>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{count}</span>
+                          </div>
+                          <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ height: '6px', borderRadius: '3px', background: PLANS[plan]?.color || '#1d4ed8', width: analytics.activeSubscribers > 0 ? `${(count / analytics.activeSubscribers * 100).toFixed(0)}%` : '0%', transition: 'width 0.4s' }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ ...S.card }}>
+                      <h3 style={{ ...S.h4, marginBottom: '16px' }}>Win Rate by Segment</h3>
+                      {analytics.segmentBreakdown.length === 0 ? (
+                        <p style={{ color: '#94a3b8', fontSize: '13px' }}>No closed calls yet.</p>
+                      ) : analytics.segmentBreakdown.map(s => {
+                        const rate = s.total > 0 ? ((s.wins / s.total) * 100).toFixed(0) : 0;
+                        return (
+                          <div key={s.seg} style={{ marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', textTransform: 'capitalize' }}>{s.seg}</span>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: rate >= 50 ? '#059669' : '#dc2626' }}>{rate}% ({s.wins}/{s.total})</span>
+                            </div>
+                            <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ height: '6px', borderRadius: '3px', background: rate >= 50 ? '#059669' : '#dc2626', width: `${rate}%`, transition: 'width 0.4s' }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div style={{ ...S.disclaimer }}>
+                    ⚠️ MRR estimate is based on current active subscribers × plan price. Actual revenue depends on payment gateway. Past win rate does not guarantee future performance.
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ─── NOTIFICATIONS TAB ─── */}
+          {activeTab === 'notifications' && (
+            <div>
+              {/* Compose notification */}
+              <div style={{ ...S.card, marginBottom: '20px', border: '2px solid #bfdbfe' }}>
+                <h3 style={{ ...S.h4, marginBottom: '16px' }}>📢 Send Notification to Users</h3>
+                {notifMsg && (
+                  <div style={{ background: notifMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', color: notifMsg.startsWith('✅') ? '#065f46' : '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '14px' }}>
+                    {notifMsg}
+                  </div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={S.label}>Target Audience</label>
+                    <select style={S.select} value={notifForm.plan_target} onChange={e => setNF('plan_target', e.target.value)}>
+                      <option value="all">All Users</option>
+                      <option value="basic">Basic Equity</option>
+                      <option value="premium">Premium Equity</option>
+                      <option value="fno">F&O Pro</option>
+                      <option value="elite">Elite All Access</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={S.label}>Type</label>
+                    <select style={S.select} value={notifForm.type} onChange={e => setNF('type', e.target.value)}>
+                      <option value="info">ℹ️ Info</option>
+                      <option value="alert">🔴 Alert</option>
+                      <option value="success">✅ Success</option>
+                      <option value="call">📊 New Call</option>
+                      <option value="market">📈 Market Update</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={S.label}>Title *</label>
+                    <input style={S.input} placeholder="e.g. New RELIANCE BUY call published" value={notifForm.title} onChange={e => setNF('title', e.target.value)} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={S.label}>Message *</label>
+                  <textarea style={{ ...S.textarea, minHeight: '70px' }} placeholder="Detailed notification message for users..." value={notifForm.body} onChange={e => setNF('body', e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button onClick={sendNotification} disabled={notifSending} style={{ ...S.btn, ...S.btnPrimary, opacity: notifSending ? 0.7 : 1 }}>
+                    {notifSending ? 'Sending...' : '📢 Send Notification'}
+                  </button>
+                  <p style={{ fontSize: '12px', color: '#94a3b8' }}>Notification will appear in users' notification bell immediately.</p>
+                </div>
+              </div>
+
+              {/* Quick templates */}
+              <div style={{ ...S.card, marginBottom: '20px' }}>
+                <h3 style={{ ...S.h4, marginBottom: '12px' }}>Quick Templates</h3>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { label: '📊 New Call Alert', title: 'New research call published', body: 'A new research call has been published on your plan. Login to view entry, target, and stop-loss details.' },
+                    { label: '📈 Market Update', title: 'Market update from our analyst', body: 'Important market update published. Check the live calls section for revised price targets.' },
+                    { label: '⚠️ SL Alert', title: 'Stop-loss triggered on active call', body: 'Stop-loss has been hit on one of your active calls. Please review your portfolio.' },
+                    { label: '🎯 Target Hit', title: 'Target achieved on research call', body: 'Congratulations! A research call has hit its target. Book profits and review performance.' },
+                    { label: '📅 Expiry Reminder', title: 'Your subscription expires soon', body: 'Your StockVista subscription expires in 7 days. Renew now to continue accessing research calls.' },
+                  ].map((t, i) => (
+                    <button key={i} onClick={() => { setNF('title', t.title); setNF('body', t.body); }}
+                      style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, fontSize: '12px' }}>{t.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notification history */}
+              <div style={{ ...S.card }}>
+                <h3 style={{ ...S.h4, marginBottom: '16px' }}>Notification History</h3>
+                {loading ? (
+                  <p style={{ color: '#94a3b8', textAlign: 'center', padding: '20px' }}>Loading...</p>
+                ) : notifications.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                    <p style={{ fontSize: '32px', marginBottom: '8px' }}>🔔</p>
+                    <p>No notifications sent yet.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {notifications.map(n => {
+                      const typeColor = n.type === 'alert' ? '#dc2626' : n.type === 'success' ? '#059669' : n.type === 'call' ? '#1e40af' : n.type === 'market' ? '#d97706' : '#64748b';
+                      return (
+                        <div key={n.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                          <div style={{ width: '36px', height: '36px', background: '#eff6ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
+                            {n.type === 'alert' ? '🔴' : n.type === 'success' ? '✅' : n.type === 'call' ? '📊' : n.type === 'market' ? '📈' : 'ℹ️'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                              <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{n.title}</p>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '10px', color: '#94a3b8' }}>{new Date(n.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                <span style={{ fontSize: '10px', background: '#eff6ff', color: '#1e40af', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                  {n.plan_target === 'all' ? 'All users' : PLANS[n.plan_target]?.name}
+                                </span>
+                                <button onClick={() => deleteNotif(n.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}>🗑</button>
+                              </div>
+                            </div>
+                            <p style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>{n.body}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-// ─── ADD RECOMMENDATION FORM ──────────────────────────────────────────────────
 function AddRecForm({ existingRec, onSave, adminId }) {
   const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '' };
   const [form, setForm] = useState(existingRec || empty);
@@ -4091,7 +4386,7 @@ export default function App() {
     if (path === '/about') return <AboutPage />;
     if (path === '/contact') return <ContactPage />;
     if (path === '/blog') return <BlogPage />;
-    if (path === '/notifications') return <NotificationsPage user={user} />;
+    if (path === '/notifications') return <NotificationsPage user={user} userProfile={userProfile} />;
     if (path === '/profile') return <ProfilePage user={user} userProfile={userProfile} />;
     if (path === '/disclaimer') return <DisclaimerPage />;
     if (path === '/privacy') return <PrivacyPage />;
