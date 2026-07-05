@@ -1244,62 +1244,100 @@ function RecCard({ rec, userProfile, onClick }) {
   const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
   const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
   const reqRank = planRank[rec.plan_required || 'basic'] ?? 0;
-  const hasActiveSub = !!userProfile?.plan_id &&
-    userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+  const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
   const hasAccess = hasActiveSub && userRank >= reqRank;
   const isLocked = !hasAccess;
+  const pnl = calcPnL(rec);
+  const effStatus = rec.status || 'live';
+
+  // Status badge config
+  const statusConfig = {
+    live:        { label: 'LIVE',        bg: '#dbeafe', color: '#1e40af' },
+    near_target: { label: 'NEAR TARGET', bg: '#d1fae5', color: '#065f46' },
+    near_sl:     { label: 'NEAR SL',     bg: '#fef3c7', color: '#92400e' },
+    target_hit:  { label: 'TARGET HIT ✓', bg: '#d1fae5', color: '#065f46' },
+    sl_hit:      { label: 'SL HIT',      bg: '#fee2e2', color: '#991b1b' },
+    expired:     { label: 'EXPIRED',     bg: '#f1f5f9', color: '#64748b' },
+    closed:      { label: 'CLOSED',      bg: '#f1f5f9', color: '#64748b' },
+    draft:       { label: 'DRAFT',       bg: '#f1f5f9', color: '#64748b' },
+    archived:    { label: 'ARCHIVED',    bg: '#f1f5f9', color: '#64748b' },
+  };
+  const sc = statusConfig[effStatus] || statusConfig.live;
 
   return (
-    <div style={{ ...S.card, marginBottom: '12px', cursor: 'pointer', position: 'relative', transition: 'all 0.2s' }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = '#1e293b'}
+    <div
+      style={{ ...S.card, padding: '16px 18px', cursor: 'pointer', position: 'relative', transition: 'all 0.15s', overflow: 'hidden' }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(29,78,216,0.10)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(29,78,216,0.05), 0 4px 16px rgba(29,78,216,0.03)'; }}
       onClick={onClick || (() => { if (!isLocked) navigate('/recommendations/' + rec.id); })}>
+
+      {/* Lock overlay */}
       {isLocked && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,15,30,0.88)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', flexDirection: 'column', gap: '8px' }}>
-          <span style={{ fontSize: '20px' }}>🔒</span>
-          <p style={{ fontSize: '13px', fontWeight: 700 }}>{PLANS[rec.plan_required || 'basic']?.name || 'Basic Equity'} Plan Required</p>
-          <button onClick={e => { e.stopPropagation(); navigate('/pricing'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>Upgrade</button>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', flexDirection: 'column', gap: '10px' }}>
+          <span style={{ fontSize: '24px' }}>🔒</span>
+          <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{PLANS[rec.plan_required || 'basic']?.name} Required</p>
+          <button onClick={e => { e.stopPropagation(); navigate('/subscription'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>Upgrade Plan</button>
         </div>
       )}
-      <div style={{ ...S.flexBetween, marginBottom: '8px' }}>
-        <div style={{ ...S.flex, gap: '8px' }}>
-          <span style={{ ...S.badge, ...actionStyle(rec.action) }}>{rec.action}</span>
-          <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>{rec.segment?.toUpperCase()}{rec.commodity_type ? ` · ${rec.commodity_type}` : ''}</span>
-          <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>{rec.time_horizon}</span>
-          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: rec.status === 'target_hit' ? 'rgba(16,185,129,0.15)' : rec.status === 'sl_hit' ? 'rgba(239,68,68,0.15)' : rec.status === 'expired' || rec.status === 'closed' || rec.status === 'archived' ? 'rgba(148,163,184,0.15)' : 'rgba(59,130,246,0.15)', color: rec.status === 'target_hit' ? '#10b981' : rec.status === 'sl_hit' ? '#ef4444' : rec.status === 'expired' || rec.status === 'closed' || rec.status === 'archived' ? '#94a3b8' : '#3b82f6' }}>
-            {(rec.status || 'live').replace('_', ' ').toUpperCase()}
-          </span>
+
+      {/* Row 1 — Action badge + Symbol + Status badge + Date */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ ...S.badge, ...actionStyle(rec.action), fontSize: '11px', padding: '3px 10px' }}>{rec.action}</span>
+          <div>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>{rec.symbol}</span>
+            <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '5px' }}>{rec.exchange}</span>
+          </div>
         </div>
-        <span style={{ fontSize: '11px', ...S.muted }}>{new Date(rec.published_at).toLocaleDateString('en-IN')}</span>
-      </div>
-      <div style={{ ...S.flexBetween }}>
-        <div>
-          <h4 style={{ ...S.h4 }}>{rec.symbol} <span style={{ fontSize: '12px', fontWeight: 400, ...S.muted }}>({rec.exchange})</span></h4>
-          <p style={{ fontSize: '13px', ...S.muted }}>{rec.stock_name}</p>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '11px', ...S.muted }}>Target</div>
-          <div style={{ fontWeight: 700, color: '#10b981' }}>{fmt(rec.target1)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '20px', background: sc.bg, color: sc.color, letterSpacing: '0.04em' }}>{sc.label}</span>
+          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(rec.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
-        <div><p style={{ fontSize: '10px', ...S.muted }}>Entry</p><p style={{ fontSize: '13px', fontWeight: 600 }}>{fmt(rec.entry_price)}</p></div>
-        <div><p style={{ fontSize: '10px', ...S.muted }}>SL</p><p style={{ fontSize: '13px', fontWeight: 600, color: '#ef4444' }}>{fmt(rec.stop_loss)}</p></div>
-        <div><p style={{ fontSize: '10px', ...S.muted }}>T1</p><p style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>{fmt(rec.target1)}</p></div>
-        <div><p style={{ fontSize: '10px', ...S.muted }}>{rec.exit_price ? 'Exit' : 'Upside'}</p><p style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>{rec.exit_price ? fmt(rec.exit_price) : pct(rec.entry_price, rec.target1)}</p></div>
+
+      {/* Row 2 — Stock name + Segment pill */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+        <p style={{ fontSize: '12px', color: '#64748b' }}>{rec.stock_name}</p>
+        <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: '4px', textTransform: 'capitalize' }}>
+          {rec.segment}{rec.commodity_type ? ` · ${rec.commodity_type}` : ''}
+        </span>
+        <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: '4px', textTransform: 'capitalize' }}>{rec.time_horizon}</span>
       </div>
-      {(rec.chart_url || rec.report_url) && (
-        <div style={{ ...S.flex, gap: '12px', marginTop: '10px' }}>
-          {rec.chart_url && <a href={rec.chart_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#3b82f6' }}>📈 Chart</a>}
-          {rec.report_url && <a href={rec.report_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#3b82f6' }}>📄 Report</a>}
+
+      {/* Row 3 — Price grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        {[
+          { label: 'Entry', value: fmt(rec.entry_price), color: '#0f172a' },
+          { label: 'Target', value: fmt(rec.target1), color: '#059669' },
+          { label: 'Stop Loss', value: fmt(rec.stop_loss), color: '#dc2626' },
+          { label: rec.exit_price ? 'Exit' : 'Upside', value: rec.exit_price ? fmt(rec.exit_price) : pct(rec.entry_price, rec.target1), color: '#059669' },
+        ].map((item, i) => (
+          <div key={i} style={{ padding: '8px 10px', borderRight: i < 3 ? '1px solid #e2e8f0' : 'none', textAlign: 'center' }}>
+            <p style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>{item.label}</p>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: item.color }}>₹{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Row 4 — P&L + Risk + Links */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {pnl.points !== null && (
+            <span style={{ fontSize: '12px', fontWeight: 700, color: pnl.points >= 0 ? '#059669' : '#dc2626' }}>
+              {pnl.points >= 0 ? '+' : ''}{pnl.points} pts ({pnl.pct >= 0 ? '+' : ''}{pnl.pct}%)
+            </span>
+          )}
+          {rec.risk_level && (
+            <span style={{ fontSize: '10px', fontWeight: 700, color: riskColor(rec.risk_level), textTransform: 'capitalize' }}>
+              ● {rec.risk_level} risk
+            </span>
+          )}
         </div>
-      )}
-      {rec.risk_level && (
-        <div style={{ ...S.flex, gap: '6px', marginTop: '10px' }}>
-          <span style={{ fontSize: '10px', ...S.muted }}>Risk:</span>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: riskColor(rec.risk_level), textTransform: 'capitalize' }}>● {rec.risk_level}</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {rec.chart_url && <a href={rec.chart_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600, textDecoration: 'none' }}>📈 Chart</a>}
+          {rec.report_url && <a href={rec.report_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600, textDecoration: 'none' }}>📄 Report</a>}
         </div>
-      )}
+      </div>
     </div>
   );
 }
