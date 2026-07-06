@@ -2977,8 +2977,27 @@ function AdminPanel({ user, userProfile }) {
   const [editRec, setEditRec] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Notification composer state
-  const [notifForm, setNotifForm] = useState({ title: '', body: '', plan_target: 'all', type: 'info' });
+  // User management state
+  const [userSearch, setUserSearch] = useState('');
+  const [editUser, setEditUser] = useState(null);
+  const [userEditForm, setUserEditForm] = useState({ plan_id: 'basic', plan_expires_at: '', suspended: false });
+  const [userSaving, setUserSaving] = useState(false);
+  const [userMsg, setUserMsg] = useState('');
+
+  // Audit log state
+  const [auditLogs, setAuditLogs] = useState([]);
+
+  const logAudit = async (action, entity_type, entity_id, details) => {
+    try {
+      await supabase.from('audit_log').insert([{
+        action, entity_type, entity_id,
+        details: JSON.stringify(details),
+        performed_by: user?.id,
+        performed_by_email: user?.email,
+        created_at: new Date().toISOString(),
+      }]);
+    } catch(e) { console.warn('Audit log failed:', e.message); }
+  };
   const [notifSending, setNotifSending] = useState(false);
   const [notifMsg, setNotifMsg] = useState('');
   const setNF = (k, v) => setNotifForm(f => ({ ...f, [k]: v }));
@@ -3001,6 +3020,9 @@ function AdminPanel({ user, userProfile }) {
     } else if (activeTab === 'notifications') {
       const { data } = await supabase.from('admin_notifications').select('*').order('created_at', { ascending: false }).limit(50);
       setNotifications(data || []);
+    } else if (activeTab === 'audit') {
+      const { data } = await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(200);
+      setAuditLogs(data || []);
     }
     setLoading(false);
   };
@@ -3062,12 +3084,16 @@ function AdminPanel({ user, userProfile }) {
 
   const deleteRec = async (id) => {
     if (!confirm('Delete this recommendation?')) return;
+    const rec = recs.find(r => r.id === id);
     await supabase.from('recommendations').delete().eq('id', id);
+    await logAudit('DELETE_RECOMMENDATION', 'recommendation', id, { symbol: rec?.symbol, stock_name: rec?.stock_name });
     fetchData();
   };
 
   const updateStatus = async (id, status) => {
+    const rec = recs.find(r => r.id === id);
     await supabase.from('recommendations').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    await logAudit('UPDATE_STATUS', 'recommendation', id, { symbol: rec?.symbol, old_status: rec?.status, new_status: status });
     fetchData();
   };
 
@@ -3105,6 +3131,7 @@ function AdminPanel({ user, userProfile }) {
               { key: 'users', label: '👥 Users' },
               { key: 'analytics', label: '📈 Analytics' },
               { key: 'notifications', label: '🔔 Notifications' },
+              { key: 'audit', label: '📋 Audit Log' },
             ].map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
                 style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: activeTab === t.key ? '#1d4ed8' : 'transparent', color: activeTab === t.key ? '#fff' : '#94a3b8' }}>
@@ -3156,33 +3183,182 @@ function AdminPanel({ user, userProfile }) {
           )}
 
           {/* Users */}
-          {activeTab === 'users' && (
-            loading ? <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading...</div> :
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                <thead>
-                  <tr>
-                    {['Name', 'Email', 'Plan', 'Admin', 'Joined'].map(h => (
-                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #1e293b', color: '#334155', fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map(u => (
-                    <tr key={u.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                      <td style={{ padding: '10px 12px' }}>{u.full_name || '—'}</td>
-                      <td style={{ padding: '10px 12px', color: '#334155' }}>{u.email}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <span style={{ ...S.badge, background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{(u.plan_id || 'basic').toUpperCase()}</span>
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>{u.is_admin ? '✅' : '—'}</td>
-                      <td style={{ padding: '10px 12px', color: '#334155' }}>{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* ─── USERS TAB ─── */}
+          {activeTab === 'users' && (() => {
+            const filtered = users.filter(u =>
+              !userSearch || u.email?.toLowerCase().includes(userSearch.toLowerCase()) || u.full_name?.toLowerCase().includes(userSearch.toLowerCase())
+            );
+            const openEdit = (u) => {
+              setEditUser(u);
+              setUserEditForm({
+                plan_id: u.plan_id || 'basic',
+                plan_expires_at: u.plan_expires_at ? u.plan_expires_at.slice(0,10) : '',
+                suspended: u.suspended || false,
+              });
+              setUserMsg('');
+            };
+            const saveUser = async () => {
+              setUserSaving(true);
+              const expiry = userEditForm.plan_expires_at ? new Date(userEditForm.plan_expires_at).toISOString() : null;
+              const { error } = await supabase.from('users').update({
+                plan_id: userEditForm.plan_id,
+                plan_expires_at: expiry,
+                suspended: userEditForm.suspended,
+                updated_at: new Date().toISOString(),
+              }).eq('id', editUser.id);
+              if (!error) {
+                await logAudit('UPDATE_USER', 'user', editUser.id, {
+                  email: editUser.email,
+                  plan_id: userEditForm.plan_id,
+                  plan_expires_at: expiry,
+                  suspended: userEditForm.suspended,
+                });
+              }
+              setUserSaving(false);
+              setUserMsg(error ? '❌ ' + error.message : '✅ User updated successfully!');
+              fetchData();
+            };
+            const isActive = (u) => u.plan_expires_at && new Date(u.plan_expires_at) > new Date();
+            const planColors = { basic: '#64748b', premium: '#1d4ed8', fno: '#d97706', elite: '#7c3aed' };
+
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: editUser ? '1fr 340px' : '1fr', gap: '16px' }}>
+                {/* User list */}
+                <div>
+                  {/* Search + stats */}
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input style={{ ...S.input, flex: 1, minWidth: '200px' }} placeholder="Search by name or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {[
+                        { label: 'Total', val: users.length, color: '#0f172a' },
+                        { label: 'Active', val: users.filter(isActive).length, color: '#059669' },
+                        { label: 'Expired', val: users.filter(u => !isActive(u)).length, color: '#dc2626' },
+                      ].map((s,i) => (
+                        <div key={i} style={{ ...S.card, padding: '8px 14px', textAlign: 'center', minWidth: '70px' }}>
+                          <p style={{ fontWeight: 800, fontSize: '18px', color: s.color }}>{s.val}</p>
+                          <p style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* User table */}
+                  <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc' }}>
+                          {['User', 'Plan', 'Status', 'Expires', 'Joined', 'Actions'].map(h => (
+                            <th key={h} style={{ padding: '10px 14px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.length === 0 ? (
+                          <tr><td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No users found.</td></tr>
+                        ) : filtered.map(u => {
+                          const active = isActive(u);
+                          const isSelected = editUser?.id === u.id;
+                          return (
+                            <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9', background: isSelected ? '#eff6ff' : u.suspended ? '#fef2f2' : 'transparent' }}>
+                              <td style={{ padding: '11px 14px' }}>
+                                <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>{u.full_name || '—'}</p>
+                                <p style={{ fontSize: '11px', color: '#64748b' }}>{u.email}</p>
+                                {u.is_admin && <span style={{ fontSize: '9px', background: '#ede9fe', color: '#5b21b6', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>ADMIN</span>}
+                              </td>
+                              <td style={{ padding: '11px 14px' }}>
+                                <span style={{ ...S.badge, background: planColors[u.plan_id || 'basic'] + '20', color: planColors[u.plan_id || 'basic'], fontSize: '11px' }}>
+                                  {(u.plan_id || 'basic').toUpperCase()}
+                                </span>
+                              </td>
+                              <td style={{ padding: '11px 14px' }}>
+                                {u.suspended ? (
+                                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>🚫 Suspended</span>
+                                ) : active ? (
+                                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#059669' }}>✅ Active</span>
+                                ) : (
+                                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>⚪ Inactive</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '11px 14px', fontSize: '12px', color: '#64748b' }}>
+                                {u.plan_expires_at ? new Date(u.plan_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                              </td>
+                              <td style={{ padding: '11px 14px', fontSize: '12px', color: '#64748b' }}>
+                                {new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
+                              </td>
+                              <td style={{ padding: '11px 14px' }}>
+                                <button onClick={() => openEdit(u)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, fontSize: '12px' }}>
+                                  ✏️ Edit
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Edit user panel */}
+                {editUser && (
+                  <div style={{ ...S.card, border: '2px solid #1d4ed8', height: 'fit-content', position: 'sticky', top: '80px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                      <div>
+                        <h3 style={{ ...S.h4, marginBottom: '2px' }}>Edit User</h3>
+                        <p style={{ fontSize: '12px', color: '#64748b' }}>{editUser.email}</p>
+                      </div>
+                      <button onClick={() => setEditUser(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>×</button>
+                    </div>
+
+                    {userMsg && (
+                      <div style={{ background: userMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', color: userMsg.startsWith('✅') ? '#065f46' : '#991b1b', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
+                        {userMsg}
+                      </div>
+                    )}
+
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Plan</label>
+                      <select style={S.select} value={userEditForm.plan_id} onChange={e => setUserEditForm(f => ({ ...f, plan_id: e.target.value }))}>
+                        {[['basic','Basic Equity — ₹999'],['premium','Premium Equity — ₹2,499'],['fno','F&O Pro — ₹3,999'],['elite','Elite All Access — ₹5,999']].map(([v,l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Plan Expiry Date</label>
+                      <input style={S.input} type="date" value={userEditForm.plan_expires_at} onChange={e => setUserEditForm(f => ({ ...f, plan_expires_at: e.target.value }))} />
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        {[['1M', 30],['3M', 90],['6M', 180],['1Y', 365]].map(([label, days]) => (
+                          <button key={label} onClick={() => {
+                            const d = new Date(); d.setDate(d.getDate() + days);
+                            setUserEditForm(f => ({ ...f, plan_expires_at: d.toISOString().slice(0,10) }));
+                          }} style={{ ...S.btn, ...S.btnSecondary, padding: '4px 10px', fontSize: '11px', borderRadius: '6px' }}>+{label}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '12px', background: userEditForm.suspended ? '#fef2f2' : '#f8fafc', borderRadius: '8px', border: '1px solid ' + (userEditForm.suspended ? '#fecaca' : '#e2e8f0') }}>
+                      <input type="checkbox" id="suspend-toggle" checked={userEditForm.suspended} onChange={e => setUserEditForm(f => ({ ...f, suspended: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                      <label htmlFor="suspend-toggle" style={{ cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: userEditForm.suspended ? '#dc2626' : '#334155' }}>
+                        {userEditForm.suspended ? '🚫 Account Suspended' : '✅ Account Active'}
+                      </label>
+                    </div>
+
+                    <button onClick={saveUser} disabled={userSaving} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', opacity: userSaving ? 0.7 : 1 }}>
+                      {userSaving ? 'Saving...' : '💾 Save Changes'}
+                    </button>
+
+                    <div style={{ marginTop: '16px', padding: '10px', background: '#f8fafc', borderRadius: '8px' }}>
+                      <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Account Info</p>
+                      <p style={{ fontSize: '12px', color: '#64748b' }}>📅 Joined: {new Date(editUser.created_at).toLocaleDateString('en-IN')}</p>
+                      <p style={{ fontSize: '12px', color: '#64748b' }}>📱 Mobile: {editUser.mobile || '—'}</p>
+                      <p style={{ fontSize: '12px', color: '#64748b' }}>🛡️ Admin: {editUser.is_admin ? 'Yes' : 'No'}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {/* ─── ANALYTICS TAB ─── */}
           {activeTab === 'analytics' && (
             <div>
@@ -3375,11 +3551,104 @@ function AdminPanel({ user, userProfile }) {
               </div>
             </div>
           )}
+
+          {/* AUDIT LOG TAB */}
+          {activeTab === 'audit' && (() => {
+            const exportCSV = () => {
+              const headers = ['Timestamp','Action','Entity Type','Entity ID','Performed By','Details'];
+              const rows = auditLogs.map(l => [
+                new Date(l.created_at).toLocaleString('en-IN'),
+                l.action||'', l.entity_type||'', l.entity_id||'',
+                l.performed_by_email||l.performed_by||'', l.details||'',
+              ]);
+              const csv = [headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+              const blob = new Blob([csv],{type:'text/csv'});
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = `stockvista_audit_${new Date().toISOString().slice(0,10)}.csv`;
+              a.click();
+            };
+            const actionColor = (action) => {
+              if(action?.includes('DELETE')) return {bg:'#fee2e2',color:'#991b1b'};
+              if(action?.includes('CREATE')||action?.includes('PUBLISH')) return {bg:'#d1fae5',color:'#065f46'};
+              if(action?.includes('UPDATE')||action?.includes('STATUS')) return {bg:'#dbeafe',color:'#1e40af'};
+              if(action?.includes('SUSPEND')) return {bg:'#fef3c7',color:'#92400e'};
+              return {bg:'#f1f5f9',color:'#64748b'};
+            };
+            return (
+              <div>
+                <div style={{...S.flexBetween,marginBottom:'16px',flexWrap:'wrap',gap:'10px'}}>
+                  <div>
+                    <h3 style={{...S.h4,marginBottom:'2px'}}>Audit Log</h3>
+                    <p style={{fontSize:'12px',color:'#64748b'}}>{auditLogs.length} entries · Immutable · No delete</p>
+                  </div>
+                  <button onClick={exportCSV} style={{...S.btn,...S.btnSecondary}}>⬇️ Export CSV for SEBI</button>
+                </div>
+                <div style={{...S.disclaimer,marginBottom:'16px'}}>
+                  ⚠️ Audit log maintained for SEBI compliance under SEBI (Research Analysts) Regulations 2014. Immutable — no entries can be deleted. Export as CSV for regulatory inspection.
+                </div>
+                {loading ? <div style={{textAlign:'center',padding:'60px',color:'#94a3b8'}}>Loading audit log...</div>
+                : auditLogs.length === 0 ? (
+                  <div style={{...S.card,textAlign:'center',padding:'60px'}}>
+                    <div style={{fontSize:'40px',marginBottom:'12px'}}>📋</div>
+                    <h3 style={{...S.h3,marginBottom:'8px'}}>No audit entries yet</h3>
+                    <p style={{color:'#64748b',fontSize:'13px'}}>Admin actions — publish call, edit status, update user — are logged automatically.</p>
+                  </div>
+                ) : (
+                  <div style={{...S.card,padding:'0',overflowX:'auto'}}>
+                    <table style={{width:'100%',borderCollapse:'collapse',fontSize:'12px'}}>
+                      <thead>
+                        <tr style={{background:'#f8fafc'}}>
+                          {['Timestamp','Action','Entity','Performed By','Details'].map(h=>(
+                            <th key={h} style={{padding:'10px 14px',textAlign:'left',borderBottom:'2px solid #e2e8f0',color:'#94a3b8',fontWeight:700,fontSize:'10px',textTransform:'uppercase',letterSpacing:'0.05em',whiteSpace:'nowrap'}}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auditLogs.map((log,i) => {
+                          const c = actionColor(log.action);
+                          let d={};
+                          try{d=JSON.parse(log.details||'{}');}catch(e){}
+                          return (
+                            <tr key={log.id||i} style={{borderBottom:'1px solid #f1f5f9'}}
+                              onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+                              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                              <td style={{padding:'10px 14px',whiteSpace:'nowrap',color:'#64748b',fontSize:'11px'}}>
+                                <p>{new Date(log.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'})}</p>
+                                <p style={{color:'#94a3b8',fontSize:'10px'}}>{new Date(log.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</p>
+                              </td>
+                              <td style={{padding:'10px 14px',whiteSpace:'nowrap'}}>
+                                <span style={{...S.badge,background:c.bg,color:c.color,fontSize:'10px'}}>{log.action?.replace(/_/g,' ')}</span>
+                              </td>
+                              <td style={{padding:'10px 14px',fontSize:'11px'}}>
+                                <p style={{fontWeight:600,color:'#334155',textTransform:'capitalize'}}>{log.entity_type?.replace('_',' ')}</p>
+                                {d.symbol&&<p style={{color:'#94a3b8',fontSize:'10px'}}>{d.symbol}</p>}
+                                {d.email&&<p style={{color:'#94a3b8',fontSize:'10px'}}>{d.email}</p>}
+                              </td>
+                              <td style={{padding:'10px 14px',fontSize:'11px',color:'#64748b',whiteSpace:'nowrap'}}>{log.performed_by_email||'—'}</td>
+                              <td style={{padding:'10px 14px',fontSize:'11px',color:'#64748b',maxWidth:'200px'}}>
+                                {Object.entries(d).filter(([k])=>!['symbol','email'].includes(k)).slice(0,4).map(([k,v])=>(
+                                  <span key={k} style={{display:'inline-block',background:'#f1f5f9',borderRadius:'4px',padding:'1px 5px',margin:'1px',fontSize:'10px'}}>
+                                    {k.replace(/_/g,' ')}: <strong>{String(v).slice(0,20)}</strong>
+                                  </span>
+                                ))}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
   );
 }
+
 function AddRecForm({ existingRec, onSave, adminId }) {
   const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '' };
   const [form, setForm] = useState(existingRec || empty);
