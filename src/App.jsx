@@ -34,17 +34,24 @@ const PLANS = {
 };
 
 const PLAN_FEATURES = [
-  { key: 'basic_recommendations', label: 'Basic Recommendations' },
-  { key: 'market_updates', label: 'Market Updates' },
-  { key: 'blog_access', label: 'Blog Access' },
-  { key: 'equity_recommendations', label: 'Equity Recommendations' },
-  { key: 'fno_recommendations', label: 'F&O Recommendations' },
-  { key: 'intraday_calls', label: 'Intraday Calls' },
-  { key: 'options_strategies', label: 'Options Strategies' },
-  { key: 'ipo_recommendations', label: 'IPO Recommendations' },
-  { key: 'telegram_signals', label: 'Telegram Signals' },
-  { key: 'priority_support', label: 'Priority Support' },
-  { key: 'one_on_one', label: 'One-on-One Sessions' },
+  { key: 'equity_calls',      label: 'Equity Calls / Month',       values: ['4–6', '8–12', '8–12', '8–12'] },
+  { key: 'fno_calls',         label: 'F&O Calls / Month',           values: ['—', '—', '4–6', '6–8'] },
+  { key: 'intraday_calls',    label: 'Intraday Calls / Month',      values: ['—', '—', '2–4', '5–8'] },
+  { key: 'commodity_calls',   label: 'Commodity Calls / Month',     values: ['—', '—', '—', '3–5'] },
+  { key: 'ipo_calls',         label: 'IPO Calls / Month',           values: ['—', '2–3', '2–3', '2–3'] },
+  { key: 'total_calls',       label: 'Total Calls / Month',         values: ['4–6', '10–15', '14–21', '24–36'] },
+  { key: 'stocks_covered',    label: 'Stocks Covered',              values: ['Large Cap', 'All Caps', 'All Caps', 'All Caps'] },
+  { key: 'call_targets',      label: 'Call Targets',                values: ['T1 only', 'T1, T2, T3', 'T1, T2, T3', 'T1, T2, T3'] },
+  { key: 'pdf_report',        label: 'PDF Research Report per Call', values: [false, true, true, true] },
+  { key: 'weekly_market',     label: 'Weekly Market View',          values: [true, true, true, true] },
+  { key: 'blog_access',       label: 'Blog & Education',            values: [true, true, true, true] },
+  { key: 'options_strategy',  label: 'Options Strategies',          values: ['—', '—', 'Buy only', 'Buy + Sell'] },
+  { key: 'lot_size',          label: 'Lot Size Specified (F&O)',    values: [false, false, true, true] },
+  { key: 'telegram',          label: 'Telegram Signal Alerts',      values: [false, false, true, true] },
+  { key: 'performance_rpt',   label: 'Monthly Performance Report',  values: [false, true, true, true] },
+  { key: 'email_support',     label: 'Email Support',               values: ['—', '24hr response', '12hr response', 'WhatsApp direct'] },
+  { key: 'one_on_one',        label: '1-on-1 Monthly Session',      values: [false, false, false, '30 min/mo'] },
+  { key: 'portfolio_review',  label: 'Portfolio Review on Request', values: [false, false, false, true] },
 ];
 
 const BILLING_CYCLES = [
@@ -707,103 +714,200 @@ function PricingCards({ compact = false }) {
 // ─── PRICING PAGE ─────────────────────────────────────────────────────────────
 function PricingPage() {
   const faqs = [
-    { q: 'Can I change my plan later?', a: 'Yes, you can upgrade or downgrade at any time. Upgrades are immediate; downgrades apply at next billing cycle.' },
-    { q: 'What payment methods do you accept?', a: 'We accept all major credit/debit cards, UPI, Net Banking, Paytm, PhonePe, and Google Pay via Razorpay.' },
-    { q: 'Is there a free trial?', a: 'We don\'t offer a free trial at this time. All plans start with Basic Equity, our most affordable research tier, so you can upgrade only when you\'re ready.' },
-    { q: 'Can I get a refund?', a: 'We have a strict no-refund policy. All subscription fees are non-refundable once paid. Please review our complete track record on the Performance page and read our Refund Policy before subscribing.' },
-    { q: 'Are the recommendations guaranteed?', a: 'No. Research analysis is based on technical and fundamental research but does not guarantee returns. Investment is subject to market risk.' },
+    { q: 'How many calls will I get per month?', a: 'Basic: 4–6 equity calls. Premium: 10–15 calls (equity + IPO). F&O Pro: 14–21 calls (equity + F&O + intraday). Elite: 24–36 calls across all segments. These are ranges — we publish calls only when there are high-conviction setups. We never publish low-quality calls just to meet a number.' },
+    { q: 'What is the difference between Basic and Premium?', a: 'Basic covers large-cap equity with 1 target level. Premium adds mid & small cap, 3 target levels (T1/T2/T3), IPO calls, PDF research reports, priority support, and monthly performance reports. The service layer — not just call count — is what makes Premium worth the upgrade.' },
+    { q: 'Can F&O beginners subscribe to F&O Pro?', a: 'F&O Pro is recommended for investors with prior F&O experience. Each F&O call includes lot size, margin required, and max loss possible. Please read our Risk Disclosure before subscribing. If you are new to F&O, start with Basic or Premium and build experience first.' },
+    { q: 'Can I change my plan later?', a: 'Yes. Upgrades are applied immediately. Downgrades apply from the next billing cycle.' },
+    { q: 'What payment methods do you accept?', a: 'All major credit/debit cards, UPI, Net Banking, Paytm, PhonePe, and Google Pay via Razorpay.' },
+    { q: 'Can I get a refund?', a: 'We have a strict no-refund policy. All subscription fees are non-refundable. Please review our Performance page track record and Refund Policy before subscribing.' },
+    { q: 'Are the recommendations guaranteed?', a: 'No. Research is based on technical and fundamental analysis but does not guarantee returns. Every call includes stop-loss — please respect it. Investment is subject to market risk.' },
   ];
 
-  const planCols = [
-    { key: 'basic', name: 'Basic Equity', color: '#64748b' },
-    { key: 'premium', name: 'Premium Equity', color: '#1d4ed8' },
-    { key: 'fno', name: 'F&O Pro', color: '#d97706' },
-    { key: 'elite', name: 'Elite All Access', color: '#7c3aed' },
+  const planDetails = [
+    {
+      id: 'basic', name: 'Basic Equity', price: '₹999', color: '#334155', bg: '#f8fafc', border: '#e2e8f0',
+      calls: '4–6', callType: 'equity calls/month', icon: '📊',
+      headline: 'Start with research-backed large-cap equity calls.',
+      highlights: ['Large Cap stocks only (NSE/BSE)', 'Entry + Target 1 + Stop Loss', 'Positional (1–4 weeks)', 'Weekly market view', 'Blog & education access'],
+      notIncluded: ['Mid/Small cap', 'IPO calls', 'PDF reports', 'Support'],
+    },
+    {
+      id: 'premium', name: 'Premium Equity', price: '₹2,499', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
+      calls: '10–15', callType: 'total calls/month', icon: '📈',
+      headline: 'Full equity research with IPOs and 3 profit targets.',
+      highlights: ['All Caps — Large, Mid, Small', 'Entry + T1, T2, T3 + Stop Loss', 'Positional + Swing (3–15 days)', '2–3 IPO calls / month', 'PDF research report per call', 'Monthly performance report', 'Priority email (24hr response)'],
+      notIncluded: ['F&O calls', 'Intraday', 'Telegram alerts'],
+    },
+    {
+      id: 'fno', name: 'F&O Pro', price: '₹3,999', color: '#92400e', bg: '#fffbeb', border: '#fde68a',
+      calls: '14–21', callType: 'total calls/month', icon: '⚡', popular: true,
+      headline: 'Equity + F&O + Intraday for active traders.',
+      highlights: ['All Premium Equity features', '4–6 F&O calls/mo (Nifty/BankNifty/Stocks)', '2–4 Intraday calls/month', 'Options: Buy side (CE/PE)', 'Lot size + margin specified', 'Telegram signal alerts', 'Priority email (12hr response)'],
+      notIncluded: ['Commodity calls', '1-on-1 sessions'],
+    },
+    {
+      id: 'elite', name: 'Elite All Access', price: '₹5,999', color: '#5b21b6', bg: '#faf5ff', border: '#c4b5fd',
+      calls: '24–36', callType: 'total calls/month', icon: '💎',
+      headline: 'Complete research suite — every segment, every service.',
+      highlights: ['Everything in F&O Pro', '3–5 MCX Commodity calls/mo (Gold, Silver, Crude)', '5–8 Intraday calls/month', 'Options: Buy + Sell strategies', '1 monthly 30-min 1-on-1 session', 'Portfolio review on request', 'Dedicated WhatsApp support', 'Quarterly accuracy report'],
+      notIncluded: [],
+    },
   ];
-
-  const matrix = {
-    basic_recommendations:  [true,  true,  true,  true],
-    market_updates:         [true,  true,  true,  true],
-    blog_access:            [true,  true,  true,  true],
-    equity_recommendations: [true,  true,  true,  true],
-    fno_recommendations:    [false, false, true,  true],
-    intraday_calls:         [false, false, true,  true],
-    options_strategies:     [false, false, true,  true],
-    ipo_recommendations:    [false, true,  true,  true],
-    telegram_signals:       [false, false, false, true],
-    priority_support:       [false, true,  true,  true],
-    one_on_one:             [false, false, false, true],
-  };
 
   return (
-    <div style={{ paddingTop: '80px', background: '#f1f5f9' }}>
+    <div style={{ paddingTop: '80px', background: '#f0f4f8' }}>
 
       {/* Hero */}
-      <section style={{ ...S.section, textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 60%, #fefce8 100%)' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', background: 'rgba(29,78,216,0.08)', color: '#1d4ed8', borderRadius: '20px', padding: '6px 16px', fontSize: '13px', fontWeight: 700, marginBottom: '16px' }}>
+      <section style={{ ...S.section, textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f0f4f8 60%)' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+          <div style={{ display: 'inline-block', background: 'rgba(29,78,216,0.08)', color: '#1e40af', borderRadius: '20px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, marginBottom: '16px', letterSpacing: '0.04em' }}>
             SEBI Registered Research Analyst · {SEBI_REG}
           </div>
           <h1 style={{ ...S.h2, marginBottom: '12px' }}>Choose Your Research Plan</h1>
-          <p style={{ ...S.muted, marginBottom: '40px', fontSize: '15px' }}>Flexible plans for traders of all levels. Cancel anytime.</p>
-          <PricingCards compact={false} />
+          <p style={{ color: '#64748b', marginBottom: '12px', fontSize: '15px' }}>Flexible plans for every type of trader. Quality over quantity — every call is high-conviction.</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '48px' }}>⚠️ Call counts are monthly ranges. We publish only when high-conviction setups exist. No padding, no quota-filling.</p>
+        </div>
+
+        {/* Plan cards */}
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          {planDetails.map(p => (
+            <div key={p.id} style={{ background: '#fff', border: `2px solid ${p.popular ? '#f59e0b' : p.border}`, borderRadius: '16px', padding: '24px', textAlign: 'left', position: 'relative', boxShadow: p.popular ? '0 4px 20px rgba(245,158,11,0.15)' : '0 1px 4px rgba(0,0,0,0.04)' }}>
+              {p.popular && <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: '#d97706', color: '#fff', fontSize: '11px', fontWeight: 800, padding: '4px 12px', borderRadius: '20px', whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>⭐ MOST POPULAR</div>}
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>{p.icon}</div>
+              <p style={{ fontWeight: 800, fontSize: '15px', color: p.color, marginBottom: '2px' }}>{p.name}</p>
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px', lineHeight: 1.4 }}>{p.headline}</p>
+
+              {/* Call count highlight */}
+              <div style={{ background: p.bg, border: `1px solid ${p.border}`, borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '28px', fontWeight: 900, color: p.color, lineHeight: 1 }}>{p.calls}</span>
+                <span style={{ fontSize: '11px', color: p.color, fontWeight: 600, lineHeight: 1.4 }}>{p.callType}</span>
+              </div>
+
+              <p style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '2px' }}>{p.price}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '18px' }}>per month</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                {p.highlights.map((h, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '7px', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#059669', fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>✓</span>
+                    <span style={{ fontSize: '12px', color: '#334155', lineHeight: 1.5 }}>{h}</span>
+                  </div>
+                ))}
+                {p.notIncluded.map((h, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '7px', alignItems: 'flex-start', opacity: 0.45 }}>
+                    <span style={{ color: '#94a3b8', flexShrink: 0, marginTop: '1px' }}>✕</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>{h}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={() => navigate('/subscription')} style={{ ...S.btn, width: '100%', justifyContent: 'center', background: p.popular ? '#d97706' : p.color, color: '#fff', border: 'none', fontWeight: 700 }}>
+                Subscribe →
+              </button>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Feature Comparison Table */}
+      {/* Comparison Table */}
       <section style={{ ...S.section, background: '#ffffff', paddingTop: '60px' }}>
-        <div style={{ maxWidth: '950px', margin: '0 auto' }}>
-          <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '8px' }}>Full Feature Comparison</h2>
-          <p style={{ textAlign: 'center', ...S.muted, marginBottom: '40px' }}>See exactly what each plan includes</p>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '8px' }}>Full Comparison</h2>
+          <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '40px' }}>Every feature, every plan — no surprises</p>
 
-          <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', minWidth: '600px' }}>
+          <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '680px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
-                  <th style={{ padding: '16px 20px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#0f172a', fontWeight: 700, fontSize: '13px', width: '35%' }}>Feature</th>
-                  {planCols.map(p => (
-                    <th key={p.key} style={{ padding: '16px 12px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', color: p.color, fontWeight: 800, fontSize: '13px' }}>
-                      {p.key === 'fno' ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: '6px', fontSize: '11px' }}>⭐ POPULAR</span> : ''}
-                      <div style={{ marginTop: p.key === 'fno' ? '4px' : '0' }}>{p.name}</div>
+                  <th style={{ padding: '14px 18px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '12px', width: '32%' }}>Feature</th>
+                  {[
+                    { name: 'Basic', sub: '₹999/mo', color: '#334155' },
+                    { name: 'Premium', sub: '₹2,499/mo', color: '#1e40af' },
+                    { name: 'F&O Pro ⭐', sub: '₹3,999/mo', color: '#92400e' },
+                    { name: 'Elite', sub: '₹5,999/mo', color: '#5b21b6' },
+                  ].map((c, i) => (
+                    <th key={i} style={{ padding: '14px 12px', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>
+                      <p style={{ fontWeight: 800, color: c.color, fontSize: '13px' }}>{c.name}</p>
+                      <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>{c.sub}</p>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {PLAN_FEATURES.map((f, i) => (
-                  <tr key={f.key} style={{ background: i % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                    <td style={{ padding: '13px 20px', color: '#1e293b', fontWeight: 500, borderBottom: '1px solid #f1f5f9' }}>{f.label}</td>
-                    {(matrix[f.key] || [false,false,false,false]).map((has, j) => (
-                      <td key={j} style={{ padding: '13px 12px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          width: '26px', height: '26px', borderRadius: '50%',
-                          background: has ? 'rgba(5,150,105,0.1)' : 'rgba(185,28,28,0.08)',
-                          color: has ? '#047857' : '#b91c1c',
-                          fontSize: '14px', fontWeight: 800
-                        }}>
-                          {has ? '✓' : '✕'}
-                        </span>
+                {/* Section: Calls */}
+                <tr style={{ background: '#f8fafc' }}>
+                  <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0' }}>Research Calls</td>
+                </tr>
+                {PLAN_FEATURES.filter(f => ['equity_calls','fno_calls','intraday_calls','commodity_calls','ipo_calls','total_calls'].includes(f.key)).map((f, i) => (
+                  <tr key={f.key} style={{ borderBottom: '1px solid #f1f5f9', background: f.key === 'total_calls' ? '#f0f9ff' : i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <td style={{ padding: '11px 18px', color: f.key === 'total_calls' ? '#1e40af' : '#334155', fontWeight: f.key === 'total_calls' ? 700 : 500 }}>{f.label}</td>
+                    {f.values.map((v, j) => (
+                      <td key={j} style={{ padding: '11px 12px', textAlign: 'center', fontWeight: v === '—' ? 400 : 700, color: v === '—' ? '#94a3b8' : f.key === 'total_calls' ? '#1e40af' : '#0f172a' }}>{v}</td>
+                    ))}
+                  </tr>
+                ))}
+                {/* Section: Coverage */}
+                <tr style={{ background: '#f8fafc' }}>
+                  <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Coverage & Targets</td>
+                </tr>
+                {PLAN_FEATURES.filter(f => ['stocks_covered','call_targets','options_strategy','lot_size'].includes(f.key)).map((f, i) => (
+                  <tr key={f.key} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <td style={{ padding: '11px 18px', color: '#334155', fontWeight: 500 }}>{f.label}</td>
+                    {f.values.map((v, j) => (
+                      <td key={j} style={{ padding: '11px 12px', textAlign: 'center' }}>
+                        {v === false ? <span style={{ color: '#cbd5e1' }}>✕</span>
+                          : v === true ? <span style={{ color: '#059669', fontWeight: 700 }}>✓</span>
+                          : <span style={{ fontSize: '12px', color: v === '—' ? '#94a3b8' : '#0f172a', fontWeight: v === '—' ? 400 : 600 }}>{v}</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {/* Section: Services */}
+                <tr style={{ background: '#f8fafc' }}>
+                  <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Reports & Support</td>
+                </tr>
+                {PLAN_FEATURES.filter(f => ['pdf_report','weekly_market','blog_access','telegram','performance_rpt','email_support','one_on_one','portfolio_review'].includes(f.key)).map((f, i) => (
+                  <tr key={f.key} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <td style={{ padding: '11px 18px', color: '#334155', fontWeight: 500 }}>{f.label}</td>
+                    {f.values.map((v, j) => (
+                      <td key={j} style={{ padding: '11px 12px', textAlign: 'center' }}>
+                        {v === false ? <span style={{ color: '#cbd5e1' }}>✕</span>
+                          : v === true ? <span style={{ color: '#059669', fontWeight: 700 }}>✓</span>
+                          : <span style={{ fontSize: '11px', color: v === '—' ? '#94a3b8' : '#0f172a', fontWeight: v === '—' ? 400 : 600 }}>{v}</span>}
                       </td>
                     ))}
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#f8fafc' }}>
-                  <td style={{ padding: '16px 20px', fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>Monthly Price</td>
-                  {[{ price: '₹999', color: '#64748b' }, { price: '₹2,499', color: '#1d4ed8' }, { price: '₹3,999', color: '#d97706' }, { price: '₹5,999', color: '#7c3aed' }].map((p, i) => (
-                    <td key={i} style={{ padding: '16px 12px', textAlign: 'center', fontWeight: 800, fontSize: '16px', color: p.color }}>{p.price}</td>
+                <tr style={{ background: '#0f172a' }}>
+                  <td style={{ padding: '14px 18px', fontWeight: 700, color: '#fff', fontSize: '13px' }}>Monthly Price</td>
+                  {[{ price: '₹999', color: '#94a3b8' }, { price: '₹2,499', color: '#93c5fd' }, { price: '₹3,999', color: '#fde68a' }, { price: '₹5,999', color: '#c4b5fd' }].map((p, i) => (
+                    <td key={i} style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 900, fontSize: '17px', color: p.color }}>{p.price}</td>
+                  ))}
+                </tr>
+                <tr style={{ background: '#1e293b' }}>
+                  <td style={{ padding: '10px 18px' }} />
+                  {planDetails.map(p => (
+                    <td key={p.id} style={{ padding: '10px 12px', textAlign: 'center' }}>
+                      <button onClick={() => navigate('/subscription')} style={{ ...S.btn, background: p.popular ? '#d97706' : p.color, color: '#fff', border: 'none', ...S.btnSm, justifyContent: 'center', width: '100%', fontWeight: 700 }}>
+                        Subscribe
+                      </button>
+                    </td>
                   ))}
                 </tr>
               </tfoot>
             </table>
           </div>
+
+          <div style={{ ...S.disclaimer, marginTop: '24px' }}>
+            ⚠️ Call counts shown are monthly ranges. Market conditions may result in fewer calls when high-conviction setups are unavailable. We do not publish calls to meet a quota. Past accuracy does not guarantee future returns.
+          </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section style={{ ...S.section, background: '#f1f5f9' }}>
+      <section style={{ ...S.section, background: '#f0f4f8' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '40px' }}>Frequently Asked Questions</h2>
           {faqs.map((faq, i) => (
@@ -816,6 +920,7 @@ function PricingPage() {
     </div>
   );
 }
+
 
 function FaqItem({ q, a }) {
   const [open, setOpen] = useState(false);
