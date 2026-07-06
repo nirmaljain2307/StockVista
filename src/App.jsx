@@ -2023,36 +2023,83 @@ function ProfilePage({ user, userProfile }) {
   const [mobile, setMobile] = useState(userProfile?.mobile || '');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState(userProfile?.avatar_url || null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { setMsg('Image must be under 2MB.'); return; }
+    setUploading(true);
+    const ext = file.name.split('.').pop();
+    const path = `avatars/${user.id}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('user-avatars').upload(path, file, { upsert: true });
+    if (upErr) { setMsg('Upload error: ' + upErr.message); setUploading(false); return; }
+    const { data } = supabase.storage.from('user-avatars').getPublicUrl(path);
+    const url = data.publicUrl + '?t=' + Date.now();
+    await supabase.from('users').update({ avatar_url: url }).eq('id', user.id);
+    setAvatarUrl(url);
+    setUploading(false);
+    setMsg('✅ Photo updated!');
+  };
+
   const save = async () => {
     setSaving(true);
     const { error } = await supabase.from('users').update({ full_name: name, mobile }).eq('id', user.id);
     setSaving(false);
     if (error) { setMsg('Error: ' + error.message); return; }
-    setMsg('Profile updated successfully!');
+    setMsg('✅ Profile updated!');
     setEditing(false);
   };
+
   if (!user) { navigate('/login'); return null; }
   const plan = PLANS[userProfile?.plan_id || 'basic'];
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '28px' }}>👤 My Profile</h1>
+
           {/* Avatar + plan badge */}
           <div style={{ ...S.card, marginBottom: '16px', display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #1d4ed8, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', color: '#fff', fontWeight: 800, flexShrink: 0 }}>
-              {(userProfile?.full_name || user?.email || 'U')[0].toUpperCase()}
+            {/* Avatar with upload */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #bfdbfe' }} />
+              ) : (
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #1e40af, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#fff', fontWeight: 800, border: '3px solid #bfdbfe' }}>
+                  {(userProfile?.full_name || user?.email || 'U')[0].toUpperCase()}
+                </div>
+              )}
+              {/* Upload overlay */}
+              <label htmlFor="avatar-upload" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.45)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}>
+                {uploading ? (
+                  <span style={{ color: '#fff', fontSize: '20px' }}>⏳</span>
+                ) : (
+                  <span style={{ color: '#fff', fontSize: '18px', opacity: 0 }} className="cam-icon">📷</span>
+                )}
+              </label>
+              <input id="avatar-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadAvatar} />
+              <div style={{ position: 'absolute', bottom: '2px', right: '2px', background: '#1e40af', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid #fff' }}>
+                <label htmlFor="avatar-upload" style={{ cursor: 'pointer', fontSize: '11px', color: '#fff', lineHeight: 1 }}>📷</label>
+              </div>
             </div>
+
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: '18px', color: '#0f172a' }}>{userProfile?.full_name || 'Investor'}</p>
               <p style={{ color: '#64748b', fontSize: '13px' }}>{user?.email}</p>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
                 <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8' }}>{plan?.name || 'Basic Equity'}</span>
                 <span style={{ ...S.badge, background: isActive ? '#d1fae5' : '#fee2e2', color: isActive ? '#065f46' : '#991b1b' }}>
-                  {isActive ? 'Active' : 'Inactive'}
+                  {isActive ? '✅ Active' : '⚠️ Inactive'}
                 </span>
               </div>
+              {msg && <p style={{ fontSize: '12px', color: msg.startsWith('✅') ? '#059669' : '#dc2626', marginTop: '8px', fontWeight: 600 }}>{msg}</p>}
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Click the camera icon to change photo · Max 2MB</p>
             </div>
           </div>
           {/* Profile details */}
@@ -3011,7 +3058,28 @@ function AdminPanel({ user, userProfile }) {
     show_watchlist_to_free: true,
     show_blog_to_all: true,
   });
-  const [settingsSaved, setSettingsSaved] = useState(false);
+  // Blog manager state
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [blogForm, setBlogForm] = useState(null); // null = list, {} = new, {id,...} = edit
+  const emptyBlog = { title: '', slug: '', content: '', summary: '', tag: 'Education', status: 'draft', author: ANALYST_NAME };
+  const setBF = (k, v) => setBlogForm(f => ({ ...f, [k]: v }));
+  const genSlug = (title) => title.toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').slice(0,60);
+
+  // Performance tracker state
+  const [perfData, setPerfData] = useState(null);
+  const [perfMonth, setPerfMonth] = useState(new Date().toISOString().slice(0,7));
+
+  // Email composer state
+  const [emailForm, setEmailForm] = useState({ subject: '', body: '', plan_target: 'all' });
+  const setEF = (k,v) => setEmailForm(f => ({ ...f, [k]: v }));
+
+  // Coupon state
+  const [coupons, setCoupons] = useState([]);
+  const [couponForm, setCouponForm] = useState({ code: '', type: 'percent', value: '', plan_id: 'all', max_uses: '', expires_at: '' });
+  const setCF = (k,v) => setCouponForm(f => ({ ...f, [k]: v }));
+
+  // Revenue state
+  const [revenueData, setRevenueData] = useState(null);
 
   const logAudit = async (action, entity_type, entity_id, details) => {
     try {
@@ -3043,6 +3111,16 @@ function AdminPanel({ user, userProfile }) {
     } else if (activeTab === 'notifications') {
       const { data } = await supabase.from('admin_notifications').select('*').order('created_at', { ascending: false }).limit(50);
       setNotifications(data || []);
+    } else if (activeTab === 'coupons') {
+      const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+      setCoupons(data || []);
+    } else if (activeTab === 'revenue') {
+      await fetchRevenue();
+    } else if (activeTab === 'blog') {
+      const { data } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+      setBlogPosts(data || []);
+    } else if (activeTab === 'performance') {
+      await fetchPerformance();
     } else if (activeTab === 'audit') {
       const { data } = await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(200);
       setAuditLogs(data || []);
@@ -3086,6 +3164,68 @@ function AdminPanel({ user, userProfile }) {
         wins: allRecs.filter(r=>r.segment===seg && r.status==='target_hit').length,
       })).filter(s=>s.total>0),
     });
+  };
+
+  const fetchPerformance = async () => {
+    const { data: allRecs } = await supabase.from('recommendations')
+      .select('id, symbol, stock_name, action, segment, entry_price, target1, stop_loss, exit_price, cmp, status, published_at, updated_at')
+      .in('status', ['target_hit','sl_hit','closed','expired','archived']);
+    const recs = allRecs || [];
+    const calcReturn = (r) => {
+      const entry = parseFloat(r.entry_price);
+      const exit = parseFloat(r.exit_price) || (r.status === 'target_hit' ? parseFloat(r.target1) : parseFloat(r.stop_loss));
+      if (!entry || !exit) return null;
+      return r.action === 'SELL' ? ((entry - exit) / entry) * 100 : ((exit - entry) / entry) * 100;
+    };
+    const withReturn = recs.map(r => ({ ...r, ret: calcReturn(r) })).filter(r => r.ret !== null);
+    // Monthly breakdown — last 4 months
+    const months = [];
+    for (let i = 0; i < 4; i++) {
+      const d = new Date(); d.setMonth(d.getMonth() - i);
+      const ym = d.toISOString().slice(0,7);
+      const label = d.toLocaleString('en-IN', { month: 'short', year: '2-digit' });
+      const monthRecs = withReturn.filter(r => (r.updated_at || r.published_at || '').slice(0,7) === ym);
+      const wins = monthRecs.filter(r => r.status === 'target_hit');
+      months.push({ ym, label, total: monthRecs.length, wins: wins.length, winRate: monthRecs.length ? ((wins.length/monthRecs.length)*100).toFixed(1) : 0, avgReturn: monthRecs.length ? (monthRecs.reduce((s,r) => s+r.ret, 0)/monthRecs.length).toFixed(2) : 0 });
+    }
+    // Segment breakdown
+    const segments = ['equity','futures','options','commodity'].map(seg => {
+      const sr = withReturn.filter(r => r.segment === seg);
+      const wins = sr.filter(r => r.status === 'target_hit');
+      return { seg, total: sr.length, wins: wins.length, winRate: sr.length ? ((wins.length/sr.length)*100).toFixed(1) : 0, avgReturn: sr.length ? (sr.reduce((s,r)=>s+r.ret,0)/sr.length).toFixed(2) : 0 };
+    }).filter(s => s.total > 0);
+    // Best and worst
+    const sorted = [...withReturn].sort((a,b) => b.ret - a.ret);
+    const best = sorted.slice(0,5);
+    const worst = sorted.slice(-5).reverse();
+    // Current month calls
+    const curMonthRecs = withReturn.filter(r => (r.updated_at || r.published_at || '').slice(0,7) === perfMonth);
+    setPerfData({ months, segments, best, worst, curMonthRecs, total: withReturn.length, wins: withReturn.filter(r=>r.status==='target_hit').length, avgReturn: withReturn.length ? (withReturn.reduce((s,r)=>s+r.ret,0)/withReturn.length).toFixed(2) : 0 });
+  };
+
+  const fetchRevenue = async () => {
+    const { data: allUsers } = await supabase.from('users').select('id, plan_id, plan_expires_at, created_at');
+    const users = allUsers || [];
+    const now = new Date();
+    const planRevenue = { basic: 999, premium: 2499, fno: 3999, elite: 5999 };
+    const active = users.filter(u => u.plan_id && u.plan_expires_at && new Date(u.plan_expires_at) > now);
+    const mrr = active.reduce((s,u) => s + (planRevenue[u.plan_id] || 0), 0);
+    const expiringWeek = active.filter(u => new Date(u.plan_expires_at) < new Date(now.getTime() + 7*24*60*60*1000));
+    const expiringMonth = active.filter(u => new Date(u.plan_expires_at) < new Date(now.getTime() + 30*24*60*60*1000));
+    const churned = users.filter(u => u.plan_id && u.plan_expires_at && new Date(u.plan_expires_at) < now);
+    const planBreakdown = Object.entries(planRevenue).map(([plan, price]) => ({
+      plan, price, count: active.filter(u => u.plan_id === plan).length,
+      revenue: active.filter(u => u.plan_id === plan).length * price,
+    })).filter(p => p.count > 0);
+    const monthlyGrowth = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(); d.setMonth(d.getMonth() - i);
+      const ym = d.toISOString().slice(0,7);
+      const label = d.toLocaleString('en-IN', { month: 'short', year: '2-digit' });
+      const newSubs = users.filter(u => u.created_at?.slice(0,7) === ym && u.plan_id).length;
+      monthlyGrowth.push({ ym, label, newSubs });
+    }
+    setRevenueData({ mrr, active: active.length, churned: churned.length, expiringWeek: expiringWeek.length, expiringMonth: expiringMonth.length, planBreakdown, monthlyGrowth, totalUsers: users.length, churnRate: users.length > 0 ? ((churned.length / users.length) * 100).toFixed(1) : 0, avgLTV: active.length > 0 ? (mrr * 6 / active.length).toFixed(0) : 0 });
   };
 
   const sendNotification = async () => {
@@ -3153,8 +3293,13 @@ function AdminPanel({ user, userProfile }) {
               { key: 'add_recommendation', label: '➕ Add Call' },
               { key: 'users', label: '👥 Users' },
               { key: 'analytics', label: '📈 Analytics' },
+              { key: 'revenue', label: '💰 Revenue' },
               { key: 'notifications', label: '🔔 Notifications' },
+              { key: 'email', label: '📧 Email' },
+              { key: 'coupons', label: '🎫 Coupons' },
               { key: 'bulk', label: '⚡ Bulk Actions' },
+              { key: 'blog', label: '✍️ Blog' },
+              { key: 'performance', label: '🏆 Performance' },
               { key: 'settings', label: '⚙️ Settings' },
               { key: 'audit', label: '📋 Audit Log' },
             ].map(t => (
@@ -3576,6 +3721,559 @@ function AdminPanel({ user, userProfile }) {
               </div>
             </div>
           )}
+
+          {/* ─── BLOG MANAGER TAB ─── */}
+          {activeTab === 'blog' && (() => {
+            const [blogSaving, setBlogSaving] = useState(false);
+            const [blogMsg, setBlogMsg] = useState('');
+            const TAGS = ['Education', 'F&O', 'Commodity', 'Markets', 'Technical', 'Fundamental', 'IPO', 'Risk Management'];
+
+            const saveBlog = async () => {
+              if (!blogForm?.title || !blogForm?.content) { setBlogMsg('Title and content required.'); return; }
+              setBlogSaving(true); setBlogMsg('');
+              const payload = { ...blogForm, slug: blogForm.slug || genSlug(blogForm.title), updated_at: new Date().toISOString() };
+              if (!payload.created_at) payload.created_at = new Date().toISOString();
+              let error;
+              if (blogForm.id) {
+                const res = await supabase.from('blog_posts').update(payload).eq('id', blogForm.id);
+                error = res.error;
+              } else {
+                const res = await supabase.from('blog_posts').insert([payload]);
+                error = res.error;
+              }
+              await logAudit(blogForm.id ? 'UPDATE_BLOG_POST' : 'CREATE_BLOG_POST', 'blog_post', blogForm.id || 'new', { title: blogForm.title, status: blogForm.status });
+              setBlogSaving(false);
+              if (error) { setBlogMsg('Error: ' + error.message); return; }
+              setBlogMsg('✅ Saved!');
+              setTimeout(() => { setBlogForm(null); setBlogMsg(''); fetchData(); }, 1200);
+            };
+
+            const deleteBlog = async (id) => {
+              if (!confirm('Delete this article?')) return;
+              await supabase.from('blog_posts').delete().eq('id', id);
+              await logAudit('DELETE_BLOG_POST', 'blog_post', id, {});
+              fetchData();
+            };
+
+            const tagColor = { Education: '#dbeafe', 'F&O': '#fef3c7', Commodity: '#d1fae5', Markets: '#ede9fe', Technical: '#fee2e2', Fundamental: '#f0fdf4', IPO: '#fce7f3', 'Risk Management': '#f1f5f9' };
+            const tagText  = { Education: '#1e40af', 'F&O': '#92400e', Commodity: '#065f46', Markets: '#5b21b6', Technical: '#991b1b', Fundamental: '#166534', IPO: '#9d174d', 'Risk Management': '#334155' };
+
+            if (blogForm) return (
+              <div>
+                <div style={{ ...S.flexBetween, marginBottom: '20px' }}>
+                  <h3 style={S.h3}>{blogForm.id ? 'Edit Article' : 'New Article'}</h3>
+                  <button onClick={() => { setBlogForm(null); setBlogMsg(''); }} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>← Back to list</button>
+                </div>
+                {blogMsg && <div style={{ background: blogMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', color: blogMsg.startsWith('✅') ? '#065f46' : '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '14px' }}>{blogMsg}</div>}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={S.label}>Title *</label>
+                    <input style={{ ...S.input, fontSize: '16px', fontWeight: 700 }} placeholder="How to Read a Stock Research Call" value={blogForm.title || ''} onChange={e => { setBF('title', e.target.value); if (!blogForm.id) setBF('slug', genSlug(e.target.value)); }} />
+                  </div>
+                  <div>
+                    <label style={S.label}>Slug (URL)</label>
+                    <input style={S.input} value={blogForm.slug || ''} onChange={e => setBF('slug', e.target.value)} />
+                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '3px' }}>/blog/{blogForm.slug || genSlug(blogForm.title || '')}</p>
+                  </div>
+                  <div>
+                    <label style={S.label}>Tag / Category</label>
+                    <select style={S.select} value={blogForm.tag || 'Education'} onChange={e => setBF('tag', e.target.value)}>
+                      {TAGS.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={S.label}>Status</label>
+                    <select style={S.select} value={blogForm.status || 'draft'} onChange={e => setBF('status', e.target.value)}>
+                      <option value="draft">📝 Draft</option>
+                      <option value="published">🟢 Published</option>
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={S.label}>Summary (shown on blog card)</label>
+                    <textarea style={{ ...S.textarea, minHeight: '70px' }} placeholder="Brief summary of the article — 2-3 sentences" value={blogForm.summary || ''} onChange={e => setBF('summary', e.target.value)} />
+                  </div>
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={S.label}>Article Content *</label>
+                    <textarea style={{ ...S.textarea, minHeight: '320px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 1.8 }} placeholder="Write your full article here. Use plain text — paragraphs will be displayed as-is." value={blogForm.content || ''} onChange={e => setBF('content', e.target.value)} />
+                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{(blogForm.content || '').length} characters · ~{Math.ceil((blogForm.content || '').split(' ').length / 200)} min read</p>
+                  </div>
+                  <div>
+                    <label style={S.label}>Author</label>
+                    <input style={S.input} value={blogForm.author || ANALYST_NAME} onChange={e => setBF('author', e.target.value)} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={saveBlog} disabled={blogSaving} style={{ ...S.btn, ...S.btnPrimary, opacity: blogSaving ? 0.7 : 1 }}>
+                    {blogSaving ? 'Saving...' : blogForm.status === 'published' ? '🟢 Publish Article' : '💾 Save Draft'}
+                  </button>
+                  {blogForm.status === 'draft' && (
+                    <button onClick={() => { setBF('status','published'); setTimeout(saveBlog, 100); }} style={{ ...S.btn, ...S.btnGreen }}>🟢 Publish Now</button>
+                  )}
+                </div>
+              </div>
+            );
+
+            return (
+              <div>
+                <div style={{ ...S.flexBetween, marginBottom: '20px' }}>
+                  <div>
+                    <h3 style={{ ...S.h4, marginBottom: '2px' }}>Blog Manager</h3>
+                    <p style={{ fontSize: '12px', color: '#64748b' }}>{blogPosts.filter(p=>p.status==='published').length} published · {blogPosts.filter(p=>p.status==='draft').length} drafts</p>
+                  </div>
+                  <button onClick={() => setBlogForm({ ...emptyBlog })} style={{ ...S.btn, ...S.btnPrimary }}>✍️ New Article</button>
+                </div>
+                {blogPosts.length === 0 ? (
+                  <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
+                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>✍️</div>
+                    <h3 style={{ ...S.h3, marginBottom: '8px' }}>No articles yet</h3>
+                    <p style={{ color: '#64748b', marginBottom: '20px' }}>Start writing educational content to drive SEO and trust.</p>
+                    <button onClick={() => setBlogForm({ ...emptyBlog })} style={{ ...S.btn, ...S.btnPrimary }}>Write First Article</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {blogPosts.map(p => (
+                      <div key={p.id} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'flex-start', padding: '14px 16px' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                            <span style={{ ...S.badge, background: tagColor[p.tag] || '#f1f5f9', color: tagText[p.tag] || '#334155', fontSize: '11px' }}>{p.tag}</span>
+                            <span style={{ ...S.badge, background: p.status === 'published' ? '#d1fae5' : '#f1f5f9', color: p.status === 'published' ? '#065f46' : '#64748b', fontSize: '11px' }}>
+                              {p.status === 'published' ? '🟢 Published' : '📝 Draft'}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>{p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN') : ''}</span>
+                          </div>
+                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', marginBottom: '2px' }}>{p.title}</p>
+                          <p style={{ fontSize: '12px', color: '#64748b' }}>{(p.summary || '').slice(0, 100)}{p.summary?.length > 100 ? '...' : ''}</p>
+                          {p.slug && <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>/blog/{p.slug}</p>}
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                          <button onClick={() => setBlogForm(p)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>✏️ Edit</button>
+                          <button onClick={() => deleteBlog(p.id)} style={{ ...S.btn, background: '#fee2e2', color: '#dc2626', border: 'none', ...S.btnSm }}>🗑</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ─── PERFORMANCE TRACKER TAB ─── */}
+          {activeTab === 'performance' && (() => {
+            const [csvLoading, setCsvLoading] = useState(false);
+
+            const exportPerfCSV = () => {
+              if (!perfData) return;
+              const headers = ['Symbol', 'Stock Name', 'Action', 'Segment', 'Entry', 'Exit', 'Return %', 'Status', 'Date'];
+              const rows = perfData.curMonthRecs.map(r => [
+                r.symbol, r.stock_name, r.action, r.segment,
+                r.entry_price, r.exit_price || r.target1 || r.stop_loss,
+                r.ret?.toFixed(2) + '%', r.status,
+                (r.updated_at || r.published_at || '').slice(0,10),
+              ]);
+              const csv = [headers,...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+              a.download = `stockvista_performance_${perfMonth}.csv`;
+              a.click();
+            };
+
+            if (!perfData && !loading) fetchPerformance();
+
+            return (
+              <div>
+                {loading || !perfData ? (
+                  <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading performance data...</div>
+                ) : (
+                  <>
+                    {/* Overall KPIs */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                      {[
+                        { label: 'Total Closed Calls', value: perfData.total, color: '#0f172a' },
+                        { label: 'Total Wins', value: perfData.wins, color: '#059669' },
+                        { label: 'Overall Win Rate', value: perfData.total > 0 ? ((perfData.wins/perfData.total)*100).toFixed(1)+'%' : '—', color: perfData.wins/perfData.total >= 0.5 ? '#059669' : '#dc2626' },
+                        { label: 'Avg Return / Call', value: (perfData.avgReturn >= 0 ? '+' : '') + perfData.avgReturn + '%', color: perfData.avgReturn >= 0 ? '#059669' : '#dc2626' },
+                      ].map((s,i) => (
+                        <div key={i} style={{ ...S.card, padding: '14px', textAlign: 'center' }}>
+                          <p style={{ fontSize: '22px', fontWeight: 800, color: s.color }}>{s.value}</p>
+                          <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Monthly comparison + segment breakdown */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                      <div style={{ ...S.card }}>
+                        <h3 style={{ ...S.h4, marginBottom: '16px' }}>Monthly Performance (Last 4 Months)</h3>
+                        {perfData.months.map((m, i) => (
+                          <div key={m.ym} style={{ marginBottom: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: i === 0 ? '#1e40af' : '#334155' }}>{m.label}</span>
+                                {i === 0 && <span style={{ fontSize: '9px', background: '#dbeafe', color: '#1e40af', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>THIS MONTH</span>}
+                              </div>
+                              <div style={{ display: 'flex', gap: '12px' }}>
+                                <span style={{ fontSize: '12px', color: '#64748b' }}>{m.wins}/{m.total} calls</span>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: parseFloat(m.winRate) >= 50 ? '#059669' : m.total > 0 ? '#dc2626' : '#94a3b8' }}>{m.total > 0 ? m.winRate + '%' : '—'}</span>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: parseFloat(m.avgReturn) >= 0 ? '#059669' : '#dc2626' }}>{m.total > 0 ? (parseFloat(m.avgReturn) >= 0 ? '+' : '') + m.avgReturn + '%' : ''}</span>
+                              </div>
+                            </div>
+                            <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ height: '6px', borderRadius: '3px', background: parseFloat(m.winRate) >= 50 ? '#059669' : m.total > 0 ? '#dc2626' : '#e2e8f0', width: m.total > 0 ? m.winRate + '%' : '0%', transition: 'width 0.4s' }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ ...S.card }}>
+                        <h3 style={{ ...S.h4, marginBottom: '16px' }}>Win Rate by Segment</h3>
+                        {perfData.segments.length === 0 ? (
+                          <p style={{ color: '#94a3b8', fontSize: '13px' }}>No closed calls with data yet.</p>
+                        ) : perfData.segments.map(s => (
+                          <div key={s.seg} style={{ marginBottom: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155', textTransform: 'capitalize' }}>{s.seg}</span>
+                              <div style={{ display: 'flex', gap: '12px' }}>
+                                <span style={{ fontSize: '12px', color: '#64748b' }}>{s.wins}/{s.total}</span>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: parseFloat(s.winRate) >= 50 ? '#059669' : '#dc2626' }}>{s.winRate}% win</span>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: parseFloat(s.avgReturn) >= 0 ? '#059669' : '#dc2626' }}>{(parseFloat(s.avgReturn) >= 0 ? '+' : '') + s.avgReturn}% avg</span>
+                              </div>
+                            </div>
+                            <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ height: '6px', borderRadius: '3px', background: parseFloat(s.winRate) >= 50 ? '#059669' : '#dc2626', width: s.winRate + '%', transition: 'width 0.4s' }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Best & Worst calls */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                      {[
+                        { title: '🏆 Best Calls (All Time)', calls: perfData.best, green: true },
+                        { title: '⚠️ Worst Calls (All Time)', calls: perfData.worst, green: false },
+                      ].map(({ title, calls, green }) => (
+                        <div key={title} style={{ ...S.card }}>
+                          <h3 style={{ ...S.h4, marginBottom: '12px' }}>{title}</h3>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {calls.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '13px' }}>No data yet.</p>
+                            : calls.map((r, i) => (
+                              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: i === 0 ? (green ? '#f0fdf4' : '#fef2f2') : '#f8fafc', borderRadius: '8px', border: '1px solid ' + (i === 0 ? (green ? '#bbf7d0' : '#fecaca') : '#f1f5f9') }}>
+                                <div>
+                                  <p style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a' }}>{i+1}. {r.symbol}</p>
+                                  <p style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'capitalize' }}>{r.action} · {r.segment}</p>
+                                </div>
+                                <p style={{ fontWeight: 800, fontSize: '14px', color: r.ret >= 0 ? '#059669' : '#dc2626' }}>
+                                  {r.ret >= 0 ? '+' : ''}{r.ret?.toFixed(1)}%
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Monthly report with export */}
+                    <div style={{ ...S.card }}>
+                      <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <h3 style={{ ...S.h4, marginBottom: '2px' }}>Monthly Accuracy Report</h3>
+                          <p style={{ fontSize: '12px', color: '#64748b' }}>{perfData.curMonthRecs.length} closed calls in selected month</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input type="month" value={perfMonth} onChange={e => { setPerfMonth(e.target.value); fetchPerformance(); }} style={{ ...S.input, width: 'auto', padding: '7px 12px' }} />
+                          <button onClick={exportPerfCSV} disabled={perfData.curMonthRecs.length === 0} style={{ ...S.btn, ...S.btnSecondary, opacity: perfData.curMonthRecs.length === 0 ? 0.5 : 1 }}>
+                            ⬇️ Export CSV
+                          </button>
+                        </div>
+                      </div>
+                      {perfData.curMonthRecs.length === 0 ? (
+                        <p style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>No closed calls in {perfMonth}. Try another month.</p>
+                      ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                            <thead>
+                              <tr style={{ background: '#f8fafc' }}>
+                                {['Symbol','Action','Segment','Entry','Exit/Target','Return %','Status'].map(h => (
+                                  <th key={h} style={{ padding: '9px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {perfData.curMonthRecs.map(r => (
+                                <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '9px 12px', fontWeight: 700 }}>{r.symbol}</td>
+                                  <td style={{ padding: '9px 12px' }}><span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '10px' }}>{r.action}</span></td>
+                                  <td style={{ padding: '9px 12px', color: '#64748b', textTransform: 'capitalize' }}>{r.segment}</td>
+                                  <td style={{ padding: '9px 12px' }}>₹{r.entry_price}</td>
+                                  <td style={{ padding: '9px 12px' }}>₹{r.exit_price || r.target1 || r.stop_loss}</td>
+                                  <td style={{ padding: '9px 12px', fontWeight: 700, color: r.ret >= 0 ? '#059669' : '#dc2626' }}>{r.ret >= 0 ? '+' : ''}{r.ret?.toFixed(2)}%</td>
+                                  <td style={{ padding: '9px 12px' }}>
+                                    <span style={{ ...S.badge, background: r.status === 'target_hit' ? '#d1fae5' : '#fee2e2', color: r.status === 'target_hit' ? '#065f46' : '#991b1b', fontSize: '10px' }}>
+                                      {r.status?.replace('_',' ').toUpperCase()}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                                <td colSpan={5} style={{ padding: '9px 12px', fontWeight: 700, color: '#334155' }}>Month Summary</td>
+                                <td style={{ padding: '9px 12px', fontWeight: 800, color: perfData.curMonthRecs.filter(r=>r.status==='target_hit').length / perfData.curMonthRecs.length >= 0.5 ? '#059669' : '#dc2626' }}>
+                                  {((perfData.curMonthRecs.filter(r=>r.status==='target_hit').length / perfData.curMonthRecs.length) * 100).toFixed(1)}% win rate
+                                </td>
+                                <td style={{ padding: '9px 12px', fontWeight: 700, color: '#64748b' }}>
+                                  {perfData.curMonthRecs.filter(r=>r.status==='target_hit').length}/{perfData.curMonthRecs.length} wins
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ─── REVENUE TAB ─── */}
+          {activeTab === 'revenue' && (
+            <div>
+              {!revenueData && !loading ? fetchRevenue() : null}
+              {loading || !revenueData ? (
+                <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading revenue data...</div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', gap: '12px', marginBottom: '24px' }}>
+                    {[
+                      { label: 'Est. MRR', value: '₹' + fmtCurr(revenueData.mrr), color: '#d97706' },
+                      { label: 'Est. ARR', value: '₹' + fmtCurr(revenueData.mrr * 12), color: '#059669' },
+                      { label: 'Active Subs', value: revenueData.active, color: '#1e40af' },
+                      { label: 'Churned', value: revenueData.churned, color: '#dc2626' },
+                      { label: 'Churn Rate', value: revenueData.churnRate + '%', color: parseFloat(revenueData.churnRate) > 20 ? '#dc2626' : '#059669' },
+                      { label: 'Avg LTV (6mo)', value: '₹' + fmtCurr(revenueData.avgLTV), color: '#7c3aed' },
+                    ].map((s,i) => (
+                      <div key={i} style={{ ...S.card, padding: '14px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '20px', fontWeight: 800, color: s.color }}>{s.value}</p>
+                        <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div style={{ ...S.card }}>
+                      <h3 style={{ ...S.h4, marginBottom: '16px' }}>Revenue by Plan</h3>
+                      {revenueData.planBreakdown.map(p => (
+                        <div key={p.plan} style={{ marginBottom: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', textTransform: 'capitalize' }}>{PLANS[p.plan]?.name}</span>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                              <span style={{ fontSize: '12px', color: '#64748b' }}>{p.count} subs</span>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#d97706' }}>₹{fmtCurr(p.revenue)}/mo</span>
+                            </div>
+                          </div>
+                          <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ height: '6px', borderRadius: '3px', background: PLANS[p.plan]?.color || '#1d4ed8', width: revenueData.mrr > 0 ? (p.revenue/revenueData.mrr*100)+'%' : '0%' }} />
+                          </div>
+                        </div>
+                      ))}
+                      {revenueData.planBreakdown.length === 0 && <p style={{ color: '#94a3b8', fontSize: '13px' }}>No active subscribers yet.</p>}
+                    </div>
+                    <div style={{ ...S.card }}>
+                      <h3 style={{ ...S.h4, marginBottom: '16px' }}>Renewal Forecast</h3>
+                      {[
+                        { label: 'Expiring this week', val: revenueData.expiringWeek, color: '#dc2626' },
+                        { label: 'Expiring this month', val: revenueData.expiringMonth, color: '#d97706' },
+                        { label: 'Revenue at risk (week)', val: '₹' + fmtCurr(revenueData.expiringWeek * (revenueData.mrr / Math.max(revenueData.active,1))), color: '#dc2626' },
+                        { label: 'Revenue at risk (month)', val: '₹' + fmtCurr(revenueData.expiringMonth * (revenueData.mrr / Math.max(revenueData.active,1))), color: '#d97706' },
+                      ].map((item, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                          <span style={{ fontSize: '13px', color: '#64748b' }}>{item.label}</span>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: item.color }}>{item.val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ ...S.card }}>
+                    <h3 style={{ ...S.h4, marginBottom: '16px' }}>New Subscribers — Last 6 Months</h3>
+                    <div style={{ display: 'flex', gap: '0', alignItems: 'flex-end', height: '100px' }}>
+                      {revenueData.monthlyGrowth.map((m, i) => {
+                        const max = Math.max(...revenueData.monthlyGrowth.map(x => x.newSubs), 1);
+                        return (
+                          <div key={m.ym} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#1e40af' }}>{m.newSubs || ''}</span>
+                            <div style={{ width: '80%', background: '#1e40af', borderRadius: '4px 4px 0 0', height: (m.newSubs/max*70) + 'px', minHeight: m.newSubs > 0 ? '4px' : '0', transition: 'height 0.4s' }} />
+                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>{m.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ─── EMAIL COMPOSER TAB ─── */}
+          {activeTab === 'email' && (
+            <div>
+              <div style={{ ...S.card, marginBottom: '16px' }}>
+                <h3 style={{ ...S.h4, marginBottom: '4px' }}>📧 Email Composer</h3>
+                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>Compose and send emails to your subscribers. Opens your email client with pre-filled content.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={S.label}>Send To</label>
+                    <select style={S.select} value={emailForm.plan_target} onChange={e => setEF('plan_target', e.target.value)}>
+                      <option value="all">All Users</option>
+                      <option value="basic">Basic Equity</option>
+                      <option value="premium">Premium Equity</option>
+                      <option value="fno">F&O Pro</option>
+                      <option value="elite">Elite All Access</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={S.label}>Subject *</label>
+                    <input style={S.input} placeholder="New research call published — RELIANCE BUY" value={emailForm.subject} onChange={e => setEF('subject', e.target.value)} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={S.label}>Email Body *</label>
+                  <textarea style={{ ...S.textarea, minHeight: '160px' }} placeholder="Write your email content here..." value={emailForm.body} onChange={e => setEF('body', e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => { if (!emailForm.subject || !emailForm.body) return; window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('[StockVista] ' + emailForm.subject)}&body=${encodeURIComponent(emailForm.body)}`; }} style={{ ...S.btn, ...S.btnPrimary }}>
+                    📧 Open in Email Client
+                  </button>
+                  <button onClick={() => navigator.clipboard?.writeText(emailForm.body)} style={{ ...S.btn, ...S.btnSecondary }}>📋 Copy Body</button>
+                </div>
+                <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '10px' }}>💡 For bulk email to all subscribers, integrate Resend.com (free 3,000 emails/month). Email: resend.com/docs</p>
+              </div>
+              <div style={{ ...S.card }}>
+                <h3 style={{ ...S.h4, marginBottom: '12px' }}>Quick Email Templates</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { label: '📊 New Call Alert', subj: 'New Research Call Published', body: `Dear Subscriber,\n\nWe have published a new research call on your plan.\n\nPlease login to StockVista to view the complete analysis with entry price, target, and stop-loss.\n\nhttps://stock-vista-sandy.vercel.app/live-calls\n\nRisk Disclaimer: Investment in securities market is subject to market risk. Past performance is not indicative of future results.\n\nRegards,\n${ANALYST_NAME}\nStockVista · ${SEBI_REG}` },
+                    { label: '⏰ Expiry Reminder', subj: 'Your StockVista Subscription Expires Soon', body: `Dear Subscriber,\n\nYour StockVista subscription is expiring soon. Renew now to continue accessing research calls without interruption.\n\nRenew here: https://stock-vista-sandy.vercel.app/subscription\n\nIf you have any questions, reply to this email.\n\nRegards,\n${ANALYST_NAME}\nStockVista` },
+                    { label: '🎯 Target Hit', subj: 'Target Achieved on Research Call', body: `Dear Subscriber,\n\nOne of our research calls has hit its target. Please review your positions and consider booking profits.\n\nView performance: https://stock-vista-sandy.vercel.app/performance\n\nRemember to maintain stop-loss discipline on open positions.\n\nRegards,\n${ANALYST_NAME}\nStockVista` },
+                    { label: '📈 Market Update', subj: 'Important Market Update from StockVista', body: `Dear Subscriber,\n\nOur analyst has published an important market update. Login to StockVista to read the full analysis.\n\nhttps://stock-vista-sandy.vercel.app/dashboard\n\nRegards,\n${ANALYST_NAME}\nStockVista · ${SEBI_REG}` },
+                  ].map((t,i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>{t.label}</p>
+                      <button onClick={() => { setEF('subject', t.subj); setEF('body', t.body); }} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>Use Template</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── COUPONS TAB ─── */}
+          {activeTab === 'coupons' && (() => {
+            const [couponMsg, setCouponMsg] = useState('');
+            const [couponSaving, setCouponSaving] = useState(false);
+
+            const saveCoupon = async () => {
+              if (!couponForm.code || !couponForm.value) { setCouponMsg('Code and value required.'); return; }
+              setCouponSaving(true);
+              const payload = { ...couponForm, code: couponForm.code.toUpperCase(), value: parseFloat(couponForm.value), max_uses: parseInt(couponForm.max_uses) || null, uses: 0, active: true, created_at: new Date().toISOString() };
+              const { error } = await supabase.from('coupons').insert([payload]);
+              setCouponSaving(false);
+              if (error) { setCouponMsg('Error: ' + error.message); return; }
+              setCouponMsg('✅ Coupon created!');
+              setCouponForm({ code: '', type: 'percent', value: '', plan_id: 'all', max_uses: '', expires_at: '' });
+              fetchData();
+            };
+
+            const deactivate = async (id) => {
+              await supabase.from('coupons').update({ active: false }).eq('id', id);
+              fetchData();
+            };
+
+            return (
+              <div>
+                <div style={{ ...S.card, marginBottom: '16px', border: '2px solid #bfdbfe' }}>
+                  <h3 style={{ ...S.h4, marginBottom: '16px' }}>🎫 Create Coupon Code</h3>
+                  {couponMsg && <div style={{ background: couponMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', color: couponMsg.startsWith('✅') ? '#065f46' : '#991b1b', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px' }}>{couponMsg}</div>}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', gap: '10px', marginBottom: '12px' }}>
+                    <div>
+                      <label style={S.label}>Coupon Code *</label>
+                      <input style={{ ...S.input, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.08em' }} placeholder="LAUNCH50" value={couponForm.code} onChange={e => setCF('code', e.target.value.toUpperCase())} />
+                    </div>
+                    <div>
+                      <label style={S.label}>Discount Type</label>
+                      <select style={S.select} value={couponForm.type} onChange={e => setCF('type', e.target.value)}>
+                        <option value="percent">% Percentage</option>
+                        <option value="flat">₹ Flat Amount</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={S.label}>Value * ({couponForm.type === 'percent' ? '%' : '₹'})</label>
+                      <input style={S.input} type="number" placeholder={couponForm.type === 'percent' ? '20' : '500'} value={couponForm.value} onChange={e => setCF('value', e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={S.label}>Apply to Plan</label>
+                      <select style={S.select} value={couponForm.plan_id} onChange={e => setCF('plan_id', e.target.value)}>
+                        <option value="all">All Plans</option>
+                        <option value="basic">Basic Equity</option>
+                        <option value="premium">Premium Equity</option>
+                        <option value="fno">F&O Pro</option>
+                        <option value="elite">Elite All Access</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={S.label}>Max Uses (blank = unlimited)</label>
+                      <input style={S.input} type="number" placeholder="100" value={couponForm.max_uses} onChange={e => setCF('max_uses', e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={S.label}>Expiry Date</label>
+                      <input style={S.input} type="date" value={couponForm.expires_at} onChange={e => setCF('expires_at', e.target.value)} />
+                    </div>
+                  </div>
+                  <button onClick={saveCoupon} disabled={couponSaving} style={{ ...S.btn, ...S.btnPrimary, opacity: couponSaving ? 0.7 : 1 }}>
+                    {couponSaving ? 'Creating...' : '🎫 Create Coupon'}
+                  </button>
+                </div>
+
+                <div style={{ ...S.card }}>
+                  <h3 style={{ ...S.h4, marginBottom: '14px' }}>Active Coupons</h3>
+                  {coupons.length === 0 ? (
+                    <p style={{ color: '#94a3b8', textAlign: 'center', padding: '32px', fontSize: '13px' }}>No coupons created yet.</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc' }}>
+                            {['Code','Type','Value','Plan','Uses','Expires','Status','Action'].map(h => (
+                              <th key={h} style={{ padding: '9px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {coupons.map(c => (
+                            <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: c.active ? 1 : 0.5 }}>
+                              <td style={{ padding: '9px 12px', fontWeight: 800, letterSpacing: '0.06em', color: '#1e40af' }}>{c.code}</td>
+                              <td style={{ padding: '9px 12px', textTransform: 'capitalize', color: '#64748b' }}>{c.type}</td>
+                              <td style={{ padding: '9px 12px', fontWeight: 700 }}>{c.type === 'percent' ? c.value + '%' : '₹' + c.value}</td>
+                              <td style={{ padding: '9px 12px', color: '#64748b', textTransform: 'capitalize' }}>{c.plan_id === 'all' ? 'All' : PLANS[c.plan_id]?.name}</td>
+                              <td style={{ padding: '9px 12px', color: '#64748b' }}>{c.uses || 0}{c.max_uses ? ' / ' + c.max_uses : ' / ∞'}</td>
+                              <td style={{ padding: '9px 12px', color: '#64748b', fontSize: '11px' }}>{c.expires_at ? new Date(c.expires_at).toLocaleDateString('en-IN') : '—'}</td>
+                              <td style={{ padding: '9px 12px' }}>
+                                <span style={{ ...S.badge, background: c.active ? '#d1fae5' : '#f1f5f9', color: c.active ? '#065f46' : '#94a3b8', fontSize: '11px' }}>
+                                  {c.active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '9px 12px' }}>
+                                {c.active && <button onClick={() => deactivate(c.id)} style={{ ...S.btn, background: '#fee2e2', color: '#dc2626', border: 'none', ...S.btnSm, fontSize: '11px' }}>Deactivate</button>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ─── BULK ACTIONS TAB ─── */}
           {activeTab === 'bulk' && (() => {
