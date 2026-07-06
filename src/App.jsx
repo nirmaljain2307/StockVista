@@ -129,6 +129,14 @@ const S = {
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const fmt = (n) => n ? Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—';
 const fmtCurr = (n) => n ? Number(n).toLocaleString('en-IN') : '0';
+const loadRazorpayScript = () => new Promise((resolve) => {
+  if (typeof window !== 'undefined' && window.Razorpay) return resolve(true);
+  const script = document.createElement('script');
+  script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+  script.onload = () => resolve(true);
+  script.onerror = () => resolve(false);
+  document.body.appendChild(script);
+});
 const pct = (entry, target) => entry && target ? (((target - entry) / entry) * 100).toFixed(1) + '%' : '—';
 const actionStyle = (a) => {
   if (a === 'BUY') return S.badgeBuy;
@@ -5689,9 +5697,77 @@ function SubscriptionPage({ user, userProfile }) {
       return;
     }
 
-    // Real payment — coming soon
-    const amt = prices[selectedPlan][cycle];
-    alert(`Razorpay integration coming soon!\n\nPlan: ${PLANS[selectedPlan]?.name}\nAmount: ₹${amt}\n\nUse bypass code for testing.`);
+    // Real payment via Razorpay
+    setActivating(true);
+    setBypassMsg('');
+    try {
+      const orderRes = await fetch('/api/create-subscription-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: selectedPlan, cycle, userId: user.id }),
+      });
+      const order = await orderRes.json();
+      if (!orderRes.ok) {
+        setActivating(false);
+        setBypassMsg('Error: ' + (order.error || 'Could not start payment.'));
+        return;
+      }
+
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setActivating(false);
+        setBypassMsg('Error: Could not load payment gateway. Check your connection and try again.');
+        return;
+      }
+
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.orderId,
+        name: APP_NAME,
+        description: `${PLANS[selectedPlan]?.name} — ${cycle} subscription`,
+        prefill: { email: user.email, contact: userProfile?.mobile || '' },
+        theme: { color: '#1e40af' },
+        handler: async (response) => {
+          setBypassMsg('Verifying payment...');
+          try {
+            const verifyRes = await fetch('/api/verify-subscription-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                userId: user.id,
+                planId: selectedPlan,
+                cycle,
+              }),
+            });
+            const verify = await verifyRes.json();
+            setActivating(false);
+            if (!verifyRes.ok || !verify.success) {
+              setBypassMsg('Error: ' + (verify.error || `Verification failed. Contact support with payment ID: ${response.razorpay_payment_id}`));
+              return;
+            }
+            setBypassMsg('✅ Plan activated! Refreshing...');
+            setTimeout(() => window.location.reload(), 1200);
+          } catch (e) {
+            setActivating(false);
+            setBypassMsg(`Error verifying payment. Contact support with payment ID: ${response.razorpay_payment_id}`);
+          }
+        },
+        modal: { ondismiss: () => { setActivating(false); } },
+      });
+      rzp.on('payment.failed', (resp) => {
+        setActivating(false);
+        setBypassMsg('❌ Payment failed: ' + (resp?.error?.description || 'Please try again.'));
+      });
+      rzp.open();
+    } catch (e) {
+      setActivating(false);
+      setBypassMsg('Error: Could not start payment. ' + e.message);
+    }
   };
 
   return (
