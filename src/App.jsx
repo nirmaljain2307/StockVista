@@ -2987,6 +2987,29 @@ function AdminPanel({ user, userProfile }) {
   // Audit log state
   const [auditLogs, setAuditLogs] = useState([]);
 
+  // Notification state — WAS MISSING, caused blank page crash
+  const [notifForm, setNotifForm] = useState({ title: '', body: '', plan_target: 'all', type: 'info' });
+  const [notifSending, setNotifSending] = useState(false);
+  const [notifMsg, setNotifMsg] = useState('');
+  const setNF = (k, v) => setNotifForm(f => ({ ...f, [k]: v }));
+
+  // Bulk actions state
+  const [selectedRecs, setSelectedRecs] = useState([]);
+  const [bulkAction, setBulkAction] = useState('');
+  const [bulkMsg, setBulkMsg] = useState('');
+
+  // Platform settings state
+  const [settings, setSettings] = useState({
+    maintenance_mode: false,
+    maintenance_msg: 'StockVista is under maintenance. Back shortly!',
+    sebi_reg: SEBI_REG,
+    disclaimer_text: 'Investment in securities market is subject to market risk. Past performance is not indicative of future results.',
+    show_portfolio_to_free: true,
+    show_watchlist_to_free: true,
+    show_blog_to_all: true,
+  });
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
   const logAudit = async (action, entity_type, entity_id, details) => {
     try {
       await supabase.from('audit_log').insert([{
@@ -2998,9 +3021,6 @@ function AdminPanel({ user, userProfile }) {
       }]);
     } catch(e) { console.warn('Audit log failed:', e.message); }
   };
-  const [notifSending, setNotifSending] = useState(false);
-  const [notifMsg, setNotifMsg] = useState('');
-  const setNF = (k, v) => setNotifForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
     if (!userProfile?.is_admin) { navigate('/'); return; }
@@ -3131,6 +3151,8 @@ function AdminPanel({ user, userProfile }) {
               { key: 'users', label: '👥 Users' },
               { key: 'analytics', label: '📈 Analytics' },
               { key: 'notifications', label: '🔔 Notifications' },
+              { key: 'bulk', label: '⚡ Bulk Actions' },
+              { key: 'settings', label: '⚙️ Settings' },
               { key: 'audit', label: '📋 Audit Log' },
             ].map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
@@ -3548,6 +3570,210 @@ function AdminPanel({ user, userProfile }) {
                     })}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── BULK ACTIONS TAB ─── */}
+          {activeTab === 'bulk' && (() => {
+            const liveRecs = recs.filter(r => ['live','near_target','near_sl'].includes(r.status));
+            const allClosed = recs.filter(r => ['target_hit','sl_hit','expired','closed'].includes(r.status));
+            const segments = [...new Set(recs.map(r => r.segment))].filter(Boolean);
+            const [segFilter, setSegFilter] = useState('all');
+            const [cmpUpdates, setCmpUpdates] = useState({});
+            const [bulkLoading, setBulkLoading] = useState(false);
+
+            const filteredRecs = segFilter === 'all' ? recs : recs.filter(r => r.segment === segFilter);
+            const toggle = (id) => setSelectedRecs(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+            const toggleAll = () => setSelectedRecs(filteredRecs.length === selectedRecs.length ? [] : filteredRecs.map(r => r.id));
+
+            const applyBulk = async () => {
+              if (!bulkAction || selectedRecs.length === 0) { setBulkMsg('Select calls and an action.'); return; }
+              if (!confirm(`Apply "${bulkAction}" to ${selectedRecs.length} call(s)?`)) return;
+              setBulkLoading(true);
+              for (const id of selectedRecs) {
+                await supabase.from('recommendations').update({ status: bulkAction, updated_at: new Date().toISOString() }).eq('id', id);
+                await logAudit('BULK_STATUS_UPDATE', 'recommendation', id, { new_status: bulkAction, bulk_count: selectedRecs.length });
+              }
+              setBulkMsg(`✅ ${selectedRecs.length} calls updated to "${bulkAction}"`);
+              setSelectedRecs([]);
+              setBulkLoading(false);
+              fetchData();
+            };
+
+            const bulkUpdateCMP = async () => {
+              const entries = Object.entries(cmpUpdates).filter(([,v]) => v);
+              if (entries.length === 0) { setBulkMsg('Enter CMP values first.'); return; }
+              setBulkLoading(true);
+              for (const [id, cmp] of entries) {
+                await supabase.from('recommendations').update({ cmp: parseFloat(cmp), updated_at: new Date().toISOString() }).eq('id', id);
+              }
+              setBulkMsg(`✅ CMP updated for ${entries.length} calls`);
+              setCmpUpdates({});
+              setBulkLoading(false);
+              fetchData();
+            };
+
+            return (
+              <div>
+                {bulkMsg && <div style={{ background: bulkMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', color: bulkMsg.startsWith('✅') ? '#065f46' : '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{bulkMsg}</div>}
+
+                {/* Bulk status action */}
+                <div style={{ ...S.card, marginBottom: '16px' }}>
+                  <h3 style={{ ...S.h4, marginBottom: '12px' }}>⚡ Bulk Status Update</h3>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px', alignItems: 'center' }}>
+                    <div>
+                      <label style={S.label}>Filter by segment</label>
+                      <select style={{ ...S.select, width: '140px' }} value={segFilter} onChange={e => { setSegFilter(e.target.value); setSelectedRecs([]); }}>
+                        <option value="all">All Segments</option>
+                        {segments.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={S.label}>Apply Action</label>
+                      <select style={{ ...S.select, width: '160px' }} value={bulkAction} onChange={e => setBulkAction(e.target.value)}>
+                        <option value="">Select action...</option>
+                        <option value="closed">Close</option>
+                        <option value="expired">Mark Expired</option>
+                        <option value="archived">Archive</option>
+                        <option value="target_hit">Mark Target Hit</option>
+                        <option value="sl_hit">Mark SL Hit</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end' }}>
+                      <button onClick={applyBulk} disabled={bulkLoading || selectedRecs.length === 0} style={{ ...S.btn, ...S.btnPrimary, opacity: (bulkLoading || selectedRecs.length === 0) ? 0.5 : 1 }}>
+                        {bulkLoading ? 'Updating...' : `Apply to ${selectedRecs.length} selected`}
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc' }}>
+                          <th style={{ padding: '10px 12px', borderBottom: '2px solid #e2e8f0' }}>
+                            <input type="checkbox" checked={selectedRecs.length === filteredRecs.length && filteredRecs.length > 0} onChange={toggleAll} />
+                          </th>
+                          {['Symbol', 'Action', 'Status', 'Segment', 'Published'].map(h => (
+                            <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredRecs.slice(0,30).map(r => (
+                          <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', background: selectedRecs.includes(r.id) ? '#eff6ff' : 'transparent' }}>
+                            <td style={{ padding: '10px 12px' }}><input type="checkbox" checked={selectedRecs.includes(r.id)} onChange={() => toggle(r.id)} /></td>
+                            <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>{r.symbol}</td>
+                            <td style={{ padding: '10px 12px' }}><span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '11px' }}>{r.action}</span></td>
+                            <td style={{ padding: '10px 12px', fontSize: '12px', color: '#64748b', textTransform: 'capitalize' }}>{r.status?.replace('_',' ')}</td>
+                            <td style={{ padding: '10px 12px', fontSize: '12px', color: '#94a3b8', textTransform: 'capitalize' }}>{r.segment}</td>
+                            <td style={{ padding: '10px 12px', fontSize: '11px', color: '#94a3b8' }}>{r.published_at ? new Date(r.published_at).toLocaleDateString('en-IN') : '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Bulk CMP update */}
+                <div style={{ ...S.card }}>
+                  <h3 style={{ ...S.h4, marginBottom: '4px' }}>📈 Bulk CMP Update (Live Calls)</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Update current market price for all live calls at once</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginBottom: '14px' }}>
+                    {liveRecs.map(r => (
+                      <div key={r.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a' }}>{r.symbol}</p>
+                          <p style={{ fontSize: '10px', color: '#94a3b8' }}>Entry ₹{r.entry_price}</p>
+                        </div>
+                        <input type="number" placeholder={String(r.cmp || r.entry_price)} value={cmpUpdates[r.id] || ''} onChange={e => setCmpUpdates(c => ({ ...c, [r.id]: e.target.value }))}
+                          style={{ width: '80px', padding: '5px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px' }} />
+                      </div>
+                    ))}
+                    {liveRecs.length === 0 && <p style={{ color: '#94a3b8', fontSize: '13px' }}>No live calls at the moment.</p>}
+                  </div>
+                  <button onClick={bulkUpdateCMP} disabled={bulkLoading} style={{ ...S.btn, ...S.btnSecondary, opacity: bulkLoading ? 0.5 : 1 }}>
+                    {bulkLoading ? 'Updating...' : '💾 Save All CMP Updates'}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ─── PLATFORM SETTINGS TAB ─── */}
+          {activeTab === 'settings' && (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {/* Maintenance mode */}
+                <div style={{ ...S.card, border: settings.maintenance_mode ? '2px solid #dc2626' : '1.5px solid #bfdbfe' }}>
+                  <h3 style={{ ...S.h4, marginBottom: '4px' }}>🚧 Maintenance Mode</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Shows a banner to all users that the platform is under maintenance.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                    <div onClick={() => setSettings(s => ({ ...s, maintenance_mode: !s.maintenance_mode }))}
+                      style={{ width: '44px', height: '24px', borderRadius: '12px', background: settings.maintenance_mode ? '#dc2626' : '#e2e8f0', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                      <div style={{ position: 'absolute', top: '3px', left: settings.maintenance_mode ? '23px' : '3px', width: '18px', height: '18px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: settings.maintenance_mode ? '#dc2626' : '#64748b' }}>
+                      {settings.maintenance_mode ? '🔴 Maintenance ON' : 'Off'}
+                    </span>
+                  </div>
+                  <div style={S.formGroup}>
+                    <label style={S.label}>Maintenance Message</label>
+                    <textarea style={{ ...S.textarea, minHeight: '60px' }} value={settings.maintenance_msg} onChange={e => setSettings(s => ({ ...s, maintenance_msg: e.target.value }))} />
+                  </div>
+                </div>
+
+                {/* SEBI reg */}
+                <div style={{ ...S.card }}>
+                  <h3 style={{ ...S.h4, marginBottom: '4px' }}>🛡️ SEBI Registration</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Update once your SEBI RA registration number is issued. This appears on all pages.</p>
+                  <div style={S.formGroup}>
+                    <label style={S.label}>SEBI RA Registration Number</label>
+                    <input style={S.input} value={settings.sebi_reg} onChange={e => setSettings(s => ({ ...s, sebi_reg: e.target.value }))} placeholder="INH000XXXXXX" />
+                  </div>
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#92400e' }}>
+                    ⚠️ Currently showing: <strong>{SEBI_REG}</strong>
+                  </div>
+                </div>
+
+                {/* Disclaimer text */}
+                <div style={{ ...S.card, gridColumn: '1/-1' }}>
+                  <h3 style={{ ...S.h4, marginBottom: '4px' }}>⚠️ Global Disclaimer Text</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Shown in amber disclaimer boxes across all pages.</p>
+                  <div style={S.formGroup}>
+                    <textarea style={{ ...S.textarea, minHeight: '80px' }} value={settings.disclaimer_text} onChange={e => setSettings(s => ({ ...s, disclaimer_text: e.target.value }))} />
+                  </div>
+                </div>
+
+                {/* Feature visibility */}
+                <div style={{ ...S.card, gridColumn: '1/-1' }}>
+                  <h3 style={{ ...S.h4, marginBottom: '12px' }}>👥 Feature Access for Free Users</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {[
+                      { key: 'show_portfolio_to_free', label: 'Portfolio Tracker', desc: 'Allow free users to access portfolio tracking' },
+                      { key: 'show_watchlist_to_free', label: 'Watchlist', desc: 'Allow free users to access watchlist page' },
+                      { key: 'show_blog_to_all', label: 'Blog / Education', desc: 'Show blog articles to all users (recommended for SEO)' },
+                    ].map(f => (
+                      <div key={f.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div>
+                          <p style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>{f.label}</p>
+                          <p style={{ fontSize: '11px', color: '#94a3b8' }}>{f.desc}</p>
+                        </div>
+                        <div onClick={() => setSettings(s => ({ ...s, [f.key]: !s[f.key] }))}
+                          style={{ width: '44px', height: '24px', borderRadius: '12px', background: settings[f.key] ? '#059669' : '#e2e8f0', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                          <div style={{ position: 'absolute', top: '3px', left: settings[f.key] ? '23px' : '3px', width: '18px', height: '18px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px', alignItems: 'center' }}>
+                <button onClick={() => { setSettingsSaved(true); setTimeout(() => setSettingsSaved(false), 3000); }} style={{ ...S.btn, ...S.btnPrimary }}>
+                  💾 Save Settings
+                </button>
+                {settingsSaved && <span style={{ fontSize: '13px', color: '#059669', fontWeight: 600 }}>✅ Settings saved!</span>}
+                <p style={{ fontSize: '12px', color: '#94a3b8' }}>Note: SEBI reg change requires App.jsx update to persist across deployments.</p>
               </div>
             </div>
           )}
