@@ -1133,7 +1133,10 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
 
   const fetchRecs = async () => {
     const { data } = await supabase.from('recommendations')
-      .select('*').eq('status', 'active').order('published_at', { ascending: false }).limit(10);
+      .select('*')
+      .in('status', ['live', 'near_target', 'near_sl'])
+      .order('published_at', { ascending: false })
+      .limit(10);
     setRecs(data || []);
     setLoading(false);
   };
@@ -1169,7 +1172,7 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
           {/* Summary Cards */}
           <div style={S.grid4}>
             {[
-              { label: 'Active Calls', value: recs.length, icon: '📊', color: '#3b82f6' },
+              { label: 'Live Calls', value: recs.filter(r => r.status === 'live').length, icon: '📊', color: '#1e40af' },
               { label: 'Your Plan', value: planLabel?.name || 'Free', icon: '💎', color: '#f59e0b' },
               { label: 'Calls Today', value: recs.filter(r => new Date(r.published_at).toDateString() === new Date().toDateString()).length, icon: '📅', color: '#10b981' },
               { label: 'Subscription', value: isSubscribed ? 'Active' : 'Free', icon: '✅', color: isSubscribed ? '#10b981' : '#ef4444' },
