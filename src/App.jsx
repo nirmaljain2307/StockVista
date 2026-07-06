@@ -584,6 +584,7 @@ function Footer() {
       { label: 'FAQ', path: '/faq' },
       { label: 'Risk Disclosure', path: '/risk-disclosure' },
       { label: 'SEBI RA Disclosure', path: '/sebi-disclosure' },
+      { label: 'Investor Charter', path: '/investor-charter' },
     ],
   };
 
@@ -1294,6 +1295,8 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
             ))}
           </div>
 
+          <MyPerformanceWidget userProfile={userProfile} />
+
           <div style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
             {/* Recommendations */}
             <div>
@@ -1343,6 +1346,87 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── PERSONAL P&L WIDGET ("If you followed every call on your plan") ────────
+function MyPerformanceWidget({ userProfile }) {
+  const [recs, setRecs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('month'); // 'month' | 'all'
+
+  useEffect(() => {
+    supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: true })
+      .then(({ data }) => { setRecs(data || []); setLoading(false); });
+  }, []);
+
+  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const userRank = planRank[userProfile?.plan_id || 'basic'] ?? 0;
+  const now = new Date();
+
+  const inPeriod = (r) => {
+    if (period === 'all') return true;
+    const d = new Date(r.published_at);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  };
+
+  const eligible = recs.filter(r => (planRank[r.plan_required || 'basic'] ?? 0) <= userRank && inPeriod(r));
+  const closed = eligible.filter(r => ['closed', 'target_hit', 'sl_hit', 'expired'].includes(r.status));
+
+  const withReturn = closed.map(r => {
+    const entry = parseFloat(r.entry_price);
+    const exit = parseFloat(r.exit_price) || (r.status === 'target_hit' ? parseFloat(r.target1) : parseFloat(r.stop_loss));
+    if (!entry || !exit) return null;
+    const ret = r.action === 'SELL' ? ((entry - exit) / entry * 100) : ((exit - entry) / entry * 100);
+    return +ret.toFixed(2);
+  }).filter(r => r !== null);
+
+  const cumulative = withReturn.reduce((s, r) => s + r, 0);
+  const avgReturn = withReturn.length ? cumulative / withReturn.length : null;
+  const wins = closed.filter(r => r.status === 'target_hit').length;
+  const winRate = closed.length ? ((wins / closed.length) * 100).toFixed(0) : 0;
+
+  if (loading) return null;
+
+  return (
+    <div style={{ ...S.card, marginTop: '4px' }}>
+      <div style={{ ...S.flexBetween, marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+        <h3 style={S.h4}>📈 If You Followed Every Call On Your Plan</h3>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {['month', 'all'].map(p => (
+            <button key={p} onClick={() => setPeriod(p)}
+              style={{ ...S.btn, ...S.btnSm, ...(period === p ? S.btnPrimary : S.btnSecondary) }}>
+              {p === 'month' ? 'This Month' : 'All Time'}
+            </button>
+          ))}
+        </div>
+      </div>
+      {closed.length === 0 ? (
+        <p style={{ ...S.muted, fontSize: '13px' }}>No closed calls in this window yet on your plan tier. Check back once calls hit target/SL.</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+          <div>
+            <p style={{ fontSize: '22px', fontWeight: 800, color: cumulative >= 0 ? '#059669' : '#dc2626' }}>
+              {cumulative >= 0 ? '+' : ''}{cumulative.toFixed(2)}%
+            </p>
+            <p style={{ fontSize: '11px', ...S.muted }}>Notional Cumulative Return</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '22px', fontWeight: 800, color: '#1e40af' }}>{winRate}%</p>
+            <p style={{ fontSize: '11px', ...S.muted }}>Win Rate ({wins}/{closed.length})</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>
+              {avgReturn !== null ? (avgReturn >= 0 ? '+' : '') + avgReturn.toFixed(2) + '%' : '—'}
+            </p>
+            <p style={{ fontSize: '11px', ...S.muted }}>Avg Return / Closed Call</p>
+          </div>
+        </div>
+      )}
+      <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '12px', lineHeight: 1.5 }}>
+        ⚠️ Notional/theoretical return assuming equal exposure per call at published entry/exit prices. Not actual realised P&L, not personalised advice, and past performance is not indicative of future results.
+      </p>
     </div>
   );
 }
@@ -2360,6 +2444,11 @@ function WatchlistPage({ user }) {
   const [showAdd, setShowAdd] = useState(false);
   const [selected, setSelected] = useState(null);
   const [refreshTs, setRefreshTs] = useState(Date.now());
+  const [alerts, setAlerts] = useState([]);
+  const [alertModal, setAlertModal] = useState(null); // { sym, exch }
+  const [alertForm, setAlertForm] = useState({ target_price: '', direction: 'above' });
+  const [alertMsg, setAlertMsg] = useState('');
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -2367,7 +2456,65 @@ function WatchlistPage({ user }) {
       const w = localStorage.getItem('sv_wl3_' + user.id);
       setWatchlist(w ? JSON.parse(w) : DEFAULT_SYMBOLS);
     } catch(e) { setWatchlist(DEFAULT_SYMBOLS); }
+    fetchAlerts();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
   }, [user]);
+
+  const fetchAlerts = async () => {
+    const { data, error } = await supabase.from('price_alerts').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+    if (!error) setAlerts(data || []);
+  };
+
+  const openAlertModal = (sym, exch) => {
+    setAlertForm({ target_price: '', direction: 'above' });
+    setAlertMsg('');
+    setAlertModal({ sym, exch });
+  };
+
+  const saveAlert = async () => {
+    if (!alertForm.target_price || isNaN(parseFloat(alertForm.target_price))) { setAlertMsg('Enter a valid target price.'); return; }
+    const payload = {
+      user_id: user.id,
+      symbol: alertModal.sym,
+      exchange: alertModal.exch,
+      target_price: parseFloat(alertForm.target_price),
+      direction: alertForm.direction,
+      triggered: false,
+    };
+    const { error } = await supabase.from('price_alerts').insert([payload]);
+    if (error) { setAlertMsg(error.message); return; }
+    setAlertMsg('✅ Alert set!');
+    await fetchAlerts();
+    setTimeout(() => setAlertModal(null), 700);
+  };
+
+  const deleteAlert = async (id) => {
+    await supabase.from('price_alerts').delete().eq('id', id);
+    fetchAlerts();
+  };
+
+  const checkAlerts = async (results) => {
+    const active = alerts.filter(a => !a.triggered);
+    if (!active.length) return;
+    const toTrigger = active.filter(a => {
+      const p = results[a.symbol];
+      if (!p) return false;
+      return a.direction === 'above' ? p.price >= a.target_price : p.price <= a.target_price;
+    });
+    if (!toTrigger.length) return;
+    for (const a of toTrigger) {
+      await supabase.from('price_alerts').update({ triggered: true, triggered_at: new Date().toISOString() }).eq('id', a.id);
+      const msg = `${a.symbol} hit your alert: ${a.direction === 'above' ? '≥' : '≤'} ₹${a.target_price} (now ₹${results[a.symbol].price})`;
+      setToast(msg);
+      setTimeout(() => setToast(null), 6000);
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try { new Notification('StockVista Alert', { body: msg }); } catch(e) {}
+      }
+    }
+    fetchAlerts();
+  };
 
   // Fetch Yahoo Finance prices for all symbols
   useEffect(() => {
@@ -2395,11 +2542,12 @@ function WatchlistPage({ user }) {
         } catch(e) {}
       }));
       setPrices(results);
+      checkAlerts(results);
     };
     fetchPrices();
     const timer = setInterval(fetchPrices, 30000);
     return () => clearInterval(timer);
-  }, [watchlist, refreshTs]);
+  }, [watchlist, refreshTs, alerts]);
 
   const save = (data) => {
     try { localStorage.setItem('sv_wl3_' + user?.id, JSON.stringify(data)); } catch(e) {}
@@ -2507,11 +2655,14 @@ function WatchlistPage({ user }) {
                     </div>
                   </div>
 
-                  {/* Right: price + delete */}
+                  {/* Right: price + alert + delete */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
                       {p ? p.price.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—'}
                     </span>
+                    <button onClick={e => { e.stopPropagation(); openAlertModal(sym, exch); }}
+                      style={{ background: 'none', border: 'none', color: alerts.some(a => a.symbol === sym && !a.triggered) ? '#f59e0b' : '#cbd5e1', cursor: 'pointer', fontSize: '13px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                      title="Set price alert">🔔</button>
                     <button onClick={e => { e.stopPropagation(); remove(sym); }}
                       style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
                       title="Remove">×</button>
@@ -2559,6 +2710,55 @@ function WatchlistPage({ user }) {
           )}
         </div>
       </div>
+
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1200, background: '#0f172a', color: '#fff', padding: '14px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, maxWidth: '320px', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
+          🔔 {toast}
+        </div>
+      )}
+
+      {alertModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(4px)' }}>
+          <div style={{ ...S.card, maxWidth: '380px', width: '100%' }}>
+            <h3 style={{ ...S.h4, marginBottom: '4px' }}>🔔 Set Price Alert — {alertModal.sym}</h3>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>Get notified when the price crosses your target.</p>
+            {alertMsg && <div style={{ padding: '8px 12px', borderRadius: '8px', marginBottom: '12px', background: alertMsg.startsWith('✅') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: alertMsg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: '12px' }}>{alertMsg}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+              <div>
+                <label style={S.label}>Condition</label>
+                <select style={S.select} value={alertForm.direction} onChange={e => setAlertForm(f => ({ ...f, direction: e.target.value }))}>
+                  <option value="above">Price goes above</option>
+                  <option value="below">Price goes below</option>
+                </select>
+              </div>
+              <div>
+                <label style={S.label}>Target Price ₹</label>
+                <input style={S.input} type="number" step="0.05" placeholder={prices[alertModal.sym]?.price ? String(prices[alertModal.sym].price) : '0.00'}
+                  value={alertForm.target_price} onChange={e => setAlertForm(f => ({ ...f, target_price: e.target.value }))} />
+              </div>
+            </div>
+
+            {alerts.filter(a => a.symbol === alertModal.sym).length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Existing alerts</p>
+                {alerts.filter(a => a.symbol === alertModal.sym).map(a => (
+                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#f8fafc', borderRadius: '8px', marginBottom: '4px', fontSize: '12px' }}>
+                    <span style={{ color: a.triggered ? '#94a3b8' : '#0f172a' }}>
+                      {a.direction === 'above' ? '≥' : '≤'} ₹{a.target_price} {a.triggered ? '(triggered)' : ''}
+                    </span>
+                    <button onClick={() => deleteAlert(a.id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '12px' }}>Remove</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ ...S.flex, gap: '10px' }}>
+              <button onClick={saveAlert} style={{ ...S.btn, ...S.btnPrimary }}>Set Alert</button>
+              <button onClick={() => setAlertModal(null)} style={{ ...S.btn, ...S.btnSecondary }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3337,9 +3537,10 @@ function AdminPanel({ user, userProfile }) {
     if (!notifForm.title || !notifForm.body) { setNotifMsg('Title and message required.'); return; }
     setNotifSending(true); setNotifMsg('');
     const payload = { title: notifForm.title, body: notifForm.body, plan_target: notifForm.plan_target, type: notifForm.type, created_by: user.id, created_at: new Date().toISOString() };
-    const { error } = await supabase.from('admin_notifications').insert([payload]);
+    const { data, error } = await supabase.from('admin_notifications').insert([payload]).select();
     setNotifSending(false);
     if (error) { setNotifMsg('Error: ' + error.message); return; }
+    await logAudit('SEND_NOTIFICATION', 'admin_notification', data?.[0]?.id || 'new', { title: notifForm.title, plan_target: notifForm.plan_target, type: notifForm.type });
     setNotifMsg('✅ Notification sent to ' + (notifForm.plan_target === 'all' ? 'all users' : notifForm.plan_target + ' plan users'));
     setNF('title',''); setNF('body','');
     fetchData();
@@ -3347,6 +3548,7 @@ function AdminPanel({ user, userProfile }) {
 
   const deleteNotif = async (id) => {
     await supabase.from('admin_notifications').delete().eq('id', id);
+    await logAudit('DELETE_NOTIFICATION', 'admin_notification', id, {});
     fetchData();
   };
 
@@ -5199,6 +5401,61 @@ function RefundPage() {
   );
 }
 
+function InvestorCharterPage() {
+  return (
+    <LegalPage title="Investor Charter — Research Analysts" icon="📜">
+      <LegalSection title="Vision" icon="🎯">
+        <p>To ensure every investor who uses {APP_NAME}'s research services receives fair, transparent, and unbiased analysis, and is fully aware of their rights as a client of a SEBI Registered Research Analyst.</p>
+      </LegalSection>
+      <LegalSection title="Services We Provide" icon="📊">
+        <ul style={{ paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Research reports and trade recommendations on equity, F&O, and commodity segments</li>
+          <li>Buy/Sell/Hold calls with entry price, target, and stop-loss levels</li>
+          <li>Performance track record disclosed transparently on our Performance page</li>
+          <li>Conflict-of-interest disclosure for every published call</li>
+        </ul>
+        <p style={{ marginTop: '10px' }}>We do <strong>not</strong> provide personalised investment advice, portfolio management, or fund management services. For advice tailored to your specific financial goals, please consult a SEBI Registered Investment Adviser (RIA).</p>
+      </LegalSection>
+      <LegalSection title="Your Rights as an Investor" icon="✅">
+        <ul style={{ paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Receive research based on genuine analysis, free from front-running or price manipulation</li>
+          <li>Be informed of any conflict of interest the analyst may have in a recommended security</li>
+          <li>Access our full, unedited track record — including losing calls, not just winners</li>
+          <li>Fair and transparent fee terms disclosed before payment</li>
+          <li>A functioning grievance redressal mechanism (see our Grievance page) with escalation to SEBI SCORES and Smart ODR if unresolved</li>
+          <li>Data privacy — your personal information is never sold to third parties</li>
+        </ul>
+      </LegalSection>
+      <LegalSection title="Your Responsibilities" icon="🙋">
+        <ul style={{ paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Read all disclosures, risk warnings, and terms before subscribing or acting on any call</li>
+          <li>Verify our SEBI registration independently at sebi.gov.in before relying on our research</li>
+          <li>Apply your own risk assessment — F&O and commodity calls carry a materially higher risk of loss</li>
+          <li>Never share login credentials; report unauthorised account access immediately</li>
+          <li>Raise grievances promptly through the official channel rather than unregistered/unverified sources claiming to represent us</li>
+        </ul>
+      </LegalSection>
+      <LegalSection title="Do's" icon="👍">
+        <ul style={{ paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Deal only with SEBI registered intermediaries — verify registration numbers</li>
+          <li>Read rationale and risk level before acting on a call, not just the headline target</li>
+          <li>Keep records of all payments and communications with us</li>
+        </ul>
+      </LegalSection>
+      <LegalSection title="Don'ts" icon="👎">
+        <ul style={{ paddingLeft: '20px', lineHeight: 2 }}>
+          <li>Don't assume guaranteed profits — no research analyst can promise returns</li>
+          <li>Don't act on calls circulated outside our official app/website/verified channels</li>
+          <li>Don't invest based on tips from unregistered advisors or social media impersonators claiming affiliation with us</li>
+        </ul>
+      </LegalSection>
+      <LegalSection title="Grievance Redressal Timelines" icon="⏱️">
+        <p>Level 1 (direct to us): response within 21 calendar days. If unresolved or unsatisfactory, escalate to SEBI SCORES (scores.sebi.gov.in), and if still unresolved, to the SEBI-empanelled Online Dispute Resolution (ODR) platform at smartodr.in. Full details on our <button onClick={() => navigate('/grievance')} style={{ background: 'none', border: 'none', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer', padding: 0, fontSize: 'inherit', textDecoration: 'underline' }}>Grievance page</button>.</p>
+      </LegalSection>
+    </LegalPage>
+  );
+}
+
 function GrievancePage() {
   return (
     <LegalPage title="Grievance Redressal" icon="📮">
@@ -5694,6 +5951,7 @@ export default function App() {
     if (path === '/terms') return <TermsPage />;
     if (path === '/refund') return <RefundPage />;
     if (path === '/grievance') return <GrievancePage />;
+    if (path === '/investor-charter') return <InvestorCharterPage />;
     if (path === '/disclosure' || path === '/sebi-disclosure') return <SEBIDisclosurePage />;
     if (path === '/faq') return <FAQPage />;
     if (path === '/risk-disclosure') return <RiskDisclosurePage />;
