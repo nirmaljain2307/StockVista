@@ -1867,6 +1867,105 @@ function getTVSymbol(rec) {
   return `NSE:${sym || 'NIFTY'}`;
 }
 
+// ─── SELF-HOSTED CHART (Yahoo Finance data) ──────────────────────────────────
+// TradingView's free embeddable widgets require a data-licensing agreement for
+// NSE/BSE real-time data — without it they silently fall back to a demo symbol
+// (Apple Inc), even for valid, liquid Indian tickers. Yahoo Finance's public
+// chart endpoint already works reliably in this app (used for live watchlist
+// prices), so this renders our own chart from that same data source instead of
+// depending on TradingView's embed restrictions.
+function YahooLineChart({ rec }) {
+  const [points, setPoints] = useState(null);
+  const [range, setRange] = useState('3mo');
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  const sym = (rec?.symbol || '').toUpperCase().trim();
+  const exch = (rec?.exchange || 'NSE').toUpperCase();
+  const yhSym = exch === 'BSE' ? sym + '.BO' : sym + '.NS';
+
+  useEffect(() => {
+    if (!sym) { setErr('No symbol set for this call.'); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true); setErr('');
+    fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=1d&range=${range}`, { headers: { 'Accept': 'application/json' } })
+      .then(r => r.json())
+      .then(json => {
+        if (cancelled) return;
+        const result = json?.chart?.result?.[0];
+        const closes = result?.indicators?.quote?.[0]?.close;
+        const timestamps = result?.timestamp;
+        if (!result || !closes || !timestamps) { setErr('No chart data available for this symbol yet.'); setPoints(null); setLoading(false); return; }
+        const pts = timestamps.map((t, i) => ({ t, close: closes[i] })).filter(p => p.close != null);
+        setPoints(pts);
+        setLoading(false);
+      })
+      .catch(() => { if (!cancelled) { setErr('Could not load chart data.'); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [sym, exch, range]);
+
+  const W = 800, H = 300, PAD = 30;
+  let pathD = '', areaD = '', lastPrice = null, changePct = null, isUp = true;
+  if (points && points.length > 1) {
+    const closes = points.map(p => p.close);
+    const min = Math.min(...closes), max = Math.max(...closes);
+    const spread = (max - min) || 1;
+    const xStep = (W - PAD * 2) / (points.length - 1);
+    const coords = points.map((p, i) => {
+      const x = PAD + i * xStep;
+      const y = PAD + (H - PAD * 2) * (1 - (p.close - min) / spread);
+      return [x, y];
+    });
+    pathD = coords.map((c, i) => (i === 0 ? 'M' : 'L') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
+    areaD = pathD + ` L${coords[coords.length - 1][0].toFixed(1)},${H - PAD} L${coords[0][0].toFixed(1)},${H - PAD} Z`;
+    lastPrice = closes[closes.length - 1];
+    const firstPrice = closes[0];
+    changePct = +(((lastPrice - firstPrice) / firstPrice) * 100).toFixed(2);
+    isUp = lastPrice >= firstPrice;
+  }
+  const lineColor = isUp ? '#059669' : '#dc2626';
+
+  return (
+    <div style={{ ...S.card, padding: '0', overflow: 'hidden', marginBottom: '16px' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
+            📈 {sym} {exch}
+            {lastPrice !== null && <span style={{ marginLeft: '10px', color: lineColor }}>₹{fmt(lastPrice)} ({changePct >= 0 ? '+' : ''}{changePct}%)</span>}
+          </p>
+          <p style={{ fontSize: '11px', color: '#64748b' }}>Live data via Yahoo Finance</p>
+        </div>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {[{v:'1mo',l:'1M'},{v:'3mo',l:'3M'},{v:'6mo',l:'6M'},{v:'1y',l:'1Y'}].map(r => (
+            <button key={r.v} onClick={() => setRange(r.v)}
+              style={{ ...S.btn, ...S.btnSm, ...(range === r.v ? S.btnPrimary : S.btnSecondary) }}>{r.l}</button>
+          ))}
+          <a href={`https://www.tradingview.com/chart/?symbol=${exch === 'BSE' ? 'BSE' : 'NSE'}:${sym}`} target="_blank" rel="noreferrer"
+            style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary, textDecoration: 'none' }}>Full chart ↗</a>
+        </div>
+      </div>
+      <div style={{ padding: '12px 16px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: '13px' }}>Loading chart...</div>
+        ) : err ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: '13px' }}>{err}</div>
+        ) : (
+          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '280px' }}>
+            <defs>
+              <linearGradient id={`grad-${rec?.id || 'x'}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={lineColor} stopOpacity="0.18" />
+                <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={areaD} fill={`url(#grad-${rec?.id || 'x'})`} />
+            <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2" />
+          </svg>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // TradingView Advanced Chart with dropdown controls
 function TVAdvancedChart({ rec }) {
   const [tvInterval, setTvInterval] = useState('D');
@@ -2113,23 +2212,47 @@ function RecommendationDetailPage({ id, userProfile }) {
             </div>
           )}
 
-          {/* TradingView Live Charts */}
+          {/* Live Charts */}
           <h4 style={{ ...S.h4, marginBottom: '12px', marginTop: '8px' }}>Live Charts</h4>
 
-          {/* Main advanced chart */}
-          <TVAdvancedChart rec={rec} />
+          {/* Main chart — self-hosted (Yahoo Finance data), reliable for NSE/BSE equity */}
+          {(rec.segment || 'equity').toLowerCase() === 'equity' ? (
+            <YahooLineChart rec={rec} />
+          ) : (
+            <TVAdvancedChart rec={rec} />
+          )}
 
-          {/* Technical Analysis */}
-          <div style={{ marginBottom: '16px' }}>
-            <TVTechnicalAnalysis rec={rec} />
-          </div>
+          {(rec.segment || 'equity').toLowerCase() === 'equity' ? (
+            <>
+              {/* TradingView's technical-analysis and mini-overview embed widgets share the
+                  same NSE/BSE data-licensing restriction as the advanced chart above, so for
+                  equity calls we link out to the real TradingView site (confirmed working)
+                  instead of embedding a widget that would show the same fallback. */}
+              <div style={{ ...S.card, marginBottom: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <a href={`https://www.tradingview.com/chart/?symbol=${rec.exchange === 'BSE' ? 'BSE' : 'NSE'}:${(rec.symbol||'').toUpperCase()}`} target="_blank" rel="noreferrer"
+                  style={{ ...S.btn, ...S.btnSecondary, textDecoration: 'none' }}>📊 View technicals (RSI/MACD) on TradingView ↗</a>
+                <a href={`https://www.tradingview.com/symbols/${rec.exchange === 'BSE' ? 'BSE' : 'NSE'}-${(rec.symbol||'').toUpperCase()}/`} target="_blank" rel="noreferrer"
+                  style={{ ...S.btn, ...S.btnSecondary, textDecoration: 'none' }}>📉 Full price history ↗</a>
+              </div>
+              <div style={{ marginBottom: '24px' }}>
+                <ChartPlaceholder label="⛓️ Option Chain" icon="⛓️" />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Technical Analysis */}
+              <div style={{ marginBottom: '16px' }}>
+                <TVTechnicalAnalysis rec={rec} />
+              </div>
 
-          {/* Mini charts grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-            <TVMiniChart rec={rec} label="📊 3-Month Overview" />
-            <TVMiniChart rec={{ ...rec, symbol: rec.symbol }} label="📉 Price Action" />
-            <ChartPlaceholder label="⛓️ Option Chain" icon="⛓️" />
-          </div>
+              {/* Mini charts grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                <TVMiniChart rec={rec} label="📊 3-Month Overview" />
+                <TVMiniChart rec={{ ...rec, symbol: rec.symbol }} label="📉 Price Action" />
+                <ChartPlaceholder label="⛓️ Option Chain" icon="⛓️" />
+              </div>
+            </>
+          )}
 
           <div style={{ ...S.disclaimer }}>
             ⚠️ Investment in securities market is subject to market risk. Past performance does not guarantee future returns. This platform does not provide guaranteed profit. SEBI RA Reg: {SEBI_REG}
