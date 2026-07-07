@@ -11,3 +11,9 @@
     }
   ]
 }
+"crons": [
+  {
+    "path": "/api/run-market-screeners",
+    "schedule": "0 11 * * 1-5"
+  }
+]

@@ -1777,15 +1777,39 @@ function RecCard({ rec, userProfile, onClick }) {
 // feed across the whole market, which we don't have yet). Dividend yield and
 // unusual-option-activity data aren't collected today, so those categories show
 // as "coming soon" rather than faking results.
+function ScreenerResultRow({ item }) {
+  const isPositive = item.metric_value >= 0;
+  return (
+    <div style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div>
+        <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{item.symbol} <span style={{ fontWeight: 400, fontSize: '11px', color: '#94a3b8' }}>{item.exchange}</span></p>
+        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{item.meta?.note}{item.meta?.close ? ` · CMP ₹${fmt(item.meta.close)}` : ''}</p>
+      </div>
+      <span style={{ fontSize: '15px', fontWeight: 800, color: isPositive ? '#059669' : '#dc2626' }}>
+        {isPositive ? '+' : ''}{item.metric_value}%
+      </span>
+    </div>
+  );
+}
+
 function ScreenersPage({ user, userProfile }) {
   const [recs, setRecs] = useState([]);
+  const [marketResults, setMarketResults] = useState([]);
+  const [asOfDate, setAsOfDate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeCat, setActiveCat] = useState(null);
   const { t } = useLang();
 
   useEffect(() => {
-    supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false })
-      .then(({ data }) => { setRecs(data || []); setLoading(false); });
+    Promise.all([
+      supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false }),
+      supabase.from('screener_results').select('*').in('category', ['breakouts', 'momentum']).order('metric_value', { ascending: false }),
+    ]).then(([recsRes, marketRes]) => {
+      setRecs(recsRes.data || []);
+      setMarketResults(marketRes.data || []);
+      if (marketRes.data?.[0]?.as_of_date) setAsOfDate(marketRes.data[0].as_of_date);
+      setLoading(false);
+    });
   }, []);
 
   const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
@@ -1793,10 +1817,10 @@ function ScreenersPage({ user, userProfile }) {
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
 
   const CATEGORIES = [
-    { key: 'breakouts', label: 'Fresh breakouts', icon: '📈', color: '#EAF3DE', iconColor: '#27500A',
-      filter: r => ['live', 'near_target'].includes(r.status) && r.action === 'BUY' },
-    { key: 'momentum', label: 'Momentum leaders', icon: '⚡', color: '#FAEEDA', iconColor: '#633806',
-      filter: r => r.status === 'live' && r.action === 'BUY' },
+    { key: 'breakouts', label: 'Fresh breakouts', icon: '📈', color: '#EAF3DE', iconColor: '#27500A', marketData: true,
+      filter: item => item.category === 'breakouts' },
+    { key: 'momentum', label: 'Momentum leaders', icon: '⚡', color: '#FAEEDA', iconColor: '#633806', marketData: true,
+      filter: item => item.category === 'momentum' },
     { key: 'smart-money', label: 'Smart money moves', icon: '🏦', color: '#E6F1FB', iconColor: '#0C447C', planGate: 'premium',
       filter: r => (r.segment || 'equity') === 'equity' && ['premium','fno','elite'].includes(r.plan_required || 'basic') },
     { key: 'options-activity', label: 'Unusual option activity', icon: '🔥', color: '#FAECE7', iconColor: '#712B13', planGate: 'fno',
@@ -1809,7 +1833,8 @@ function ScreenersPage({ user, userProfile }) {
   const gateOk = (cat) => !cat.planGate || (hasActiveSub && userRank >= (catRank[cat.planGate] ?? 0));
 
   const activeCategory = CATEGORIES.find(c => c.key === activeCat);
-  const matches = activeCategory && !activeCategory.comingSoon ? recs.filter(activeCategory.filter) : [];
+  const marketMatches = activeCategory?.marketData ? marketResults.filter(activeCategory.filter) : [];
+  const recMatches = activeCategory && !activeCategory.marketData && !activeCategory.comingSoon ? recs.filter(activeCategory.filter) : [];
 
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
@@ -1818,14 +1843,17 @@ function ScreenersPage({ user, userProfile }) {
 
           <div style={{ background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
             <h2 style={{ ...S.h3, color: '#042C53', marginBottom: '2px' }}>{t('section_screeners')}</h2>
-            <p style={{ fontSize: '13px', color: '#0C447C' }}>Filtered views over our published research calls — refreshed as we publish new calls.</p>
+            <p style={{ fontSize: '13px', color: '#0C447C' }}>
+              Breakouts and momentum are scanned daily across our Nifty 100 universe{asOfDate ? ` · as of ${new Date(asOfDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}. Other screens are filtered from our published research calls.
+            </p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '28px' }}>
             {CATEGORIES.map(cat => {
               const isActive = activeCat === cat.key;
               const locked = !gateOk(cat);
-              const count = !cat.comingSoon ? recs.filter(cat.filter).length : null;
+              const count = cat.marketData ? marketResults.filter(cat.filter).length
+                : !cat.comingSoon ? recs.filter(cat.filter).length : null;
               return (
                 <div key={cat.key} onClick={() => !cat.comingSoon && setActiveCat(cat.key)}
                   style={{ ...S.card, cursor: cat.comingSoon ? 'default' : 'pointer', border: isActive ? '2px solid #185FA5' : '2px solid #1e40af', opacity: cat.comingSoon ? 0.7 : 1, position: 'relative' }}>
@@ -1837,7 +1865,7 @@ function ScreenersPage({ user, userProfile }) {
                   </div>
                   <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>{cat.label}</p>
                   <p style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    {cat.comingSoon ? 'Coming soon' : locked ? `Unlock with ${PLANS[cat.planGate]?.name || cat.planGate}` : `${count} matching call${count === 1 ? '' : 's'}`}
+                    {cat.comingSoon ? 'Coming soon' : locked ? `Unlock with ${PLANS[cat.planGate]?.name || cat.planGate}` : `${count} matching stock${count === 1 ? '' : 's'}`}
                   </p>
                 </div>
               );
@@ -1852,13 +1880,27 @@ function ScreenersPage({ user, userProfile }) {
               </div>
               {loading ? (
                 <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>Loading...</div>
-              ) : matches.length === 0 ? (
+              ) : activeCategory.marketData ? (
+                !gateOk(activeCategory) ? (
+                  <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
+                    <p style={{ ...S.muted }}>Upgrade your plan to unlock this screen.</p>
+                  </div>
+                ) : marketMatches.length === 0 ? (
+                  <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
+                    <p style={{ ...S.muted }}>No stocks matched this screen in today's scan. Check back tomorrow.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {marketMatches.map(item => <ScreenerResultRow key={item.id} item={item} />)}
+                  </div>
+                )
+              ) : recMatches.length === 0 ? (
                 <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
                   <p style={{ ...S.muted }}>No calls currently match this screen. Check back after our next published call.</p>
                 </div>
               ) : (
                 <div style={S.grid2}>
-                  {matches.map(r => <RecCard key={r.id} rec={r} userProfile={userProfile} />)}
+                  {recMatches.map(r => <RecCard key={r.id} rec={r} userProfile={userProfile} />)}
                 </div>
               )}
             </div>
