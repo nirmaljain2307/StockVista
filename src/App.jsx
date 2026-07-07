@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
@@ -215,27 +215,138 @@ function DisclaimerPopup({ onAccept }) {
   );
 }
 
+// ─── F&O SPECIFIC RISK GATE (first-time access, separate from general disclaimer) ──
+function FnoRiskGate({ onAccept, onDecline }) {
+  const [checked, setChecked] = useState(false);
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ ...S.card, maxWidth: '560px', width: '100%', borderColor: '#d97706' }}>
+        <div style={{ ...S.flex, gap: '12px', marginBottom: '20px' }}>
+          <span style={{ fontSize: '28px' }}>⚡</span>
+          <div>
+            <h2 style={{ ...S.h3, color: '#d97706' }}>F&O carries materially higher risk</h2>
+            <p style={{ ...S.muted, fontSize: '13px' }}>One-time acknowledgment before viewing Futures & Options calls</p>
+          </div>
+        </div>
+        <div style={{ ...S.disclaimer, marginBottom: '16px', background: '#fffbeb', borderColor: '#fde68a' }}>
+          <p>Futures and Options trading is materially riskier than equity investing:</p>
+          <ul style={{ paddingLeft: '18px', marginTop: '8px', lineHeight: 1.8 }}>
+            <li>Options can result in <strong>total loss of premium paid</strong></li>
+            <li>Futures losses can <strong>exceed your initial margin</strong></li>
+            <li>Leverage magnifies both gains and losses</li>
+            <li>Not suitable for inexperienced or risk-averse investors</li>
+          </ul>
+          <p style={{ marginTop: '8px' }}>{APP_NAME} (SEBI RA Reg: {SEBI_REG}) publishes F&O research for educational purposes only. We do not guarantee returns. Please assess your own risk tolerance before proceeding.</p>
+        </div>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '18px', cursor: 'pointer', fontSize: '13px', color: '#0f172a' }}>
+          <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} style={{ marginTop: '2px' }} />
+          <span>I understand F&O trading carries a high risk of loss, including losses beyond my invested capital, and I choose to proceed at my own risk.</span>
+        </label>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button onClick={onAccept} disabled={!checked} style={{ ...S.btn, ...S.btnPrimary, flex: 1, opacity: checked ? 1 : 0.5, cursor: checked ? 'pointer' : 'not-allowed', background: '#d97706' }}>
+            ✓ I Understand & Agree
+          </button>
+          <button onClick={onDecline} style={{ ...S.btn, ...S.btnSecondary }}>
+            Not Now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── NAVBAR ───────────────────────────────────────────────────────────────────
+// ─── i18n (English / Hindi UI toggle) ────────────────────────────────────────
+// IMPORTANT: this only translates static UI labels (nav, footer, section
+// headers, page titles). Toast/alert/error/success messages and any dynamic
+// system notification text always stay in English by design, regardless of
+// the selected language — do not add those keys here.
+const TRANSLATIONS = {
+  en: {
+    nav_home: 'Home', nav_live_calls: 'Live Calls', nav_recommendations: 'Recommendations',
+    nav_past_calls: 'Past Calls', nav_pricing: 'Pricing', nav_blog: 'Blog', nav_performance: 'Performance',
+    nav_signin: 'Sign In', nav_getstarted: 'Get Started', nav_dashboard: 'Dashboard',
+    nav_profile: 'Profile Settings', nav_subscription: 'Subscription', nav_admin: 'Admin Panel',
+    nav_signout: 'Sign Out', nav_notifications: 'Notifications', nav_viewall: 'View All',
+    nav_watchlist: 'Watchlist', nav_portfolio: 'Portfolio', nav_screeners: 'Screeners',
+    footer_company: 'Company', footer_about: 'About', footer_contact: 'Contact',
+    footer_legal: 'Legal', footer_risk: 'Risk Disclosure', footer_sebi: 'SEBI RA Disclosure',
+    footer_charter: 'Investor Charter', footer_support: 'Support', footer_faq: 'FAQ',
+    footer_grievance: 'Grievance', footer_tagline: 'SEBI-registered research, built for serious investors',
+    section_latest_calls: 'Latest Research Calls', section_my_performance: 'If You Followed Every Call On Your Plan',
+    section_screeners: 'Screeners', section_watchlist: 'Watchlist', section_portfolio: 'My Portfolio',
+    section_plan_snapshot: 'Plan Performance Snapshot',
+  },
+  hi: {
+    nav_home: 'होम', nav_live_calls: 'लाइव कॉल्स', nav_recommendations: 'सिफारिशें',
+    nav_past_calls: 'पिछली कॉल्स', nav_pricing: 'प्राइसिंग', nav_blog: 'ब्लॉग', nav_performance: 'परफॉर्मेंस',
+    nav_signin: 'साइन इन', nav_getstarted: 'शुरू करें', nav_dashboard: 'डैशबोर्ड',
+    nav_profile: 'प्रोफाइल सेटिंग्स', nav_subscription: 'सब्सक्रिप्शन', nav_admin: 'एडमिन पैनल',
+    nav_signout: 'साइन आउट', nav_notifications: 'नोटिफिकेशन', nav_viewall: 'सभी देखें',
+    nav_watchlist: 'वॉचलिस्ट', nav_portfolio: 'पोर्टफोलियो', nav_screeners: 'स्क्रीनर्स',
+    footer_company: 'कंपनी', footer_about: 'हमारे बारे में', footer_contact: 'संपर्क करें',
+    footer_legal: 'कानूनी', footer_risk: 'रिस्क डिस्क्लोज़र', footer_sebi: 'सेबी RA डिस्क्लोज़र',
+    footer_charter: 'इन्वेस्टर चार्टर', footer_support: 'सहायता', footer_faq: 'सामान्य प्रश्न',
+    footer_grievance: 'शिकायत', footer_tagline: 'सेबी-रजिस्टर्ड रिसर्च, गंभीर निवेशकों के लिए',
+    section_latest_calls: 'नवीनतम रिसर्च कॉल्स', section_my_performance: 'अगर आपने अपने प्लान की हर कॉल फॉलो की होती',
+    section_screeners: 'स्क्रीनर्स', section_watchlist: 'वॉचलिस्ट', section_portfolio: 'मेरा पोर्टफोलियो',
+    section_plan_snapshot: 'प्लान परफॉर्मेंस स्नैपशॉट',
+  },
+};
+
+const LanguageContext = createContext({ lang: 'en', setLang: () => {}, t: (k) => k });
+
+function LanguageProvider({ children }) {
+  const [lang, setLangState] = useState(() => (typeof localStorage !== 'undefined' && localStorage.getItem('sv_lang')) || 'en');
+  const setLang = (l) => {
+    try { localStorage.setItem('sv_lang', l); } catch(e) {}
+    setLangState(l);
+  };
+  const t = (key) => TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en[key] ?? key;
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+const useLang = () => useContext(LanguageContext);
+
+function LanguageToggle({ compact }) {
+  const { lang, setLang } = useLang();
+  return (
+    <div style={{ display: 'flex', gap: '2px', background: '#E6F1FB', borderRadius: '20px', padding: '2px', border: '1px solid #B5D4F4' }}>
+      {['en', 'hi'].map(l => (
+        <button key={l} onClick={() => setLang(l)}
+          style={{ border: 'none', cursor: 'pointer', borderRadius: '18px', padding: compact ? '4px 10px' : '5px 12px', fontSize: '11px', fontWeight: 700, background: lang === l ? '#185FA5' : 'transparent', color: lang === l ? '#fff' : '#0C447C' }}>
+          {l === 'en' ? 'EN' : 'हि'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Navbar({ user, userProfile, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const { t } = useLang();
   const path = getPath();
 
   const navItems = [
-    { label: 'Home', path: '/' },
-    { label: 'Live Calls', path: '/live-calls' },
-    { label: 'Recommendations', path: '/recommendations' },
-    { label: 'Past Calls', path: '/past-recommendations' },
-    { label: 'Pricing', path: '/pricing' },
-    { label: 'Blog', path: '/blog' },
-    { label: 'Performance', path: '/performance' },
+    { label: t('nav_home'), path: '/' },
+    { label: t('nav_live_calls'), path: '/live-calls' },
+    { label: t('nav_recommendations'), path: '/recommendations' },
+    { label: t('nav_past_calls'), path: '/past-recommendations' },
+    { label: t('nav_pricing'), path: '/pricing' },
+    { label: t('nav_blog'), path: '/blog' },
+    { label: t('nav_performance'), path: '/performance' },
   ];
 
   return (
-    <nav style={S.nav}>
-      <div style={S.navLogo} onClick={() => navigate('/')}>
-        <div style={S.navLogoIcon}>📈</div>
+    <nav style={{ ...S.nav, background: '#E6F1FB', borderBottom: '1px solid #B5D4F4' }}>
+      <div style={{ ...S.navLogo, color: '#042C53' }} onClick={() => navigate('/')}>
+        <div style={{ ...S.navLogoIcon, background: '#185FA5' }}>📈</div>
         <span>{APP_NAME}</span>
       </div>
 
@@ -243,13 +354,14 @@ function Navbar({ user, userProfile, onLogout }) {
       <div style={{ ...S.navLinks, '@media(max-width:768px)': { display: 'none' } }}>
         {navItems.map(item => (
           <button key={item.path} onClick={() => navigate(item.path)}
-            style={{ ...S.navLink, color: path === item.path ? '#3b82f6' : '#94a3b8' }}>
+            style={{ ...S.navLink, color: path === item.path ? '#185FA5' : '#0C447C' }}>
             {item.label}
           </button>
         ))}
       </div>
 
       <div style={{ ...S.flex, gap: '12px' }}>
+        <LanguageToggle compact />
         {user ? (
           <>
             {/* Notifications */}
@@ -261,7 +373,7 @@ function Navbar({ user, userProfile, onLogout }) {
               </button>
               {notifOpen && (
                 <div style={{ position: 'absolute', right: 0, top: '44px', background: '#e2e8f0', border: '1px solid #334155', borderRadius: '12px', padding: '16px', width: '300px', zIndex: 100 }}>
-                  <p style={{ fontWeight: 700, marginBottom: '12px' }}>Notifications</p>
+                  <p style={{ fontWeight: 700, marginBottom: '12px' }}>{t('nav_notifications')}</p>
                   {[
                     { title: 'New Recommendation', msg: 'RELIANCE BUY call published', type: '📊' },
                     { title: 'Target Achieved', msg: 'TCS Target 1 hit — Book partial profits', type: '🎯' },
@@ -272,7 +384,7 @@ function Navbar({ user, userProfile, onLogout }) {
                       <p style={{ fontSize: '12px', ...S.muted, marginTop: '2px' }}>{n.msg}</p>
                     </div>
                   ))}
-                  <button onClick={() => navigate('/notifications')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, width: '100%', justifyContent: 'center', marginTop: '8px' }}>View All</button>
+                  <button onClick={() => navigate('/notifications')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, width: '100%', justifyContent: 'center', marginTop: '8px' }}>{t('nav_viewall')}</button>
                 </div>
               )}
             </div>
@@ -288,10 +400,10 @@ function Navbar({ user, userProfile, onLogout }) {
                   <p style={{ padding: '8px 12px', fontSize: '12px', ...S.muted }}>{user.email}</p>
                   <div style={{ height: '1px', background: '#334155', margin: '4px 0' }} />
                   {[
-                    { label: '📊 Dashboard', path: '/dashboard' },
-                    { label: '⚙️ Profile Settings', path: '/profile' },
-                    { label: '💳 Subscription', path: '/subscription' },
-                    ...(userProfile?.is_admin ? [{ label: '🛡️ Admin Panel', path: '/admin' }] : []),
+                    { label: '📊 ' + t('nav_dashboard'), path: '/dashboard' },
+                    { label: '⚙️ ' + t('nav_profile'), path: '/profile' },
+                    { label: '💳 ' + t('nav_subscription'), path: '/subscription' },
+                    ...(userProfile?.is_admin ? [{ label: '🛡️ ' + t('nav_admin'), path: '/admin' }] : []),
                   ].map(item => (
                     <button key={item.path} onClick={() => { navigate(item.path); setUserMenu(false); }}
                       style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#0f172a' }}>
@@ -300,7 +412,7 @@ function Navbar({ user, userProfile, onLogout }) {
                   ))}
                   <div style={{ height: '1px', background: '#334155', margin: '4px 0' }} />
                   <button onClick={onLogout} style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#ef4444' }}>
-                    🚪 Sign Out
+                    🚪 {t('nav_signout')}
                   </button>
                 </div>
               )}
@@ -308,8 +420,8 @@ function Navbar({ user, userProfile, onLogout }) {
           </>
         ) : (
           <>
-            <button onClick={() => navigate('/login')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>Sign In</button>
-            <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>Get Started</button>
+            <button onClick={() => navigate('/login')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>{t('nav_signin')}</button>
+            <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm, background: '#185FA5' }}>{t('nav_getstarted')}</button>
           </>
         )}
 
@@ -597,36 +709,36 @@ function Footer() {
   };
 
   return (
-    <footer style={{ background: '#ffffff', borderTop: '2px solid #e2e8f0', padding: '60px 20px 0' }}>
+    <footer style={{ background: '#E6F1FB', borderTop: '2px solid #B5D4F4', padding: '60px 20px 0' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '40px', marginBottom: '48px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <div style={S.navLogoIcon}>📈</div>
-              <span style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{APP_NAME}</span>
+              <div style={{ ...S.navLogoIcon, background: '#185FA5' }}>📈</div>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#042C53' }}>{APP_NAME}</span>
             </div>
-            <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7, marginBottom: '12px' }}>
+            <p style={{ fontSize: '13px', color: '#0C447C', lineHeight: 1.7, marginBottom: '12px' }}>
               Your trusted partner for stock market research. SEBI Registered Research Analyst.
             </p>
-            <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>{SEBI_REG}</p>
+            <p style={{ fontSize: '11px', color: '#185FA5', fontWeight: 500 }}>{SEBI_REG}</p>
           </div>
           {Object.entries(links).map(([cat, items]) => (
             <div key={cat}>
-              <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>{cat}</h4>
+              <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#042C53', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>{cat}</h4>
               {items.map(item => (
                 <button key={item.path} onClick={() => navigate(item.path)}
-                  style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#475569', fontSize: '14px', padding: '6px 0', cursor: 'pointer', fontWeight: 500, transition: 'color 0.15s' }}
-                  onMouseEnter={e => e.target.style.color = '#1d4ed8'}
-                  onMouseLeave={e => e.target.style.color = '#475569'}>
+                  style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#0C447C', fontSize: '14px', padding: '6px 0', cursor: 'pointer', fontWeight: 500, transition: 'color 0.15s' }}
+                  onMouseEnter={e => e.target.style.color = '#185FA5'}
+                  onMouseLeave={e => e.target.style.color = '#0C447C'}>
                   {item.label}
                 </button>
               ))}
             </div>
           ))}
         </div>
-        <div style={{ borderTop: '1px solid #e2e8f0', padding: '24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>© {new Date().getFullYear()} {APP_NAME} · {COMPANY_NAME} · All rights reserved.</p>
-          <p style={{ fontSize: '11px', color: '#94a3b8', maxWidth: '600px', textAlign: 'right', lineHeight: 1.5 }}>
+        <div style={{ borderTop: '1px solid #B5D4F4', padding: '24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <p style={{ fontSize: '12px', color: '#185FA5' }}>© {new Date().getFullYear()} {APP_NAME} · {COMPANY_NAME} · All rights reserved.</p>
+          <p style={{ fontSize: '11px', color: '#185FA5', maxWidth: '600px', textAlign: 'right', lineHeight: 1.5 }}>
             Investment in securities market is subject to market risk. Past performance does not guarantee future returns. Not SEBI investment advice.
           </p>
         </div>
@@ -1240,6 +1352,7 @@ function RegisterPage({ setUser, setUserProfile }) {
 function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLang();
 
   useEffect(() => {
     fetchRecs();
@@ -1308,9 +1421,9 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
           <div style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
             {/* Recommendations */}
             <div>
-              <div style={{ ...S.flexBetween, marginBottom: '16px' }}>
-                <h3 style={S.h3}>Latest Research Calls</h3>
-                <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>View All</button>
+              <div style={{ ...S.flexBetween, marginBottom: '16px', background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '10px', padding: '10px 16px' }}>
+                <h3 style={{ ...S.h3, color: '#042C53' }}>{t('section_latest_calls')}</h3>
+                <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>{t('nav_viewall')}</button>
               </div>
               {loading ? (
                 <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading recommendations...</div>
@@ -1363,6 +1476,7 @@ function MyPerformanceWidget({ userProfile }) {
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month'); // 'month' | 'all'
+  const { t } = useLang();
 
   useEffect(() => {
     supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: true })
@@ -1399,8 +1513,8 @@ function MyPerformanceWidget({ userProfile }) {
 
   return (
     <div style={{ ...S.card, marginTop: '4px' }}>
-      <div style={{ ...S.flexBetween, marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-        <h3 style={S.h4}>📈 If You Followed Every Call On Your Plan</h3>
+      <div style={{ ...S.flexBetween, marginBottom: '12px', flexWrap: 'wrap', gap: '8px', background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '10px', padding: '10px 16px' }}>
+        <h3 style={{ ...S.h4, color: '#042C53' }}>📈 {t('section_my_performance')}</h3>
         <div style={{ display: 'flex', gap: '6px' }}>
           {['month', 'all'].map(p => (
             <button key={p} onClick={() => setPeriod(p)}
@@ -1551,6 +1665,25 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
   const [filters, setFilters] = useState({ segment: '', action: '', status: '', risk: '' });
   const [sort, setSort] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const HIGH_RISK_SEGMENTS = ['futures', 'options'];
+  const [fnoAck, setFnoAck] = useState(() => {
+    try { return localStorage.getItem('fno_risk_ack_' + (user?.id || 'anon')) === 'true'; } catch(e) { return false; }
+  });
+  const [fnoGate, setFnoGate] = useState(false);
+
+  useEffect(() => {
+    if (HIGH_RISK_SEGMENTS.includes(filters.segment) && !fnoAck) setFnoGate(true);
+  }, [filters.segment]);
+
+  const acceptFnoRisk = () => {
+    try { localStorage.setItem('fno_risk_ack_' + (user?.id || 'anon'), 'true'); } catch(e) {}
+    setFnoAck(true);
+    setFnoGate(false);
+  };
+  const declineFnoRisk = () => {
+    setFilters(f => ({ ...f, segment: '' }));
+    setFnoGate(false);
+  };
 
   const LIVE_GROUP = ['live', 'near_target', 'near_sl'];
   const PAST_GROUP = ['target_hit', 'sl_hit', 'expired', 'closed', 'archived'];
@@ -1578,6 +1711,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
   };
 
   if (!riskAccepted && user) return <DisclaimerPopup onAccept={() => setRiskAccepted(true)} />;
+  if (fnoGate) return <FnoRiskGate onAccept={acceptFnoRisk} onDecline={declineFnoRisk} />;
 
   const stats = { live: recs.filter(r => r.status === 'live' || r.status === 'near_target' || r.status === 'near_sl').length, target_hit: recs.filter(r => r.status === 'target_hit').length, sl_hit: recs.filter(r => r.status === 'sl_hit').length, total: recs.length };
 
@@ -5657,6 +5791,53 @@ function SubscriptionPage({ user, userProfile }) {
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [cycle, setCycle] = useState('monthly');
+  const COOLOFF_MS = 10 * 60 * 1000;
+  const [cooloff, setCooloff] = useState(null); // { paymentId, createdAt }
+  const [cooloffNow, setCooloffNow] = useState(Date.now());
+  const [cooloffCancelling, setCooloffCancelling] = useState(false);
+  const [cooloffMsg, setCooloffMsg] = useState('');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('sv_cooloff_' + user.id);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.createdAt < COOLOFF_MS) setCooloff(parsed);
+        else localStorage.removeItem('sv_cooloff_' + user.id);
+      }
+    } catch(e) {}
+  }, [user.id]);
+
+  useEffect(() => {
+    if (!cooloff) return;
+    const timer = setInterval(() => setCooloffNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [cooloff]);
+
+  const cancelWithinCooloff = async () => {
+    if (!cooloff) return;
+    setCooloffCancelling(true);
+    setCooloffMsg('');
+    try {
+      const res = await fetch('/api/cancel-subscription-cooloff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, razorpay_payment_id: cooloff.paymentId }),
+      });
+      const result = await res.json();
+      setCooloffCancelling(false);
+      if (!res.ok || !result.success) {
+        setCooloffMsg('Error: ' + (result.error || 'Could not process refund. Contact support.'));
+        return;
+      }
+      localStorage.removeItem('sv_cooloff_' + user.id);
+      setCooloffMsg('✅ Refund initiated. Your plan has been reverted. Refreshing...');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) {
+      setCooloffCancelling(false);
+      setCooloffMsg('Error: Could not reach server. Contact support.');
+    }
+  };
 
   const prices = {
     basic:   { monthly: 999,  quarterly: 2697,  yearly: 8991 },
@@ -5750,6 +5931,9 @@ function SubscriptionPage({ user, userProfile }) {
               setBypassMsg('Error: ' + (verify.error || `Verification failed. Contact support with payment ID: ${response.razorpay_payment_id}`));
               return;
             }
+            try {
+              localStorage.setItem('sv_cooloff_' + user.id, JSON.stringify({ paymentId: response.razorpay_payment_id, createdAt: Date.now() }));
+            } catch(e) {}
             setBypassMsg('✅ Plan activated! Refreshing...');
             setTimeout(() => window.location.reload(), 1200);
           } catch (e) {
@@ -5797,6 +5981,24 @@ function SubscriptionPage({ user, userProfile }) {
               <button onClick={() => navigate('/dashboard')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>← Dashboard</button>
             </div>
           </div>
+
+          {cooloff && (Date.now() - cooloff.createdAt) < COOLOFF_MS && (
+            <div style={{ ...S.card, marginBottom: '20px', border: '2px solid #d97706', background: '#fffbeb' }}>
+              <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: '14px', color: '#92400e' }}>⏱️ Changed your mind? You have a short window to cancel.</p>
+                  <p style={{ fontSize: '12px', color: '#92400e', marginTop: '4px' }}>
+                    Cancel within {Math.max(0, Math.ceil((COOLOFF_MS - (cooloffNow - cooloff.createdAt)) / 60000))} min for a full refund to your original payment method.
+                  </p>
+                </div>
+                <button onClick={cancelWithinCooloff} disabled={cooloffCancelling}
+                  style={{ ...S.btn, ...S.btnSm, background: '#d97706', color: '#fff', opacity: cooloffCancelling ? 0.7 : 1 }}>
+                  {cooloffCancelling ? 'Processing...' : 'Cancel & Refund'}
+                </button>
+              </div>
+              {cooloffMsg && <p style={{ fontSize: '12px', marginTop: '10px', fontWeight: 600, color: cooloffMsg.startsWith('✅') ? '#059669' : '#dc2626' }}>{cooloffMsg}</p>}
+            </div>
+          )}
 
           <h2 style={{ ...S.h3, marginBottom: '6px' }}>Choose Your Plan</h2>
           <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>Select a plan and billing cycle to subscribe.</p>
@@ -6038,10 +6240,12 @@ export default function App() {
   };
 
   return (
-    <div style={S.page}>
-      <Navbar user={user} userProfile={userProfile} onLogout={handleLogout} />
-      {renderPage()}
-      <PWAInstallPrompt />
-    </div>
+    <LanguageProvider>
+      <div style={S.page}>
+        <Navbar user={user} userProfile={userProfile} onLogout={handleLogout} />
+        {renderPage()}
+        <PWAInstallPrompt />
+      </div>
+    </LanguageProvider>
   );
 }
