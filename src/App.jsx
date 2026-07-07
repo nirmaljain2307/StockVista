@@ -157,6 +157,35 @@ const calcPnL = (rec) => {
   return { points: +points.toFixed(2), pct: +((points / entry) * 100).toFixed(2) };
 };
 
+// Live price for equity recommendations via Yahoo Finance — so "Live Calls" price
+// movement reflects the actual market instead of only a manually-entered CMP.
+// F&O/commodity contract symbols aren't resolvable this way, so those still rely
+// on the admin-entered CMP field.
+function useLivePrice(symbol, exchange, active) {
+  const [price, setPrice] = useState(null);
+  useEffect(() => {
+    if (!active || !symbol) return;
+    let cancelled = false;
+    const fetchPrice = async () => {
+      const exch = (exchange || 'NSE').toUpperCase();
+      const yhSym = exch === 'BSE' ? symbol + '.BO' : symbol + '.NS';
+      try {
+        const res = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=1d&range=1d`,
+          { headers: { 'Accept': 'application/json' } }
+        );
+        const data = await res.json();
+        const q = data?.chart?.result?.[0]?.meta;
+        if (q?.regularMarketPrice && !cancelled) setPrice(q.regularMarketPrice);
+      } catch(e) {}
+    };
+    fetchPrice();
+    const timer = setInterval(fetchPrice, 30000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [symbol, exchange, active]);
+  return price;
+}
+
 // Suggests an effective status from CMP vs target/SL/expiry without overwriting
 // the admin's manually-set status. Used for display badges and the admin
 // "Auto-check Status" bulk action.
@@ -1561,8 +1590,11 @@ function RecCard({ rec, userProfile, onClick }) {
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
   const hasAccess = hasActiveSub && userRank >= reqRank;
   const isLocked = !hasAccess;
-  const pnl = calcPnL(rec);
   const effStatus = rec.status || 'live';
+  const isLiveish = ['live', 'near_target', 'near_sl'].includes(effStatus);
+  const isEquity = (rec.segment || 'equity').toLowerCase() === 'equity';
+  const livePrice = useLivePrice(rec.symbol, rec.exchange, isLiveish && isEquity && !isLocked);
+  const pnl = calcPnL(livePrice ? { ...rec, cmp: livePrice } : rec);
 
   // Status badge config
   const statusConfig = {
@@ -1639,6 +1671,7 @@ function RecCard({ rec, userProfile, onClick }) {
           {pnl.points !== null && (
             <span style={{ fontSize: '12px', fontWeight: 700, color: pnl.points >= 0 ? '#059669' : '#dc2626' }}>
               {pnl.points >= 0 ? '+' : ''}{pnl.points} pts ({pnl.pct >= 0 ? '+' : ''}{pnl.pct}%)
+              {livePrice && <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>● LIVE</span>}
             </span>
           )}
           {rec.risk_level && (
@@ -1825,8 +1858,11 @@ function getTVSymbol(rec) {
     if (sym === 'BANKNIFTY') return 'NSE:BANKNIFTY';
     return `NSE:${sym}`;
   }
-  // BSE
-  if (exch === 'BSE') return `BSE:${sym}`;
+  // BSE — TradingView resolves BSE listings by numeric scrip code, not by the
+  // NSE-style ticker text we store (e.g. "BSE:RELIANCE" is invalid on TradingView
+  // and silently falls back to its default chart symbol). Almost every BSE call
+  // we publish is dual-listed on NSE under the same ticker, so use NSE: instead.
+  if (exch === 'BSE') return `NSE:${sym}`;
   // Default NSE equity
   return `NSE:${sym || 'NIFTY'}`;
 }
