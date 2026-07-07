@@ -63,7 +63,7 @@ const BILLING_CYCLES = [
 
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const S = {
-  page: { minHeight: '100vh', background: '#f0f4f8', color: '#0f172a', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" },
+  page: { minHeight: '100vh', background: '#ffffff', color: '#0f172a', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" },
   container: { maxWidth: '1200px', margin: '0 auto', padding: '0 24px' },
   section: { padding: '80px 24px' },
 
@@ -82,14 +82,14 @@ const S = {
   btnDanger: { background: '#dc2626', color: '#fff' },
   btnGreen: { background: '#059669', color: '#fff' },
 
-  card: { background: '#ffffff', border: '1.5px solid #bfdbfe', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(29,78,216,0.05), 0 4px 16px rgba(29,78,216,0.04)' },
+  card: { background: '#ffffff', border: '2px solid #1e40af', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(30,64,175,0.08), 0 4px 16px rgba(30,64,175,0.06)' },
   cardHover: { transition: 'all 0.18s' },
 
   formGroup: { marginBottom: '16px' },
   label: { display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.07em' },
-  input: { width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
-  select: { width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
-  textarea: { width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
+  input: { width: '100%', background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
+  select: { width: '100%', background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
+  textarea: { width: '100%', background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
 
   badge: { display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em' },
   badgeBuy:  { background: '#dcfce7', color: '#166534' },
@@ -764,7 +764,7 @@ function PricingPage() {
   ];
 
   return (
-    <div style={{ paddingTop: '80px', background: '#f0f4f8' }}>
+    <div style={{ paddingTop: '80px', background: '#ffffff' }}>
 
       {/* Hero */}
       <section style={{ ...S.section, textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f0f4f8 60%)' }}>
@@ -824,7 +824,7 @@ function PricingPage() {
           <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '8px' }}>Full Comparison</h2>
           <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '40px' }}>Every feature, every plan — no surprises</p>
 
-          <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #1e40af', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '680px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
@@ -916,7 +916,7 @@ function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ ...S.section, background: '#f0f4f8' }}>
+      <section style={{ ...S.section, background: '#ffffff' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '40px' }}>Frequently Asked Questions</h2>
           {faqs.map((faq, i) => (
@@ -948,7 +948,7 @@ function FaqItem({ q, a }) {
 // ─── AUTH LAYOUT WRAPPER ──────────────────────────────────────────────────────
 function AuthLayout({ title, subtitle, children }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', minHeight: '560px' }}>
         {/* Left trust panel */}
         <div style={{ background: '#0f172a', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -1505,7 +1505,7 @@ function RecCard({ rec, userProfile, onClick }) {
       </div>
 
       {/* Row 3 — Price grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#f8fafc', borderRadius: '10px', border: '1px solid #1e40af', overflow: 'hidden' }}>
         {[
           { label: 'Entry', value: fmt(rec.entry_price), color: '#0f172a' },
           { label: 'Target', value: fmt(rec.target1), color: '#059669' },
@@ -2142,7 +2142,7 @@ function NotificationsPage({ user, userProfile }) {
   }, [user]);
 
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔔</div>
         <h2 style={S.h3}>Login to see notifications</h2>
@@ -2154,7 +2154,7 @@ function NotificationsPage({ user, userProfile }) {
   const typeIcon = { info: 'ℹ️', alert: '🔴', success: '✅', call: '📊', market: '📈' };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '4px' }}>🔔 Notifications</h1>
@@ -2254,7 +2254,7 @@ function ProfilePage({ user, userProfile }) {
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '28px' }}>👤 My Profile</h1>
@@ -2371,7 +2371,7 @@ function ReportsPage({ user, userProfile }) {
   }, []);
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '6px' }}>📄 Research Reports</h1>
@@ -2578,7 +2578,7 @@ function WatchlistPage({ user }) {
   const selSym = selected ? `${selected.exch || 'NSE'}:${selected.sym}` : null;
 
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>👁️</div>
         <h2 style={S.h3}>Login to manage your watchlist</h2>
@@ -2588,7 +2588,7 @@ function WatchlistPage({ user }) {
   );
 
   return (
-    <div style={{ paddingTop: '64px', background: '#f0f4f8', minHeight: '100vh' }}>
+    <div style={{ paddingTop: '64px', background: '#ffffff', minHeight: '100vh' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', height: 'calc(100vh - 64px)', maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* ── LEFT PANEL ── */}
@@ -2608,10 +2608,10 @@ function WatchlistPage({ user }) {
 
             {showAdd && (
               <div style={{ display: 'flex', gap: '4px' }}>
-                <select style={{ width: '60px', padding: '6px 3px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', color: '#0f172a', background: '#f8fafc' }} value={exchange} onChange={e => setExchange(e.target.value)}>
+                <select style={{ width: '60px', padding: '6px 3px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '11px', color: '#0f172a', background: '#f8fafc' }} value={exchange} onChange={e => setExchange(e.target.value)}>
                   <option>NSE</option><option>BSE</option><option>MCX</option>
                 </select>
-                <input style={{ flex: 1, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#0f172a', background: '#f8fafc', outline: 'none' }}
+                <input style={{ flex: 1, padding: '6px 8px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '12px', color: '#0f172a', background: '#f8fafc', outline: 'none' }}
                   placeholder="e.g. RELIANCE" value={input}
                   onChange={e => setInput(e.target.value.toUpperCase())}
                   onKeyDown={e => e.key === 'Enter' && add()} autoFocus />
@@ -2936,7 +2936,7 @@ function OnboardingPage({ user, userProfile }) {
                 <div style={{ marginBottom: '16px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🔴 Live Right Now</p>
                   {liveCalls.slice(0, 2).map(r => (
-                    <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '10px', marginRight: '6px' }}>{r.action}</span>
                         <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{r.symbol}</span>
@@ -3044,7 +3044,7 @@ function PortfolioPage({ user }) {
   };
 
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>💼</div>
         <h2 style={S.h3}>Login to track your portfolio</h2>
@@ -3064,7 +3064,7 @@ function PortfolioPage({ user }) {
   const tdStyle = { padding: '12px 14px', fontSize: '13px', color: '#0f172a' };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
@@ -3200,7 +3200,7 @@ function PortfolioPage({ user }) {
           )}
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '16px', border: '1px solid #1e40af' }}>
             {[['holdings', `Open Holdings (${holdings.length})`], ['sold', `Sold / Closed (${soldHistory.length})`]].map(([t, label]) => (
               <button key={t} onClick={() => setTab(t)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: tab === t ? '#1e40af' : 'transparent', color: tab === t ? '#fff' : '#64748b', transition: 'all 0.15s' }}>{label}</button>
             ))}
@@ -3243,7 +3243,7 @@ function PortfolioPage({ user }) {
                           <td style={tdStyle}>₹{Number(h.buy_price).toLocaleString('en-IN')}</td>
                           <td style={tdStyle}>
                             <input type="number" defaultValue={h.cmp} onBlur={e => updateCMP(h.id, e.target.value)}
-                              style={{ width: '80px', padding: '4px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#0f172a' }} />
+                              style={{ width: '80px', padding: '4px 8px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '12px', color: '#0f172a' }} />
                           </td>
                           <td style={tdStyle}>₹{fmtCurr(invested)}</td>
                           <td style={tdStyle}>₹{fmtCurr(current)}</td>
@@ -3256,7 +3256,7 @@ function PortfolioPage({ user }) {
                               <button onClick={() => openSell(h)} style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '7px', padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 ↓ Sell
                               </button>
-                              <button onClick={() => removeHolding(h.id)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', padding: '5px 8px', display: 'flex', alignItems: 'center' }}>
+                              <button onClick={() => removeHolding(h.id)} style={{ background: 'none', border: '1px solid #1e40af', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', padding: '5px 8px', display: 'flex', alignItems: 'center' }}>
                                 🗑
                               </button>
                             </div>
@@ -4011,7 +4011,7 @@ function AdminPanel({ user, userProfile }) {
                     {notifications.map(n => {
                       const typeColor = n.type === 'alert' ? '#dc2626' : n.type === 'success' ? '#059669' : n.type === 'call' ? '#1e40af' : n.type === 'market' ? '#d97706' : '#64748b';
                       return (
-                        <div key={n.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div key={n.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #1e40af' }}>
                           <div style={{ width: '36px', height: '36px', background: '#eff6ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
                             {n.type === 'alert' ? '🔴' : n.type === 'success' ? '✅' : n.type === 'call' ? '📊' : n.type === 'market' ? '📈' : 'ℹ️'}
                           </div>
@@ -4471,7 +4471,7 @@ function AdminPanel({ user, userProfile }) {
                     { label: '🎯 Target Hit', subj: 'Target Achieved on Research Call', body: `Dear Subscriber,\n\nOne of our research calls has hit its target. Please review your positions and consider booking profits.\n\nView performance: https://stock-vista-sandy.vercel.app/performance\n\nRemember to maintain stop-loss discipline on open positions.\n\nRegards,\n${ANALYST_NAME}\nStockVista` },
                     { label: '📈 Market Update', subj: 'Important Market Update from StockVista', body: `Dear Subscriber,\n\nOur analyst has published an important market update. Login to StockVista to read the full analysis.\n\nhttps://stock-vista-sandy.vercel.app/dashboard\n\nRegards,\n${ANALYST_NAME}\nStockVista · ${SEBI_REG}` },
                   ].map((t,i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #1e40af' }}>
                       <p style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>{t.label}</p>
                       <button onClick={() => { setEF('subject', t.subj); setEF('body', t.body); }} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>Use Template</button>
                     </div>
@@ -4696,13 +4696,13 @@ function AdminPanel({ user, userProfile }) {
                   <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Update current market price for all live calls at once</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginBottom: '14px' }}>
                     {liveRecs.map(r => (
-                      <div key={r.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div key={r.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #1e40af' }}>
                         <div style={{ flex: 1 }}>
                           <p style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a' }}>{r.symbol}</p>
                           <p style={{ fontSize: '10px', color: '#94a3b8' }}>Entry ₹{r.entry_price}</p>
                         </div>
                         <input type="number" placeholder={String(r.cmp || r.entry_price)} value={cmpUpdates[r.id] || ''} onChange={e => setCmpUpdates(c => ({ ...c, [r.id]: e.target.value }))}
-                          style={{ width: '80px', padding: '5px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px' }} />
+                          style={{ width: '80px', padding: '5px 8px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '12px' }} />
                       </div>
                     ))}
                     {liveRecs.length === 0 && <p style={{ color: '#94a3b8', fontSize: '13px' }}>No live calls at the moment.</p>}
@@ -4769,7 +4769,7 @@ function AdminPanel({ user, userProfile }) {
                       { key: 'show_watchlist_to_free', label: 'Watchlist', desc: 'Allow free users to access watchlist page' },
                       { key: 'show_blog_to_all', label: 'Blog / Education', desc: 'Show blog articles to all users (recommended for SEO)' },
                     ].map(f => (
-                      <div key={f.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div key={f.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #1e40af' }}>
                         <div>
                           <p style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>{f.label}</p>
                           <p style={{ fontSize: '11px', color: '#94a3b8' }}>{f.desc}</p>
@@ -5163,7 +5163,7 @@ function PerformancePage() {
               <h3 style={{ ...S.h4, marginBottom: '16px' }}>Segment-wise Win Rate</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
                 {segBreakdown.map(s => (
-                  <div key={s.seg} style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                  <div key={s.seg} style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', textAlign: 'center', border: '1px solid #1e40af' }}>
                     <div style={{ fontSize: '18px', fontWeight: 800, color: s.rate >= 60 ? '#059669' : s.rate >= 40 ? '#d97706' : '#b91c1c' }}>{s.rate}%</div>
                     <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginTop: '2px', textTransform: 'capitalize' }}>{s.seg}</div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>{s.wins}W / {s.total - s.wins}L of {s.total}</div>
@@ -5202,7 +5202,7 @@ function PerformancePage() {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {[['all', 'All'], ['win', '✅ Wins'], ['loss', '❌ Losses'], ['equity', 'Equity'], ['futures', 'F&O'], ['commodity', 'Commodity']].map(([val, label]) => (
                   <button key={val} onClick={() => setFilter(val)}
-                    style={{ ...S.btn, ...S.btnSm, background: filter === val ? '#1d4ed8' : '#f1f5f9', color: filter === val ? '#fff' : '#334155', border: '1px solid #e2e8f0' }}>
+                    style={{ ...S.btn, ...S.btnSm, background: filter === val ? '#1d4ed8' : '#f1f5f9', color: filter === val ? '#fff' : '#334155', border: '1px solid #1e40af' }}>
                     {label}
                   </button>
                 ))}
@@ -5513,7 +5513,7 @@ function SEBIDisclosurePage() {
             { label: 'Registered Address', value: 'Noida, Uttar Pradesh, India' },
             { label: 'Contact Email', value: CONTACT_EMAIL },
           ].map((item, i) => (
-            <div key={i} style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+            <div key={i} style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #1e40af' }}>
               <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</p>
               <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginTop: '4px' }}>{item.value}</p>
             </div>
@@ -5771,7 +5771,7 @@ function SubscriptionPage({ user, userProfile }) {
   };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f0f4f8' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
@@ -5802,7 +5802,7 @@ function SubscriptionPage({ user, userProfile }) {
           <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>Select a plan and billing cycle to subscribe.</p>
 
           {/* Billing cycle */}
-          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '24px', border: '1px solid #1e40af' }}>
             {[
               { key: 'monthly', label: 'Monthly' },
               { key: 'quarterly', label: 'Quarterly', save: '-10%' },
@@ -5822,7 +5822,7 @@ function SubscriptionPage({ user, userProfile }) {
               const isCurrent = currentPlanId === p.id && isActive;
               return (
                 <div key={p.id} onClick={() => !isCurrent && setSelectedPlan(p.id)}
-                  style={{ ...S.card, cursor: isCurrent ? 'default' : 'pointer', border: isSelected ? `2px solid ${p.color}` : isCurrent ? '2px solid #059669' : '1px solid #e8edf3', position: 'relative', transition: 'all 0.15s', padding: '20px', background: isSelected ? '#fafbff' : '#fff' }}>
+                  style={{ ...S.card, cursor: isCurrent ? 'default' : 'pointer', border: isSelected ? `2px solid ${p.color}` : isCurrent ? '2px solid #059669' : '1.5px solid #1e40af', position: 'relative', transition: 'all 0.15s', padding: '20px', background: isSelected ? '#fafbff' : '#fff' }}>
                   {p.popular && !isCurrent && (
                     <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#d97706', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>MOST POPULAR</div>
                   )}
@@ -5841,7 +5841,7 @@ function SubscriptionPage({ user, userProfile }) {
           </div>
 
           {/* Checkout */}
-          <div style={{ ...S.card, border: selectedPlan ? '2px solid #1e40af' : '1px solid #e8edf3' }}>
+          <div style={{ ...S.card, border: selectedPlan ? '2px solid #1e40af' : '1.5px solid #1e40af' }}>
             {selectedPlan ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
