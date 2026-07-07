@@ -359,8 +359,37 @@ function Navbar({ user, userProfile, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [screenersOpen, setScreenersOpen] = useState(false);
   const { t } = useLang();
   const path = getPath();
+
+  useEffect(() => {
+    if (!searchQuery.trim()) { setSearchResults([]); return; }
+    setSearchLoading(true);
+    const timer = setTimeout(async () => {
+      const q = searchQuery.trim();
+      const { data } = await supabase.from('recommendations').select('id,symbol,stock_name,exchange,action,status')
+        .neq('status', 'draft')
+        .or(`symbol.ilike.%${q}%,stock_name.ilike.%${q}%`)
+        .order('published_at', { ascending: false })
+        .limit(6);
+      setSearchResults(data || []);
+      setSearchLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const SCREENER_CATEGORIES = [
+    { key: 'breakouts', label: 'Fresh breakouts', icon: '📈' },
+    { key: 'momentum', label: 'Momentum leaders', icon: '⚡' },
+    { key: 'smart-money', label: 'Smart money moves', icon: '🏦', plan: 'premium' },
+    { key: 'options-activity', label: 'Unusual option activity', icon: '🔥', plan: 'fno' },
+    { key: 'dividend', label: 'Dividend leaders', icon: '🪙' },
+  ];
 
   const navItems = [
     { label: t('nav_home'), path: '/' },
@@ -387,6 +416,58 @@ function Navbar({ user, userProfile, onLogout }) {
             {item.label}
           </button>
         ))}
+        <div style={{ position: 'relative' }}
+          onMouseEnter={() => setScreenersOpen(true)}
+          onMouseLeave={() => setScreenersOpen(false)}>
+          <button onClick={() => navigate('/screeners')}
+            style={{ ...S.navLink, color: path === '/screeners' ? '#185FA5' : '#0C447C', display: 'flex', alignItems: 'center', gap: '3px' }}>
+            {t('nav_screeners')} <span style={{ fontSize: '9px' }}>▾</span>
+          </button>
+          {screenersOpen && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, background: '#fff', border: '1px solid #1e40af', borderRadius: '12px', padding: '8px', width: '220px', zIndex: 200, boxShadow: '0 8px 24px rgba(30,64,175,0.12)' }}>
+              {SCREENER_CATEGORIES.map(c => (
+                <button key={c.key} onClick={() => navigate('/screeners')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#0f172a' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#E6F1FB'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                  <span>{c.icon}</span> {c.label}
+                  {c.plan && <span style={{ marginLeft: 'auto', fontSize: '9px', color: '#94a3b8' }}>🔒</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div style={{ position: 'relative', flex: '0 1 260px' }}>
+        {searchOpen ? (
+          <div>
+            <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+              placeholder="Search stocks..."
+              style={{ width: '100%', padding: '7px 12px', borderRadius: '8px', border: '1px solid #1e40af', fontSize: '13px', outline: 'none' }} />
+            {searchQuery.trim() && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: '#fff', border: '1px solid #1e40af', borderRadius: '10px', padding: '6px', zIndex: 200, maxHeight: '280px', overflowY: 'auto', boxShadow: '0 8px 24px rgba(30,64,175,0.12)' }}>
+                {searchLoading ? (
+                  <p style={{ fontSize: '12px', color: '#94a3b8', padding: '8px' }}>Searching...</p>
+                ) : searchResults.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: '#94a3b8', padding: '8px' }}>No matching calls found.</p>
+                ) : searchResults.map(r => (
+                  <button key={r.id} onMouseDown={() => { navigate('/recommendations/' + r.id); setSearchOpen(false); setSearchQuery(''); }}
+                    style={{ display: 'flex', justifyContent: 'space-between', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#E6F1FB'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{r.symbol} <span style={{ fontWeight: 400, color: '#94a3b8' }}>{r.exchange}</span></span>
+                    <span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '10px' }}>{r.action}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button onClick={() => setSearchOpen(true)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }} aria-label="Search">🔍</button>
+        )}
       </div>
 
       <div style={{ ...S.flex, gap: '12px' }}>
@@ -1690,6 +1771,104 @@ function RecCard({ rec, userProfile, onClick }) {
 }
 
 // ─── RECOMMENDATIONS PAGE ─────────────────────────────────────────────────────
+// ─── SCREENERS PAGE ────────────────────────────────────────────────────────────
+// Note: this filters our own published research calls into useful categories —
+// it is not a full NSE/BSE market-wide screener (that would need a separate data
+// feed across the whole market, which we don't have yet). Dividend yield and
+// unusual-option-activity data aren't collected today, so those categories show
+// as "coming soon" rather than faking results.
+function ScreenersPage({ user, userProfile }) {
+  const [recs, setRecs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCat, setActiveCat] = useState(null);
+  const { t } = useLang();
+
+  useEffect(() => {
+    supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false })
+      .then(({ data }) => { setRecs(data || []); setLoading(false); });
+  }, []);
+
+  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
+  const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+
+  const CATEGORIES = [
+    { key: 'breakouts', label: 'Fresh breakouts', icon: '📈', color: '#EAF3DE', iconColor: '#27500A',
+      filter: r => ['live', 'near_target'].includes(r.status) && r.action === 'BUY' },
+    { key: 'momentum', label: 'Momentum leaders', icon: '⚡', color: '#FAEEDA', iconColor: '#633806',
+      filter: r => r.status === 'live' && r.action === 'BUY' },
+    { key: 'smart-money', label: 'Smart money moves', icon: '🏦', color: '#E6F1FB', iconColor: '#0C447C', planGate: 'premium',
+      filter: r => (r.segment || 'equity') === 'equity' && ['premium','fno','elite'].includes(r.plan_required || 'basic') },
+    { key: 'options-activity', label: 'Unusual option activity', icon: '🔥', color: '#FAECE7', iconColor: '#712B13', planGate: 'fno',
+      comingSoon: true },
+    { key: 'dividend', label: 'Dividend leaders', icon: '🪙', color: '#E1F5EE', iconColor: '#085041',
+      comingSoon: true },
+  ];
+
+  const catRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const gateOk = (cat) => !cat.planGate || (hasActiveSub && userRank >= (catRank[cat.planGate] ?? 0));
+
+  const activeCategory = CATEGORIES.find(c => c.key === activeCat);
+  const matches = activeCategory && !activeCategory.comingSoon ? recs.filter(activeCategory.filter) : [];
+
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
+      <div style={{ ...S.section, paddingTop: '40px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+          <div style={{ background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
+            <h2 style={{ ...S.h3, color: '#042C53', marginBottom: '2px' }}>{t('section_screeners')}</h2>
+            <p style={{ fontSize: '13px', color: '#0C447C' }}>Filtered views over our published research calls — refreshed as we publish new calls.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '28px' }}>
+            {CATEGORIES.map(cat => {
+              const isActive = activeCat === cat.key;
+              const locked = !gateOk(cat);
+              const count = !cat.comingSoon ? recs.filter(cat.filter).length : null;
+              return (
+                <div key={cat.key} onClick={() => !cat.comingSoon && setActiveCat(cat.key)}
+                  style={{ ...S.card, cursor: cat.comingSoon ? 'default' : 'pointer', border: isActive ? '2px solid #185FA5' : '2px solid #1e40af', opacity: cat.comingSoon ? 0.7 : 1, position: 'relative' }}>
+                  {cat.planGate && (
+                    <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', fontWeight: 700, color: '#94a3b8' }}>{locked ? '🔒' : ''}</span>
+                  )}
+                  <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', fontSize: '16px' }}>
+                    {cat.icon}
+                  </div>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>{cat.label}</p>
+                  <p style={{ fontSize: '11px', color: '#94a3b8' }}>
+                    {cat.comingSoon ? 'Coming soon' : locked ? `Unlock with ${PLANS[cat.planGate]?.name || cat.planGate}` : `${count} matching call${count === 1 ? '' : 's'}`}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {activeCategory && (
+            <div>
+              <div style={{ ...S.flexBetween, marginBottom: '16px', background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '10px', padding: '10px 16px' }}>
+                <h3 style={{ ...S.h4, color: '#042C53' }}>{activeCategory.icon} {activeCategory.label}</h3>
+                <button onClick={() => setActiveCat(null)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>Close</button>
+              </div>
+              {loading ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>Loading...</div>
+              ) : matches.length === 0 ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
+                  <p style={{ ...S.muted }}>No calls currently match this screen. Check back after our next published call.</p>
+                </div>
+              ) : (
+                <div style={S.grid2}>
+                  {matches.map(r => <RecCard key={r.id} rec={r} userProfile={userProfile} />)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted, forceStatus }) {
   const [recs, setRecs] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -6367,6 +6546,7 @@ export default function App() {
     if (path === '/login') return <LoginPage setUser={setUser} setUserProfile={setUserProfile} />;
     if (path === '/register') return <RegisterPage setUser={setUser} setUserProfile={setUserProfile} />;
     if (path === '/pricing') return <PricingPage />;
+    if (path === '/screeners') return <ScreenersPage user={user} userProfile={userProfile} />;
     if (path === '/recommendations') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} />;
     if (path === '/live-calls') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="live-group" />;
     if (path === '/past-recommendations') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="past-group" />;
