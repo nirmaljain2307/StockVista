@@ -1,35 +1,76 @@
 // StockVista — /api/run-market-screeners.js
 // Runs once a day (via Vercel Cron — see vercel.json) to compute real market-wide
-// screener results across a curated large-cap universe (Nifty 100-ish, ~100
-// stocks). Results are stored in Supabase; the client reads pre-computed rows
-// instead of scanning the market live in the browser.
+// screener results across the full official NSE Nifty 500 universe (large + mid
+// + small cap, 500 stocks) — sourced directly from the official NSE/niftyindices
+// constituent list, not guessed from memory.
 //
-// SCOPE NOTE: this covers ~100 large-cap NSE stocks, not the full NSE/BSE
-// universe (2000+ stocks). Scanning the entire market needs a paid market-data
-// feed and a much longer-running job — this is a deliberately scoped v1.
-// Review and update NIFTY100_UNIVERSE periodically as index constituents change.
+// TIMEOUT NOTE: scanning 500 stocks via Yahoo Finance takes real time. This
+// function supports optional ?offset=&limit= query params so the scan can be
+// split across multiple calls (e.g. multiple cron entries) if your Vercel plan's
+// function timeout can't complete all 500 in one run. Only the offset=0 call
+// clears the previous day's results — later batches append without wiping.
 
 import { createClient } from '@supabase/supabase-js';
 
-const NIFTY100_UNIVERSE = [
-  'RELIANCE','TCS','HDFCBANK','ICICIBANK','INFY','HINDUNILVR','ITC','SBIN','BHARTIARTL','KOTAKBANK',
-  'LT','AXISBANK','BAJFINANCE','ASIANPAINT','MARUTI','SUNPHARMA','TITAN','ULTRACEMCO','NESTLEIND','WIPRO',
-  'ONGC','NTPC','POWERGRID','M&M','TATAMOTORS','TATASTEEL','JSWSTEEL','ADANIENT','ADANIPORTS','COALINDIA',
-  'HCLTECH','BAJAJFINSV','DRREDDY','GRASIM','BRITANNIA','CIPLA','EICHERMOT','HEROMOTOCO','DIVISLAB','TECHM',
-  'INDUSINDBK','SBILIFE','HDFCLIFE','BAJAJ-AUTO','APOLLOHOSP','UPL','BPCL','TATACONSUM','SHREECEM','HINDALCO',
-  'VEDL','GAIL','PIDILITIND','DABUR','GODREJCP','SIEMENS','DLF','HAVELLS','AMBUJACEM','MARICO',
-  'BANDHANBNK','BANKBARODA','PNB','CANBK','IDFCFIRSTB','GODREJPROP','INDIGO','TRENT','ZOMATO','LTIM',
-  'MOTHERSON','BOSCHLTD','TVSMOTOR','ICICIPRULI','ICICIGI','SBICARD','MUTHOOTFIN','CHOLAFIN','PFC','RECLTD',
-  'IRCTC','IOC','NHPC','SAIL','NMDC','JINDALSTEL','ADANIPOWER','ADANIGREEN','TORNTPHARM','LUPIN',
-  'AUROPHARMA','BIOCON','COLPAL','BERGEPAINT','ASHOKLEY','MRF','PAGEIND','ABB','HAL','BEL',
-];
+const NIFTY500_UNIVERSE = [
+  '360ONE','3MINDIA','ABB','ACC','ACMESOLAR','AIAENG','APLAPOLLO','AUBANK','AWL','AADHARHFC',
+  'AARTIIND','AAVAS','ABBOTINDIA','ACE','ACUTAAS','ADANIENSOL','ADANIENT','ADANIGREEN','ADANIPORTS','ADANIPOWER',
+  'ATGL','ABCAPITAL','ABFRL','ABLBL','ABREL','ABSLAMC','CPPLUS','AEGISLOG','AEGISVOPAK','AFCONS',
+  'AFFLE','AJANTPHARM','ALKEM','ABDL','ARE&M','AMBER','AMBUJACEM','ANANDRATHI','ANANTRAJ','ANGELONE',
+  'ANTHEM','ANURAS','APARINDS','APOLLOHOSP','APOLLOTYRE','APTUS','ASAHIINDIA','ASHOKLEY','ASIANPAINT','ASTERDM',
+  'ASTRAL','ATHERENERG','ATUL','AUROPHARMA','AIIL','DMART','AXISBANK','BEML','BLS','BSE',
+  'BAJAJ-AUTO','BAJFINANCE','BAJAJFINSV','BAJAJHLDNG','BAJAJHFL','BALKRISIND','BALRAMCHIN','BANDHANBNK','BANKBARODA','BANKINDIA',
+  'MAHABANK','BATAINDIA','BAYERCROP','BELRISE','BERGEPAINT','BDL','BEL','BHARATFORG','BHEL','BPCL',
+  'BHARTIARTL','BHARTIHEXA','BIKAJI','GROWW','BIOCON','BSOFT','BLUEDART','BLUEJET','BLUESTARCO','BBTC',
+  'BOSCHLTD','FIRSTCRY','BRIGADE','BRITANNIA','MAPMYINDIA','CCL','CESC','CGPOWER','CIEINDIA','CRISIL',
+  'CANFINHOME','CANBK','CANHLIFE','CAPLIPOINT','CGCL','CARBORUNIV','CARTRADE','CASTROLIND','CEATLTD','CEMPRO',
+  'CENTRALBK','CDSL','CHALET','CHAMBLFERT','CHENNPETRO','CHOICEIN','CHOLAHLDNG','CHOLAFIN','CIPLA','CUB',
+  'CLEAN','COALINDIA','COCHINSHIP','COFORGE','COHANCE','COLPAL','CAMS','CONCORDBIO','CONCOR','COROMANDEL',
+  'CRAFTSMAN','CREDITACC','CROMPTON','CUMMINSIND','CYIENT','DCMSHRIRAM','DLF','DOMS','DABUR','DALBHARAT',
+  'DATAPATTNS','DEEPAKFERT','DEEPAKNTR','DELHIVERY','DEVYANI','DIVISLAB','DIXON','LALPATHLAB','DRREDDY','EIDPARRY',
+  'EIHOTEL','EICHERMOT','ELECON','ELGIEQUIP','EMAMILTD','EMCURE','EMMVEE','ENDURANCE','ENGINERSIN','ERIS',
+  'ESCORTS','ETERNAL','EXIDEIND','NYKAA','FEDERALBNK','FACT','FINCABLES','FSL','FIVESTAR','FORCEMOT',
+  'FORTIS','GAIL','GVT&D','GMRAIRPORT','GABRIEL','GALLANTT','GRSE','GICRE','GILLETTE','GLAND',
+  'GLAXO','GLENMARK','MEDANTA','GODIGIT','GPIL','GODFRYPHLP','GODREJCP','GODREJIND','GODREJPROP','GRANULES',
+  'GRAPHITE','GRASIM','GRAVITA','GESHIP','FLUOROCHEM','GMDCLTD','HEG','HBLENGINE','HCLTECH','HDBFS',
+  'HDFCAMC','HDFCBANK','HDFCLIFE','HFCL','HAVELLS','HEROMOTOCO','HEXT','HSCL','HINDALCO','HAL',
+  'HINDCOPPER','HINDPETRO','HINDUNILVR','HINDZINC','POWERINDIA','HOMEFIRST','HONASA','HONAUT','HUDCO','HYUNDAI',
+  'ICICIBANK','ICICIGI','ICICIAMC','ICICIPRULI','IDBI','IDFCFIRSTB','IFCI','IIFL','IRB','IRCON',
+  'ITCHOTELS','ITC','ITI','INDGN','INDIACEM','INDIAMART','INDIANB','IEX','INDHOTEL','IOC',
+  'IOB','IRCTC','IRFC','IREDA','IGL','INDUSTOWER','INDUSINDBK','NAUKRI','INFY','INOXWIND',
+  'INTELLECT','INDIGO','IGIL','IKS','IPCALAB','JBCHEPHARM','JKCEMENT','JBMA','JKTYRE','JMFINANCIL',
+  'JSWCEMENT','JSWDULUX','JSWENERGY','JSWINFRA','JSWSTEEL','JAINREC','JPPOWER','J&KBANK','JINDALSAW','JSL',
+  'JINDALSTEL','JIOFIN','JUBLFOOD','JUBLINGREA','JUBLPHARMA','JWL','JYOTICNC','KPRMILL','KEI','KPITTECH',
+  'KAJARIACER','KPIL','KALYANKJIL','KARURVYSYA','KAYNES','KEC','KFINTECH','KIRLOSENG','KOTAKBANK','KIMS',
+  'LTF','LTTS','LGEINDIA','LICHSGFIN','LTFOODS','LTM','LT','LATENTVIEW','LAURUSLABS','THELEELA',
+  'LEMONTREE','LENSKART','LICI','LINDEINDIA','LLOYDSME','LODHA','LUPIN','MMTC','MRF','MGL',
+  'M&MFIN','M&M','MANAPPURAM','MRPL','MANKIND','MARICO','MARUTI','MFSL','MAXHEALTH','MAZDOCK',
+  'MEESHO','MINDACORP','MSUMI','MOTILALOFS','MPHASIS','MCX','MUTHOOTFIN','NATCOPHARM','NBCC','NCC',
+  'NHPC','NLCINDIA','NMDC','NSLNISP','NTPCGREEN','NTPC','NH','NATIONALUM','NAVA','NAVINFLUOR',
+  'NESTLEIND','NETWEB','NEULANDLAB','NEWGEN','NAM-INDIA','NIVABUPA','NUVAMA','NUVOCO','OBEROIRLTY','ONGC',
+  'OIL','OLAELEC','OLECTRA','PAYTM','ONESOURCE','OFSS','POLICYBZR','PCBL','PGEL','PIIND',
+  'PNBHOUSING','PTCIL','PVRINOX','PAGEIND','PARADEEP','PATANJALI','PERSISTENT','PETRONET','PFIZER','PHOENIXLTD',
+  'PWL','PIDILITIND','PINELABS','PIRAMALFIN','PPLPHARMA','POLYMED','POLYCAB','POONAWALLA','PFC','POWERGRID',
+  'PREMIERENE','PRESTIGE','PNB','RRKABEL','RBLBANK','RECLTD','RHIM','RITES','RADICO','RVNL',
+  'RAILTEL','RAINBOW','RKFORGE','REDINGTON','RELIANCE','RPOWER','SBFC','SBICARD','SBILIFE','SJVN',
+  'SRF','SAGILITY','SAILIFE','SAMMAANCAP','MOTHERSON','SAPPHIRE','SARDAEN','SAREGAMA','SCHAEFFLER','SCHNEIDER',
+  'SCI','SHREECEM','SHRIRAMFIN','SHYAMMETL','ENRIN','SIEMENS','SIGNATURE','SOBHA','SOLARINDS','SONACOMS',
+  'SONATSOFTW','STARHEALTH','SBIN','SAIL','SUMICHEM','SUNPHARMA','SUNTV','SUNDARMFIN','SUPREMEIND','SPLPETRO',
+  'SUZLON','SWANCORP','SWIGGY','SYNGENE','SYRMA','TBOTEK','TVSMOTOR','TATACAP','TATACHEM','TATACOMM',
+  'TCS','TATACONSUM','TATAELXSI','TATAINVEST','TMCV','TMPV','TATAPOWER','TATASTEEL','TATATECH','TTML',
+  'TECHM','TECHNOE','TEGA','TEJASNET','TENNIND','NIACL','RAMCOCEM','THERMAX','TIMKEN','TITAGARH',
+  'TITAN','TORNTPHARM','TORNTPOWER','TARIL','TRAVELFOOD','TRENT','TRIDENT','TRITURBINE','TIINDIA','UCOBANK',
+  'UNOMINDA','UPL','UTIAMC','ULTRACEMCO','UNIONBANK','UBL','UNITDSPR','URBANCO','USHAMART','VTL',
+  'VBL','VEDL','VIJAYA','VMM','IDEA','VOLTAS','WAAREEENER','WELCORP','WELSPUNLIV','WHIRLPOOL',
+  'WIPRO','WOCKPHARMA','YESBANK','ZFCVINDIA','ZEEL','ZENTEC','ZENSARTECH','ZYDUSLIFE','ZYDUSWELL','ECLERX',];
 
-const CHUNK_SIZE = 10;
+const CHUNK_SIZE = 15;
 
 async function fetchSymbolData(symbol) {
   try {
+    const cleanSym = symbol.replace('&', '%26'); // Yahoo handles URL-encoded & in tickers like M&M, ARE&M
     const res = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.NS?interval=1d&range=3mo`,
+      `https://query1.finance.yahoo.com/v8/finance/chart/${cleanSym}.NS?interval=1d&range=3mo`,
       { headers: { 'Accept': 'application/json' } }
     );
     const json = await res.json();
@@ -62,9 +103,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    const offset = parseInt(req.query?.offset, 10) || 0;
+    const limit = parseInt(req.query?.limit, 10) || NIFTY500_UNIVERSE.length;
+    const batch = NIFTY500_UNIVERSE.slice(offset, offset + limit);
+
     const results = [];
-    for (let i = 0; i < NIFTY100_UNIVERSE.length; i += CHUNK_SIZE) {
-      const chunk = NIFTY100_UNIVERSE.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < batch.length; i += CHUNK_SIZE) {
+      const chunk = batch.slice(i, i + CHUNK_SIZE);
       const chunkResults = await Promise.all(chunk.map(fetchSymbolData));
       results.push(...chunkResults.filter(Boolean));
     }
@@ -97,16 +142,22 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Full daily refresh — clear yesterday's rows for these categories, insert today's.
-    await supabaseAdmin.from('screener_results').delete().in('category', ['breakouts', 'momentum']);
+    // Only the first batch of the day clears yesterday's rows — later batches
+    // (when splitting via ?offset=) append instead of wiping each other out.
+    if (offset === 0) {
+      await supabaseAdmin.from('screener_results').delete().in('category', ['breakouts', 'momentum']);
+    }
     if (breakouts.length) await supabaseAdmin.from('screener_results').insert(breakouts);
     if (momentum.length) await supabaseAdmin.from('screener_results').insert(momentum);
 
     return res.status(200).json({
       success: true,
-      scanned: results.length,
-      breakouts: breakouts.length,
-      momentum: momentum.length,
+      universe_size: NIFTY500_UNIVERSE.length,
+      batch_offset: offset,
+      batch_scanned: batch.length,
+      resolved: results.length,
+      breakouts_found: breakouts.length,
+      momentum_computed: momentum.length,
       as_of_date: today,
     });
   } catch (err) {
@@ -115,7 +166,8 @@ export default async function handler(req, res) {
   }
 }
 
-// Allow this function up to 60s to scan the full universe (Vercel Pro or
-// higher — Hobby plans may cap this lower; reduce CHUNK_SIZE / universe size
-// if you see timeouts on your plan).
-export const config = { maxDuration: 60 };
+// Allow this function up to 300s (5 min) to scan the full 500-stock universe.
+// This requires Vercel Pro or higher — the Hobby plan caps function duration
+// lower. If you're on Hobby and see timeouts, either upgrade, or split the
+// scan into multiple cron entries using ?offset=&limit= (e.g. 0-249, 250-499).
+export const config = { maxDuration: 300 };
