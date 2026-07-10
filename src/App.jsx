@@ -5549,7 +5549,7 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
       const res = await fetch('/api/generate-research', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol: form.symbol, exchange: form.exchange, companyName: form.stock_name }),
+        body: JSON.stringify({ symbol: form.symbol, exchange: form.exchange, companyName: form.stock_name, segment: form.segment }),
       });
       const json = await res.json();
       if (!res.ok) { setAiErr(json.error || 'Could not generate draft.'); setAiLoading(false); return; }
@@ -5695,7 +5695,11 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
         <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '8px', marginBottom: aiDraft || aiErr ? '12px' : 0 }}>
           <div>
             <p style={{ fontWeight: 700, fontSize: '13px', color: '#6b21a8' }}>🤖 AI Research Draft (Phase 6)</p>
-            <p style={{ fontSize: '11px', color: '#94a3b8' }}>Generates a qualitative summary only — no entry/target/SL. Always review before using.</p>
+            <p style={{ fontSize: '11px', color: '#94a3b8' }}>
+              {form.segment === 'equity'
+                ? 'Equity: full technical-analysis-backed BUY/SELL/HOLD draft (SMA/RSI/ATR-grounded). Always review before applying.'
+                : 'This segment: qualitative summary only (no entry/target/SL) — derivatives/contract data unavailable.'}
+            </p>
           </div>
           <button onClick={generateAiDraft} disabled={aiLoading || !form.symbol}
             style={{ ...S.btn, ...S.btnSm, background: '#7c3aed', color: '#fff', opacity: (aiLoading || !form.symbol) ? 0.6 : 1 }}>
@@ -5703,7 +5707,70 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
           </button>
         </div>
         {aiErr && <p style={{ fontSize: '12px', color: '#dc2626' }}>{aiErr}</p>}
-        {aiDraft && (
+
+        {aiDraft && aiDraft.isTradeCall && (
+          <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.6 }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
+              <span style={{ ...S.badge, background: aiDraft.draft.action === 'BUY' ? '#dcfce7' : aiDraft.draft.action === 'SELL' ? '#fee2e2' : '#f1f5f9', color: aiDraft.draft.action === 'BUY' ? '#166534' : aiDraft.draft.action === 'SELL' ? '#991b1b' : '#475569', fontWeight: 800 }}>
+                {aiDraft.draft.action}
+              </span>
+              <span style={{ color: '#94a3b8' }}>Confidence: {aiDraft.draft.confidence}/100</span>
+              {aiDraft.validation?.riskReward != null && <span style={{ color: '#94a3b8' }}>R:R 1:{aiDraft.validation.riskReward}</span>}
+            </div>
+
+            {aiDraft.draft.action !== 'HOLD' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px', background: '#fff', padding: '10px', borderRadius: '8px' }}>
+                <div><p style={{ fontSize: '10px', color: '#94a3b8' }}>ENTRY</p><p style={{ fontWeight: 700 }}>{aiDraft.draft.entry_price ?? '—'}</p></div>
+                <div><p style={{ fontSize: '10px', color: '#94a3b8' }}>TARGET 1</p><p style={{ fontWeight: 700 }}>{aiDraft.draft.target1 ?? '—'}</p></div>
+                <div><p style={{ fontSize: '10px', color: '#94a3b8' }}>TARGET 2</p><p style={{ fontWeight: 700 }}>{aiDraft.draft.target2 ?? '—'}</p></div>
+                <div><p style={{ fontSize: '10px', color: '#94a3b8' }}>TARGET 3</p><p style={{ fontWeight: 700 }}>{aiDraft.draft.target3 ?? '—'}</p></div>
+                <div><p style={{ fontSize: '10px', color: '#94a3b8' }}>STOP-LOSS</p><p style={{ fontWeight: 700, color: '#dc2626' }}>{aiDraft.draft.stop_loss ?? '—'}</p></div>
+              </div>
+            )}
+
+            <p style={{ marginBottom: '6px' }}><strong>Reasoning:</strong> {aiDraft.draft.reasoning}</p>
+            <p style={{ marginBottom: '6px' }}><strong>Key risk:</strong> {aiDraft.draft.keyRisk}</p>
+            {aiDraft.draft.fundamentalNote && <p style={{ marginBottom: '6px' }}><strong>Fundamentals:</strong> {aiDraft.draft.fundamentalNote}</p>}
+            {aiDraft.draft.newsNote && <p style={{ marginBottom: '6px' }}><strong>News:</strong> {aiDraft.draft.newsNote}</p>}
+
+            {aiDraft.technicals && (
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>
+                Technicals: SMA20 {aiDraft.technicals.sma20} · SMA50 {aiDraft.technicals.sma50} · RSI14 {aiDraft.technicals.rsi14} · ATR14 {aiDraft.technicals.atr14} · 20d range {aiDraft.technicals.swingLow20}–{aiDraft.technicals.swingHigh20} · Trend: {aiDraft.technicals.trend}
+              </p>
+            )}
+
+            {aiDraft.validation?.issues?.length > 0 && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '8px 10px', marginBottom: '10px' }}>
+                <p style={{ fontWeight: 700, color: '#92400e', marginBottom: '4px' }}>⚠️ Validation flags — review before publishing:</p>
+                {aiDraft.validation.issues.map((issue, i) => <p key={i} style={{ color: '#92400e' }}>• {issue}</p>)}
+              </div>
+            )}
+
+            <p style={{ marginBottom: '10px', color: '#94a3b8', fontStyle: 'italic', fontSize: '11px' }}>Missing data (factor into your own judgment): {aiDraft.missingDatasets?.join(', ')}</p>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {aiDraft.draft.action !== 'HOLD' && (
+                <button onClick={() => {
+                  set('action', aiDraft.draft.action);
+                  set('entry_price', aiDraft.draft.entry_price);
+                  set('target1', aiDraft.draft.target1);
+                  set('target2', aiDraft.draft.target2);
+                  set('target3', aiDraft.draft.target3);
+                  set('stop_loss', aiDraft.draft.stop_loss);
+                  set('rationale', (form.rationale ? form.rationale + '\n\n' : '') + `[AI draft — reviewed by analyst before use]\n${aiDraft.draft.reasoning}\nKey risk: ${aiDraft.draft.keyRisk}`);
+                }} style={{ ...S.btn, ...S.btnSm, background: '#7c3aed', color: '#fff' }}>
+                  Apply to Form (still requires manual Publish)
+                </button>
+              )}
+              <button onClick={() => set('rationale', (form.rationale ? form.rationale + '\n\n' : '') + `[AI draft — reviewed by analyst before use]\n${aiDraft.draft.action}: ${aiDraft.draft.reasoning}\nKey risk: ${aiDraft.draft.keyRisk}`)}
+                style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>
+                Copy reasoning into Rationale only
+              </button>
+            </div>
+          </div>
+        )}
+
+        {aiDraft && !aiDraft.isTradeCall && (
           <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.6 }}>
             <p style={{ marginBottom: '6px' }}><strong>Stance:</strong> {aiDraft.draft?.verdict?.stance} (confidence {aiDraft.draft?.verdict?.confidence}/100)</p>
             <p style={{ marginBottom: '6px' }}><strong>Fundamental view:</strong> {aiDraft.draft?.fundamentalView?.summary}</p>
