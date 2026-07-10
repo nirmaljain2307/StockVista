@@ -5758,8 +5758,17 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
                   set('target3', aiDraft.draft.target3);
                   set('stop_loss', aiDraft.draft.stop_loss);
                   set('rationale', (form.rationale ? form.rationale + '\n\n' : '') + `[AI draft — reviewed by analyst before use]\n${aiDraft.draft.reasoning}\nKey risk: ${aiDraft.draft.keyRisk}`);
+                  if (aiDraft.technicals) {
+                    const t = aiDraft.technicals;
+                    set('technical_notes', (form.technical_notes ? form.technical_notes + '\n\n' : '') +
+                      `[AI-assisted, reviewed by analyst]\nSMA20: ${t.sma20} · SMA50: ${t.sma50} · SMA200: ${t.sma200}\nRSI14: ${t.rsi14} · ATR14: ${t.atr14}\n20-day range: ${t.swingLow20} – ${t.swingHigh20}\nTrend: ${t.trend}`);
+                  }
+                  if (aiDraft.draft.fundamentalNote) {
+                    set('fundamental_notes', (form.fundamental_notes ? form.fundamental_notes + '\n\n' : '') +
+                      `[AI-assisted, reviewed by analyst]\n${aiDraft.draft.fundamentalNote}`);
+                  }
                 }} style={{ ...S.btn, ...S.btnSm, background: '#7c3aed', color: '#fff' }}>
-                  Apply to Form (still requires manual Publish)
+                  Apply to Form (Rationale + Technical + Fundamental Notes — still requires manual Publish)
                 </button>
               )}
               <button onClick={() => set('rationale', (form.rationale ? form.rationale + '\n\n' : '') + `[AI draft — reviewed by analyst before use]\n${aiDraft.draft.action}: ${aiDraft.draft.reasoning}\nKey risk: ${aiDraft.draft.keyRisk}`)}
