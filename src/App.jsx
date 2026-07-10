@@ -2190,6 +2190,77 @@ function YahooLineChart({ rec }) {
   );
 }
 
+// ─── FUNDAMENTALS PANEL (Phase 4 — free/legal source: Yahoo Finance) ────────
+// Sourced via /api/get-fundamentals.js. This is deliberately NOT a licensed
+// data feed — it's clearly labeled as unofficial/informational, same honesty
+// standard as the price data disclosure. Do not remove that label.
+function FundamentalsPanel({ rec }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  const sym = (rec?.symbol || '').toUpperCase().trim();
+  const exch = (rec?.exchange || 'NSE').toUpperCase();
+
+  useEffect(() => {
+    if (!sym) { setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true); setErr('');
+    fetch(`/api/get-fundamentals?symbol=${encodeURIComponent(sym)}&exchange=${encodeURIComponent(exch)}`)
+      .then(r => r.json())
+      .then(json => {
+        if (cancelled) return;
+        if (json.error) { setErr(json.error); setData(null); }
+        else setData(json);
+        setLoading(false);
+      })
+      .catch(() => { if (!cancelled) { setErr('Could not load fundamentals.'); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [sym, exch]);
+
+  const Stat = ({ label, value, suffix = '' }) => (
+    <div>
+      <p style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</p>
+      <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{value !== null && value !== undefined ? `${fmt(value)}${suffix}` : '—'}</p>
+    </div>
+  );
+
+  return (
+    <div style={{ ...S.card, marginBottom: '16px' }}>
+      <div style={{ ...S.flexBetween, marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
+        <h4 style={S.h4}>📑 Key Fundamentals</h4>
+      </div>
+      <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '14px' }}>
+        Unofficial · Yahoo Finance (informational only — not an exchange-licensed or audited feed; verify independently before investing)
+      </p>
+
+      {loading ? (
+        <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', padding: '20px 0' }}>Loading fundamentals...</p>
+      ) : err ? (
+        <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', padding: '20px 0' }}>{err}</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '16px' }}>
+          <Stat label="P/E (TTM)" value={data.valuation.trailingPE} />
+          <Stat label="Forward P/E" value={data.valuation.forwardPE} />
+          <Stat label="P/B" value={data.valuation.priceToBook} />
+          <Stat label="PEG" value={data.valuation.pegRatio} />
+          <Stat label="ROE" value={data.profitability.returnOnEquityPct} suffix="%" />
+          <Stat label="ROA" value={data.profitability.returnOnAssetsPct} suffix="%" />
+          <Stat label="Net Margin" value={data.profitability.profitMarginsPct} suffix="%" />
+          <Stat label="Revenue Growth" value={data.growth.revenueGrowthPct} suffix="%" />
+          <Stat label="Earnings Growth" value={data.growth.earningsGrowthPct} suffix="%" />
+          <Stat label="Debt/Equity" value={data.balanceSheet.debtToEquity} />
+          <Stat label="Current Ratio" value={data.balanceSheet.currentRatio} />
+          <Stat label="Dividend Yield" value={data.dividend.yieldPct} suffix="%" />
+          <Stat label="EPS (TTM)" value={data.eps.trailing} />
+          <Stat label="52W High" value={data.priceRange.fiftyTwoWeekHigh} />
+          <Stat label="52W Low" value={data.priceRange.fiftyTwoWeekLow} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // TradingView Advanced Chart with dropdown controls
 function TVAdvancedChart({ rec }) {
   const [tvInterval, setTvInterval] = useState('D');
@@ -2441,7 +2512,10 @@ function RecommendationDetailPage({ id, userProfile }) {
 
           {/* Main chart — self-hosted (Yahoo Finance data), reliable for NSE/BSE equity */}
           {(rec.segment || 'equity').toLowerCase() === 'equity' ? (
-            <YahooLineChart rec={rec} />
+            <>
+              <YahooLineChart rec={rec} />
+              <FundamentalsPanel rec={rec} />
+            </>
           ) : (
             <TVAdvancedChart rec={rec} />
           )}
