@@ -5538,6 +5538,29 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const [history, setHistory] = useState([]);
+  const [aiDraft, setAiDraft] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiErr, setAiErr] = useState('');
+
+  const generateAiDraft = async () => {
+    if (!form.symbol) return;
+    setAiLoading(true); setAiErr(''); setAiDraft(null);
+    try {
+      const res = await fetch('/api/generate-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: form.symbol, exchange: form.exchange, companyName: form.stock_name }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setAiErr(json.error || 'Could not generate draft.'); setAiLoading(false); return; }
+      setAiDraft(json);
+      setAiLoading(false);
+    } catch (e) {
+      setAiErr('Network error generating draft.');
+      setAiLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!existingRec?.id) return;
     supabase.from('audit_log').select('*')
@@ -5666,6 +5689,33 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
       <div style={S.formGroup}>
         <label style={S.label}>Expiry Date/Time (call auto-marks expired after this)</label>
         <input style={S.input} type="datetime-local" value={form.expiry_at || ''} onChange={e => set('expiry_at', e.target.value)} />
+      </div>
+
+      <div style={{ ...S.card, marginBottom: '16px', background: '#faf5ff', border: '1.5px solid #c084fc' }}>
+        <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '8px', marginBottom: aiDraft || aiErr ? '12px' : 0 }}>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: '13px', color: '#6b21a8' }}>🤖 AI Research Draft (Phase 6)</p>
+            <p style={{ fontSize: '11px', color: '#94a3b8' }}>Generates a qualitative summary only — no entry/target/SL. Always review before using.</p>
+          </div>
+          <button onClick={generateAiDraft} disabled={aiLoading || !form.symbol}
+            style={{ ...S.btn, ...S.btnSm, background: '#7c3aed', color: '#fff', opacity: (aiLoading || !form.symbol) ? 0.6 : 1 }}>
+            {aiLoading ? 'Generating...' : '✨ Generate Draft'}
+          </button>
+        </div>
+        {aiErr && <p style={{ fontSize: '12px', color: '#dc2626' }}>{aiErr}</p>}
+        {aiDraft && (
+          <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.6 }}>
+            <p style={{ marginBottom: '6px' }}><strong>Stance:</strong> {aiDraft.draft?.verdict?.stance} (confidence {aiDraft.draft?.verdict?.confidence}/100)</p>
+            <p style={{ marginBottom: '6px' }}><strong>Fundamental view:</strong> {aiDraft.draft?.fundamentalView?.summary}</p>
+            <p style={{ marginBottom: '6px' }}><strong>News context:</strong> {aiDraft.draft?.newsView?.summary}</p>
+            <p style={{ marginBottom: '6px' }}><strong>Key risk:</strong> {aiDraft.draft?.verdict?.keyRisk}</p>
+            <p style={{ marginBottom: '10px', color: '#94a3b8', fontStyle: 'italic' }}>Missing data: {aiDraft.missingDatasets?.join(', ')}</p>
+            <button onClick={() => set('rationale', (form.rationale ? form.rationale + '\n\n' : '') + `[AI draft — reviewed by analyst before use]\n${aiDraft.draft?.verdict?.stance}: ${aiDraft.draft?.verdict?.primaryReason}\nFundamentals: ${aiDraft.draft?.fundamentalView?.summary}\nNews: ${aiDraft.draft?.newsView?.summary}\nKey risk: ${aiDraft.draft?.verdict?.keyRisk}`)}
+              style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>
+              Copy into Rationale field
+            </button>
+          </div>
+        )}
       </div>
 
       {['rationale', 'technical_notes', 'fundamental_notes'].map(k => (
