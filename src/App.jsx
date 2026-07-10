@@ -4139,11 +4139,12 @@ function AdminPanel({ user, userProfile }) {
 
   const autoCheckStatus = async () => {
     const { data } = await supabase.from('recommendations').select('*').in('status', ['live', 'near_target', 'near_sl']);
-    const updates = (data || []).map(r => ({ id: r.id, suggested: suggestStatus(r) })).filter(u => u.suggested !== data.find(r => r.id === u.id).status);
+    const updates = (data || []).map(r => ({ id: r.id, symbol: r.symbol, old: r.status, suggested: suggestStatus(r) })).filter(u => u.suggested !== u.old);
     if (updates.length === 0) { alert('No status changes detected.'); return; }
     if (!confirm(`Update ${updates.length} call(s) based on current CMP/expiry?`)) return;
     for (const u of updates) {
       await supabase.from('recommendations').update({ status: u.suggested, updated_at: new Date().toISOString() }).eq('id', u.id);
+      await logAudit('UPDATE_STATUS', 'recommendation', u.id, { symbol: u.symbol, old_status: u.old, new_status: u.suggested, via: 'auto_check' });
     }
     fetchData();
   };
@@ -4226,7 +4227,7 @@ function AdminPanel({ user, userProfile }) {
 
           {/* Add/Edit Recommendation */}
           {activeTab === 'add_recommendation' && (
-            <AddRecForm existingRec={editRec} onSave={() => { setEditRec(null); setActiveTab('recommendations'); fetchData(); }} adminId={user.id} />
+            <AddRecForm existingRec={editRec} onSave={() => { setEditRec(null); setActiveTab('recommendations'); fetchData(); }} adminId={user.id} logAudit={logAudit} />
           )}
 
           {/* Users */}
@@ -5186,6 +5187,7 @@ function AdminPanel({ user, userProfile }) {
               for (const [id, cmp] of entries) {
                 await supabase.from('recommendations').update({ cmp: parseFloat(cmp), updated_at: new Date().toISOString() }).eq('id', id);
               }
+              await logAudit('BULK_CMP_UPDATE', 'recommendation', 'bulk', { count: entries.length, ids: entries.map(([id]) => id) });
               setBulkMsg(`✅ CMP updated for ${entries.length} calls`);
               setCmpUpdates({});
               setBulkLoading(false);
@@ -5453,7 +5455,7 @@ function AdminPanel({ user, userProfile }) {
   );
 }
 
-function AddRecForm({ existingRec, onSave, adminId }) {
+function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
   const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '' };
   const [form, setForm] = useState(existingRec || empty);
   const [loading, setLoading] = useState(false);
@@ -5461,14 +5463,41 @@ function AddRecForm({ existingRec, onSave, adminId }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const [history, setHistory] = useState([]);
+  useEffect(() => {
+    if (!existingRec?.id) return;
+    supabase.from('audit_log').select('*')
+      .eq('entity_type', 'recommendation').eq('entity_id', existingRec.id)
+      .in('action', ['UPDATE_RECOMMENDATION', 'UPDATE_STATUS', 'BULK_STATUS_UPDATE'])
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setHistory(data || []));
+  }, [existingRec?.id]);
+
+  // Fields we track for edit-history purposes — the ones that actually change
+  // what the call means (price levels, direction, status, plan tier). We don't
+  // bother tracking every text-note field to keep the audit log readable.
+  const TRACKED_FIELDS = ['action', 'entry_price', 'target1', 'target2', 'target3', 'stop_loss', 'exit_price', 'status', 'plan_required'];
+
   const handleSave = async () => {
     if (!form.stock_name || !form.symbol || !form.action) { setMsg('Stock name, symbol and action are required.'); return; }
     setLoading(true);
     const payload = { ...form, created_by: adminId, updated_at: new Date().toISOString() };
     let error;
     if (existingRec?.id) {
+      // Snapshot what changed before overwriting — published calls should never
+      // be silently rewritten without a trace of what they originally said.
+      const changes = {};
+      TRACKED_FIELDS.forEach(f => {
+        const oldVal = existingRec[f] ?? null;
+        const newVal = form[f] ?? null;
+        if (String(oldVal) !== String(newVal)) changes[f] = { from: oldVal, to: newVal };
+      });
+
       const res = await supabase.from('recommendations').update(payload).eq('id', existingRec.id);
       error = res.error;
+      if (!error && Object.keys(changes).length > 0 && logAudit) {
+        await logAudit('UPDATE_RECOMMENDATION', 'recommendation', existingRec.id, { symbol: form.symbol, changes });
+      }
     } else {
       const res = await supabase.from('recommendations').insert([payload]);
       error = res.error;
@@ -5584,6 +5613,39 @@ function AddRecForm({ existingRec, onSave, adminId }) {
           {form.report_url && <p style={{ fontSize: '11px', color: '#10b981', marginTop: '4px' }}>✓ Uploaded</p>}
         </div>
       </div>
+
+      {existingRec?.id && (
+        <div style={{ ...S.card, marginTop: '8px', background: '#f8fafc' }}>
+          <p style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📜 Edit History ({history.length})</p>
+          {history.length === 0 ? (
+            <p style={{ fontSize: '12px', color: '#94a3b8' }}>No edits recorded yet since this call was created.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+              {history.map(h => {
+                let details = {};
+                try { details = JSON.parse(h.details); } catch(e) {}
+                return (
+                  <div key={h.id} style={{ padding: '8px 10px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '11px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 700, color: '#1e40af' }}>{h.action?.replace(/_/g, ' ')}</span>
+                      <span style={{ color: '#94a3b8' }}>{new Date(h.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <p style={{ color: '#64748b', marginBottom: '2px' }}>by {h.performed_by_email || 'unknown'}</p>
+                    {details.changes && Object.entries(details.changes).map(([field, val]) => (
+                      <p key={field} style={{ color: '#334155' }}>
+                        <strong>{field}:</strong> {String(val.from ?? '—')} → {String(val.to ?? '—')}
+                      </p>
+                    ))}
+                    {details.old_status && (
+                      <p style={{ color: '#334155' }}><strong>status:</strong> {details.old_status} → {details.new_status}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ ...S.flex, gap: '12px', marginTop: '8px' }}>
         <button onClick={handleSave} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, opacity: loading ? 0.7 : 1 }}>
