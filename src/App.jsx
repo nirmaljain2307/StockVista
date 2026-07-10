@@ -2963,6 +2963,7 @@ function WatchlistPage({ user }) {
     { sym: 'LT', exch: 'NSE' }, { sym: 'KOTAKBANK', exch: 'NSE' },
   ];
   const [watchlist, setWatchlist] = useState([]);
+  const [wlLoading, setWlLoading] = useState(true);
   const [prices, setPrices] = useState({});
   const [input, setInput] = useState('');
   const [exchange, setExchange] = useState('NSE');
@@ -2975,12 +2976,43 @@ function WatchlistPage({ user }) {
   const [alertMsg, setAlertMsg] = useState('');
   const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    if (!user) return;
+  // Phase 2: watchlist now lives in Supabase (watchlist_items) instead of
+  // localStorage, so it syncs across devices. On first load for a user with no
+  // Supabase rows yet, we do a one-time migration of their old localStorage
+  // watchlist (if any) so nobody loses their existing list.
+  const loadWatchlist = async () => {
+    setWlLoading(true);
+    const { data, error } = await supabase.from('watchlist_items').select('symbol,exchange').eq('user_id', user.id).order('added_at', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      setWatchlist(data.map(r => ({ sym: r.symbol, exch: r.exchange })));
+      setWlLoading(false);
+      return;
+    }
+
+    // No rows in Supabase yet — check for a legacy localStorage watchlist to migrate.
+    let legacy = null;
     try {
       const w = localStorage.getItem('sv_wl3_' + user.id);
-      setWatchlist(w ? JSON.parse(w) : DEFAULT_SYMBOLS);
-    } catch(e) { setWatchlist(DEFAULT_SYMBOLS); }
+      if (w) legacy = JSON.parse(w);
+    } catch(e) {}
+
+    const seed = (legacy && legacy.length > 0)
+      ? legacy.map(item => ({ sym: (item.sym || item), exch: item.exch || 'NSE' }))
+      : DEFAULT_SYMBOLS;
+
+    const rows = seed.map(s => ({ user_id: user.id, symbol: s.sym, exchange: s.exch }));
+    const { error: insErr } = await supabase.from('watchlist_items').insert(rows);
+    if (!insErr) {
+      try { localStorage.removeItem('sv_wl3_' + user.id); } catch(e) {}
+    }
+    setWatchlist(seed);
+    setWlLoading(false);
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    loadWatchlist();
     fetchAlerts();
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
@@ -3074,22 +3106,29 @@ function WatchlistPage({ user }) {
     return () => clearInterval(timer);
   }, [watchlist, refreshTs, alerts]);
 
-  const save = (data) => {
-    try { localStorage.setItem('sv_wl3_' + user?.id, JSON.stringify(data)); } catch(e) {}
-    setWatchlist(data);
-  };
-
-  const add = () => {
+  const add = async () => {
     const sym = input.trim().replace(/\s+/g,'').toUpperCase();
     if (!sym) return;
     if (watchlist.find(w => (w.sym || w) === sym)) { setInput(''); return; }
-    save([...watchlist, { sym, exch: exchange }]);
+    const newItem = { sym, exch: exchange };
+    setWatchlist(prev => [...prev, newItem]); // optimistic
     setInput(''); setShowAdd(false);
+    const { error } = await supabase.from('watchlist_items').insert([{ user_id: user.id, symbol: sym, exchange }]);
+    if (error) {
+      setWatchlist(prev => prev.filter(w => w.sym !== sym)); // roll back on failure
+      setToast('Could not add ' + sym + ': ' + error.message);
+      setTimeout(() => setToast(null), 5000);
+    }
   };
 
-  const remove = (sym) => {
-    save(watchlist.filter(w => (w.sym || w) !== sym));
+  const remove = async (sym) => {
+    const removed = watchlist.find(w => (w.sym || w) === sym);
+    setWatchlist(prev => prev.filter(w => (w.sym || w) !== sym)); // optimistic
     if (selected?.sym === sym) setSelected(null);
+    if (removed) {
+      await supabase.from('watchlist_items').delete()
+        .eq('user_id', user.id).eq('symbol', sym).eq('exchange', removed.exch || 'NSE');
+    }
   };
 
   const selSym = selected ? `${selected.exch || 'NSE'}:${selected.sym}` : null;
@@ -3140,7 +3179,12 @@ function WatchlistPage({ user }) {
 
           {/* Stock rows — Zerodha style */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {watchlist.length === 0 && (
+            {wlLoading && (
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: '12px' }}>
+                Loading watchlist...
+              </div>
+            )}
+            {!wlLoading && watchlist.length === 0 && (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: '12px' }}>
                 No stocks added.<br />Click "+ Add" above.
               </div>
