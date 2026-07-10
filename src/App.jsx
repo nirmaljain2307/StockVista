@@ -157,8 +157,11 @@ const calcPnL = (rec) => {
   return { points: +points.toFixed(2), pct: +((points / entry) * 100).toFixed(2) };
 };
 
-// Live price for equity recommendations via Yahoo Finance — so "Live Calls" price
-// movement reflects the actual market instead of only a manually-entered CMP.
+// Delayed price for equity recommendations via Yahoo Finance's unofficial public
+// endpoint (not an exchange-licensed real-time feed) — so "Live Calls" price
+// movement reflects a recent market price instead of only a manually-entered CMP.
+// This is NOT real-time/live data and must never be labeled "LIVE" in the UI —
+// always render it as "Delayed" per the data-freshness rules.
 // F&O/commodity contract symbols aren't resolvable this way, so those still rely
 // on the admin-entered CMP field.
 function useLivePrice(symbol, exchange, active) {
@@ -1752,7 +1755,7 @@ function RecCard({ rec, userProfile, onClick }) {
           {pnl.points !== null && (
             <span style={{ fontSize: '12px', fontWeight: 700, color: pnl.points >= 0 ? '#059669' : '#dc2626' }}>
               {pnl.points >= 0 ? '+' : ''}{pnl.points} pts ({pnl.pct >= 0 ? '+' : ''}{pnl.pct}%)
-              {livePrice && <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>● LIVE</span>}
+              {livePrice && <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>● Delayed · Yahoo</span>}
             </span>
           )}
           {rec.risk_level && (
@@ -2154,7 +2157,7 @@ function YahooLineChart({ rec }) {
             📈 {sym} {exch}
             {lastPrice !== null && <span style={{ marginLeft: '10px', color: lineColor }}>₹{fmt(lastPrice)} ({changePct >= 0 ? '+' : ''}{changePct}%)</span>}
           </p>
-          <p style={{ fontSize: '11px', color: '#64748b' }}>Live data via Yahoo Finance</p>
+          <p style={{ fontSize: '11px', color: '#64748b' }}>Delayed data · Yahoo Finance (unofficial feed, not exchange-licensed)</p>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {[{v:'1mo',l:'1M'},{v:'3mo',l:'3M'},{v:'6mo',l:'6M'},{v:'1y',l:'1Y'}].map(r => (
@@ -2228,7 +2231,7 @@ function TVAdvancedChart({ rec }) {
     <div style={{ ...S.card, padding: '0', overflow: 'hidden', marginBottom: '16px' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <div>
-          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>📈 Live Chart — {symbol}</p>
+          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>📈 Chart — {symbol}</p>
           <p style={{ fontSize: '11px', color: '#64748b' }}>Powered by TradingView</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -2433,8 +2436,8 @@ function RecommendationDetailPage({ id, userProfile }) {
             </div>
           )}
 
-          {/* Live Charts */}
-          <h4 style={{ ...S.h4, marginBottom: '12px', marginTop: '8px' }}>Live Charts</h4>
+          {/* Price Charts */}
+          <h4 style={{ ...S.h4, marginBottom: '12px', marginTop: '8px' }}>Price Charts</h4>
 
           {/* Main chart — self-hosted (Yahoo Finance data), reliable for NSE/BSE equity */}
           {(rec.segment || 'equity').toLowerCase() === 'equity' ? (
@@ -3110,7 +3113,7 @@ function WatchlistPage({ user }) {
 
           {/* Search / Header */}
           <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', background: '#fff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>WATCHLIST ({watchlist.length})</span>
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                 <button onClick={() => { setRefreshTs(Date.now()); }} title="Refresh prices" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#94a3b8' }}>↻</button>
@@ -3119,6 +3122,7 @@ function WatchlistPage({ user }) {
                 </button>
               </div>
             </div>
+            <p style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px' }}>● Delayed prices · Yahoo Finance (unofficial, not exchange-licensed real-time data)</p>
 
             {showAdd && (
               <div style={{ display: 'flex', gap: '4px' }}>
