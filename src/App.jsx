@@ -27,10 +27,10 @@ const CONTACT_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_PHONE = '+91-7003950585';
 
 const PLANS = {
-  basic: { name: 'Basic Equity', color: '#334155', monthly: 999, callLimit: 10 },
-  premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499, callLimit: 25 },
-  fno: { name: 'F&O Pro', color: '#f59e0b', monthly: 3999, callLimit: 40 },
-  elite: { name: 'Elite All Access', color: '#a78bfa', monthly: 5999, callLimit: null },
+  basic: { name: 'Basic Equity', color: '#334155', monthly: 999, callLimit: 10, screenerResultLimit: 5 },
+  premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499, callLimit: 25, screenerResultLimit: null },
+  fno: { name: 'F&O Pro', color: '#f59e0b', monthly: 3999, callLimit: 40, screenerResultLimit: null },
+  elite: { name: 'Elite All Access', color: '#a78bfa', monthly: 5999, callLimit: null, screenerResultLimit: null },
 };
 
 const PLAN_FEATURES = [
@@ -1864,6 +1864,13 @@ function ScreenersPage({ user, userProfile }) {
   const marketMatches = activeCategory?.marketData ? marketResults.filter(activeCategory.filter) : [];
   const recMatches = activeCategory && !activeCategory.marketData && !activeCategory.comingSoon ? recs.filter(activeCategory.filter) : [];
 
+  // Free screener categories (breakouts/momentum) are visible to every plan,
+  // but Basic sees only the top N results — the rest are teased with a count
+  // and an upgrade prompt, same pattern as the Live Calls monthly quota.
+  const resultLimit = PLANS[userProfile?.plan_id || 'basic']?.screenerResultLimit;
+  const visibleMarketMatches = (activeCategory?.marketData && resultLimit != null) ? marketMatches.slice(0, resultLimit) : marketMatches;
+  const hiddenMarketCount = (activeCategory?.marketData && resultLimit != null) ? Math.max(0, marketMatches.length - resultLimit) : 0;
+
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
@@ -1919,7 +1926,14 @@ function ScreenersPage({ user, userProfile }) {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {marketMatches.map(item => <ScreenerResultRow key={item.id} item={item} />)}
+                    {visibleMarketMatches.map(item => <ScreenerResultRow key={item.id} item={item} />)}
+                    {hiddenMarketCount > 0 && (
+                      <div style={{ ...S.card, textAlign: 'center', padding: '20px', background: '#FAECE7', border: '1px solid #F0997B' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#712B13', marginBottom: '4px' }}>🔒 {hiddenMarketCount} more result{hiddenMarketCount === 1 ? '' : 's'} hidden</p>
+                        <p style={{ fontSize: '11px', color: '#712B13', marginBottom: '10px' }}>{PLANS.basic.name} shows the top {resultLimit} results. Upgrade to Premium for the full list.</p>
+                        <button onClick={() => navigate('/subscription')} style={{ ...S.btn, ...S.btnSm, background: '#185FA5', color: '#fff' }}>Upgrade Plan</button>
+                      </div>
+                    )}
                   </div>
                 )
               ) : recMatches.length === 0 ? (
