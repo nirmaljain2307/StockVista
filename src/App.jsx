@@ -5703,6 +5703,43 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
     }
   };
 
+  const [reviewResult, setReviewResult] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewErr, setReviewErr] = useState('');
+
+  // Reviews whatever the admin has typed into the form so far (manual entry,
+  // not AI-generated) — deterministic checks (target/SL ordering, risk-reward)
+  // plus an AI read against technicals/fundamentals/news, flagging anything
+  // that looks inconsistent. Never edits the form itself — advisory only.
+  const reviewManualEntry = async () => {
+    if (!form.symbol || !form.action || !form.entry_price) return;
+    setReviewLoading(true); setReviewErr(''); setReviewResult(null);
+    try {
+      const res = await fetch('/api/generate-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: form.symbol, exchange: form.exchange, companyName: form.stock_name, segment: form.segment,
+          manualEntry: {
+            action: form.action,
+            entry_price: parseFloat(form.entry_price) || null,
+            target1: parseFloat(form.target1) || null,
+            target2: parseFloat(form.target2) || null,
+            target3: parseFloat(form.target3) || null,
+            stop_loss: parseFloat(form.stop_loss) || null,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setReviewErr((json.error || 'Could not review entry.') + (json.detail ? ' — ' + json.detail : '')); setReviewLoading(false); return; }
+      setReviewResult(json);
+      setReviewLoading(false);
+    } catch (e) {
+      setReviewErr('Network error reviewing entry.');
+      setReviewLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!existingRec?.id) return;
     supabase.from('audit_log').select('*')
@@ -5932,6 +5969,60 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
               style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>
               Copy into Rationale field
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Review My Entry — checks whatever the admin has manually typed so far,
+          not an AI-generated call. Same deterministic checks plus an AI read
+          against technicals/fundamentals/news, flagging inconsistencies. */}
+      <div style={{ ...S.card, marginBottom: '16px', background: '#E1F5EE', border: '1.5px solid #5DCAA5' }}>
+        <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '8px', marginBottom: reviewResult || reviewErr ? '12px' : 0 }}>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: '13px', color: '#085041' }}>🔍 Review My Entry</p>
+            <p style={{ fontSize: '11px', color: '#94a3b8' }}>Checks what you've manually typed above — target/SL ordering, risk-reward, and whether it's consistent with technicals, fundamentals and news.</p>
+          </div>
+          <button onClick={reviewManualEntry} disabled={reviewLoading || !form.symbol || !form.action || !form.entry_price}
+            style={{ ...S.btn, ...S.btnSm, background: '#0F6E56', color: '#fff', opacity: (reviewLoading || !form.symbol || !form.action || !form.entry_price) ? 0.6 : 1 }}>
+            {reviewLoading ? 'Reviewing...' : '🔍 Check My Entry'}
+          </button>
+        </div>
+        {reviewErr && <p style={{ fontSize: '12px', color: '#dc2626' }}>{reviewErr}</p>}
+        {reviewResult && (
+          <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.6 }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
+              <span style={{
+                ...S.badge,
+                background: reviewResult.review?.assessment === 'Looks reasonable' ? '#dcfce7' : reviewResult.review?.assessment === 'Significant concerns' ? '#fee2e2' : '#fef9c3',
+                color: reviewResult.review?.assessment === 'Looks reasonable' ? '#166534' : reviewResult.review?.assessment === 'Significant concerns' ? '#991b1b' : '#854d0e',
+                fontWeight: 800,
+              }}>
+                {reviewResult.review?.assessment}
+              </span>
+              <span style={{ color: '#94a3b8' }}>Confidence: {reviewResult.review?.confidence}/100</span>
+            </div>
+
+            {reviewResult.validation?.issues?.length > 0 && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '8px 10px', marginBottom: '10px' }}>
+                <p style={{ fontWeight: 700, color: '#92400e', marginBottom: '4px' }}>⚠️ Structural checks (math, not AI opinion):</p>
+                {reviewResult.validation.issues.map((issue, i) => <p key={i} style={{ color: '#92400e' }}>• {issue}</p>)}
+              </div>
+            )}
+
+            {reviewResult.review?.concerns?.length > 0 && (
+              <div style={{ marginBottom: '10px' }}>
+                <p style={{ fontWeight: 700, marginBottom: '4px' }}>AI concerns:</p>
+                {reviewResult.review.concerns.map((c, i) => <p key={i}>• {c}</p>)}
+              </div>
+            )}
+            {reviewResult.review?.strengths?.length > 0 && (
+              <div style={{ marginBottom: '10px' }}>
+                <p style={{ fontWeight: 700, marginBottom: '4px' }}>AI notes as reasonable:</p>
+                {reviewResult.review.strengths.map((s, i) => <p key={i}>• {s}</p>)}
+              </div>
+            )}
+            <p style={{ marginBottom: '6px' }}><strong>Reasoning:</strong> {reviewResult.review?.reasoning}</p>
+            <p style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Missing data (factor into your own judgment): {reviewResult.missingDatasets?.join(', ')}</p>
           </div>
         )}
       </div>

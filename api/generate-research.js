@@ -232,10 +232,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { symbol, exchange, companyName, segment } = req.body || {};
+  const { symbol, exchange, companyName, segment, manualEntry } = req.body || {};
   if (!symbol) {
     return res.status(400).json({ error: 'symbol is required' });
   }
+  const isReviewMode = !!(manualEntry && manualEntry.action);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -278,11 +279,31 @@ export default async function handler(req, res) {
       requestedAt: new Date().toISOString(),
       quote, fundamentals, technicals, news: news?.items || [],
       missingDatasets,
+      ...(isReviewMode ? { manualEntry } : {}),
     };
 
     // ─── System prompt — segment-aware ───────────────────────────────────
     let systemPrompt;
-    if (isEquity && technicals) {
+    if (isReviewMode) {
+      systemPrompt = `You are reviewing a call an analyst has ALREADY manually entered — you are not creating one. Using ONLY the structured data provided (the manual entry plus the packet's technicals/fundamentals/news), check whether the entry makes sense and flag anything that looks off. Never fabricate data not present in the input.
+
+The manual entry to review is in the "manualEntry" field of the input. Compare it against:
+- Technicals (if present): does the action match the trend/RSI? Is the stop-loss a realistic distance given ATR14 and the swing high/low? Is risk-reward on target1 at least 1:1.5?
+- Fundamentals (if present): does the direction align with valuation/growth/profitability, or contradict it?
+- News (if present): any recent headline that conflicts with this call?
+- Current quote (if present): is the entry price far from the current market price?
+
+List concrete concerns (empty array if none found) and concrete strengths. Give an overall assessment: "Looks reasonable" | "Minor concerns" | "Significant concerns". Be specific — reference actual numbers, not vague statements. If key data (technicals, fundamentals) is missing, say so and lower confidence rather than guessing.
+
+Return ONLY valid JSON, no other text:
+{
+  "assessment": "Looks reasonable"|"Minor concerns"|"Significant concerns",
+  "confidence": number,
+  "concerns": string[],
+  "strengths": string[],
+  "reasoning": string
+}`;
+    } else if (isEquity && technicals) {
       systemPrompt = `You are a research assistant analysing NSE/BSE listed Indian equities using ONLY the structured data provided in the user message. Never fabricate prices, financials, news, or indicator values not present in the input — the "technicals" object was calculated deterministically by the backend, trust those numbers exactly as given.
 
 You have: current quote, technical indicators (SMA20/50/200, RSI14, ATR14, 20-day swing high/low, trend), fundamentals, and recent news. You do NOT have institutional (FII/DII) activity or sector/peer comparison data — factor that into your confidence level.
@@ -359,8 +380,24 @@ Return ONLY valid JSON, no other text:
     }
 
     let validation = null;
-    if (isEquity && technicals) {
+    if (isReviewMode && (isEquity && technicals)) {
+      validation = validateTradeCall(manualEntry, technicals);
+    } else if (!isReviewMode && isEquity && technicals) {
       validation = validateTradeCall(parsed, technicals);
+    }
+
+    if (isReviewMode) {
+      return res.status(200).json({
+        symbol, exchange: exch, segment: seg,
+        generatedAt: new Date().toISOString(),
+        missingDatasets,
+        technicals,
+        isReview: true,
+        manualEntry,
+        review: parsed,
+        validation,
+        disclaimer: 'This is an AI-assisted REVIEW of a manually-entered call, for internal analyst reference only. It does not replace analyst judgment.',
+      });
     }
 
     return res.status(200).json({
