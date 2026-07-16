@@ -5552,7 +5552,7 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
         body: JSON.stringify({ symbol: form.symbol, exchange: form.exchange, companyName: form.stock_name, segment: form.segment }),
       });
       const json = await res.json();
-      if (!res.ok) { setAiErr(json.error || 'Could not generate draft.'); setAiLoading(false); return; }
+      if (!res.ok) { setAiErr((json.error || 'Could not generate draft.') + (json.detail ? ' — ' + json.detail : '')); setAiLoading(false); return; }
       setAiDraft(json);
       setAiLoading(false);
     } catch (e) {
