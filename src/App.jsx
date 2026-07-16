@@ -63,12 +63,12 @@ const BILLING_CYCLES = [
 
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const S = {
-  page: { minHeight: '100vh', background: '#ffffff', color: '#0f172a', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" },
+  page: { minHeight: '100vh', background: '#FEFDFB', color: '#0A0A0A', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" },
   container: { maxWidth: '1200px', margin: '0 auto', padding: '0 24px' },
   section: { padding: '80px 24px' },
 
   nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(15,23,42,0.07)', padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' },
-  navLogo: { fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', letterSpacing: '-0.02em' },
+  navLogo: { fontSize: '17px', fontWeight: 800, color: '#0A0A0A', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', letterSpacing: '-0.02em' },
   navLogoIcon: { width: '33px', height: '33px', background: '#0f172a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' },
   navLinks: { display: 'flex', gap: '2px', alignItems: 'center' },
   navLink: { color: '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: 500, transition: 'color 0.15s', padding: '6px 11px', border: 'none', background: 'none', borderRadius: '6px' },
@@ -76,20 +76,20 @@ const S = {
 
   btn: { border: 'none', borderRadius: '10px', padding: '11px 22px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', display: 'inline-flex', alignItems: 'center', gap: '8px', letterSpacing: '0.01em' },
   btnPrimary: { background: '#1e40af', color: '#fff' },
-  btnSecondary: { background: '#ffffff', color: '#1e293b', border: '1px solid #dde3ed' },
+  btnSecondary: { background: '#FEFDFB', color: '#1e293b', border: '1px solid #dde3ed' },
   btnGold: { background: '#b45309', color: '#fff' },
   btnSm: { padding: '7px 13px', fontSize: '12px', borderRadius: '8px' },
   btnDanger: { background: '#dc2626', color: '#fff' },
   btnGreen: { background: '#059669', color: '#fff' },
 
-  card: { background: '#ffffff', border: '2px solid #1e40af', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(30,64,175,0.08), 0 4px 16px rgba(30,64,175,0.06)' },
+  card: { background: '#FEFDFB', border: '1px solid #E5E3DA', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 2px rgba(20,20,15,0.04), 0 2px 8px rgba(20,20,15,0.03)' },
   cardHover: { transition: 'all 0.18s' },
 
   formGroup: { marginBottom: '16px' },
   label: { display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.07em' },
-  input: { width: '100%', background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
-  select: { width: '100%', background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
-  textarea: { width: '100%', background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
+  input: { width: '100%', background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0A0A0A', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
+  select: { width: '100%', background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0A0A0A', outline: 'none', fontFamily: 'inherit', fontWeight: 500 },
+  textarea: { width: '100%', background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#0A0A0A', outline: 'none', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px', fontWeight: 500 },
 
   badge: { display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em' },
   badgeBuy:  { background: '#dcfce7', color: '#166534' },
@@ -100,10 +100,10 @@ const S = {
   badgeActive: { background: '#dcfce7', color: '#166534' },
   badgeClosed: { background: '#f1f5f9', color: '#475569' },
 
-  h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.06, letterSpacing: '-0.03em', color: '#0f172a' },
-  h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#0f172a' },
-  h3: { fontSize: '20px', fontWeight: 700, letterSpacing: '-0.01em', color: '#0f172a' },
-  h4: { fontSize: '15px', fontWeight: 600, color: '#0f172a' },
+  h1: { fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 800, lineHeight: 1.06, letterSpacing: '-0.03em', color: '#0A0A0A' },
+  h2: { fontSize: 'clamp(24px, 3vw, 40px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#0A0A0A' },
+  h3: { fontSize: '20px', fontWeight: 700, letterSpacing: '-0.01em', color: '#0A0A0A' },
+  h4: { fontSize: '15px', fontWeight: 600, color: '#0A0A0A' },
   muted: { color: '#64748b' },
   gold: { color: '#b45309' },
   green: { color: '#059669' },
@@ -270,7 +270,7 @@ function FnoRiskGate({ onAccept, onDecline }) {
           </ul>
           <p style={{ marginTop: '8px' }}>{APP_NAME} (SEBI RA Reg: {SEBI_REG}) publishes F&O research for educational purposes only. We do not guarantee returns. Please assess your own risk tolerance before proceeding.</p>
         </div>
-        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '18px', cursor: 'pointer', fontSize: '13px', color: '#0f172a' }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '18px', cursor: 'pointer', fontSize: '13px', color: '#0A0A0A' }}>
           <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} style={{ marginTop: '2px' }} />
           <span>I understand F&O trading carries a high risk of loss, including losses beyond my invested capital, and I choose to proceed at my own risk.</span>
         </label>
@@ -427,10 +427,10 @@ function Navbar({ user, userProfile, onLogout }) {
             {t('nav_screeners')} <span style={{ fontSize: '9px' }}>▾</span>
           </button>
           {screenersOpen && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, background: '#fff', border: '1px solid #1e40af', borderRadius: '12px', padding: '8px', width: '220px', zIndex: 200, boxShadow: '0 8px 24px rgba(30,64,175,0.12)' }}>
+            <div style={{ position: 'absolute', top: '100%', left: 0, background: '#fff', border: '1px solid #E5E3DA', borderRadius: '12px', padding: '8px', width: '220px', zIndex: 200, boxShadow: '0 8px 24px rgba(30,64,175,0.12)' }}>
               {SCREENER_CATEGORIES.map(c => (
                 <button key={c.key} onClick={() => navigate('/screeners')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#0f172a' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#0A0A0A' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#E6F1FB'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                   <span>{c.icon}</span> {c.label}
@@ -449,9 +449,9 @@ function Navbar({ user, userProfile, onLogout }) {
             <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
               placeholder="Search stocks..."
-              style={{ width: '100%', padding: '7px 12px', borderRadius: '8px', border: '1px solid #1e40af', fontSize: '13px', outline: 'none' }} />
+              style={{ width: '100%', padding: '7px 12px', borderRadius: '8px', border: '1px solid #E5E3DA', fontSize: '13px', outline: 'none' }} />
             {searchQuery.trim() && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: '#fff', border: '1px solid #1e40af', borderRadius: '10px', padding: '6px', zIndex: 200, maxHeight: '280px', overflowY: 'auto', boxShadow: '0 8px 24px rgba(30,64,175,0.12)' }}>
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: '#fff', border: '1px solid #E5E3DA', borderRadius: '10px', padding: '6px', zIndex: 200, maxHeight: '280px', overflowY: 'auto', boxShadow: '0 8px 24px rgba(30,64,175,0.12)' }}>
                 {searchLoading ? (
                   <p style={{ fontSize: '12px', color: '#94a3b8', padding: '8px' }}>Searching...</p>
                 ) : searchResults.length === 0 ? (
@@ -461,7 +461,7 @@ function Navbar({ user, userProfile, onLogout }) {
                     style={{ display: 'flex', justifyContent: 'space-between', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#E6F1FB'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{r.symbol} <span style={{ fontWeight: 400, color: '#94a3b8' }}>{r.exchange}</span></span>
+                    <span style={{ fontWeight: 700, color: '#0A0A0A' }}>{r.symbol} <span style={{ fontWeight: 400, color: '#94a3b8' }}>{r.exchange}</span></span>
                     <span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '10px' }}>{r.action}</span>
                   </button>
                 ))}
@@ -519,7 +519,7 @@ function Navbar({ user, userProfile, onLogout }) {
                     ...(userProfile?.is_admin ? [{ label: '🛡️ ' + t('nav_admin'), path: '/admin' }] : []),
                   ].map(item => (
                     <button key={item.path} onClick={() => { navigate(item.path); setUserMenu(false); }}
-                      style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#0f172a' }}>
+                      style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#0A0A0A' }}>
                       {item.label}
                     </button>
                   ))}
@@ -622,7 +622,7 @@ function LandingPage() {
       </section>
 
       {/* Credentials Bar */}
-      <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '28px 20px' }}>
+      <section style={{ background: '#FEFDFB', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '28px 20px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '24px', textAlign: 'center' }}>
           {[
             { value: liveStats.calls > 0 ? liveStats.calls + '+' : 'Growing', label: 'Research Calls Published', real: true },
@@ -666,7 +666,7 @@ function LandingPage() {
                   <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(4px)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '16px' }}>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔒</div>
-                      <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Subscribe to View</p>
+                      <p style={{ fontWeight: 700, color: '#0A0A0A', marginBottom: '12px' }}>Subscribe to View</p>
                       <button onClick={e => { e.stopPropagation(); navigate('/pricing'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>View Plans</button>
                     </div>
                   </div>
@@ -697,7 +697,7 @@ function LandingPage() {
       </section>
 
       {/* Features */}
-      <section style={{ ...S.section, background: '#ffffff' }}>
+      <section style={{ ...S.section, background: '#FEFDFB' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>WHY CHOOSE US</p>
           <h2 style={{ ...S.h2, marginBottom: '48px' }}>Research You Can Trust</h2>
@@ -707,7 +707,7 @@ function LandingPage() {
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'; }}>
                 <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '16px' }}>{f.icon}</div>
-                <h4 style={{ ...S.h4, marginBottom: '8px', color: '#0f172a' }}>{f.title}</h4>
+                <h4 style={{ ...S.h4, marginBottom: '8px', color: '#0A0A0A' }}>{f.title}</h4>
                 <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7 }}>{f.desc}</p>
               </div>
             ))}
@@ -715,7 +715,7 @@ function LandingPage() {
         </div>
       </section>
       {/* How It Works */}
-      <section style={{ ...S.section, background: '#f8fafc' }}>
+      <section style={{ ...S.section, background: '#FAF9F5' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>HOW IT WORKS</p>
           <h2 style={{ ...S.h2, marginBottom: '48px' }}>Simple Steps to Start</h2>
@@ -723,7 +723,7 @@ function LandingPage() {
             {steps.map((s, i) => (
               <div key={i} style={{ ...S.card, textAlign: 'center', padding: '32px 20px', borderTop: '3px solid #e2e8f0' }}>
                 <div style={{ fontSize: '40px', fontWeight: 800, color: '#dbeafe', lineHeight: 1, marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>{s.n}</div>
-                <h3 style={{ ...S.h4, marginBottom: '8px', color: '#0f172a' }}>{s.title}</h3>
+                <h3 style={{ ...S.h4, marginBottom: '8px', color: '#0A0A0A' }}>{s.title}</h3>
                 <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{s.desc}</p>
               </div>
             ))}
@@ -732,7 +732,7 @@ function LandingPage() {
       </section>
 
       {/* Pricing Preview */}
-      <section style={{ ...S.section, background: '#ffffff' }}>
+      <section style={{ ...S.section, background: '#FEFDFB' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>PRICING</p>
           <h2 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h2>
@@ -743,7 +743,7 @@ function LandingPage() {
       </section>
 
       {/* Risk Management */}
-      <section style={{ ...S.section, background: '#f8fafc' }}>
+      <section style={{ ...S.section, background: '#FAF9F5' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h2 style={S.h2}>Risk Management Framework</h2>
@@ -759,7 +759,7 @@ function LandingPage() {
               <div key={i} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'flex-start', borderLeft: '4px solid #1d4ed8' }}>
                 <div style={{ fontSize: '28px', flexShrink: 0 }}>{r.icon}</div>
                 <div>
-                  <h4 style={{ ...S.h4, marginBottom: '4px', color: '#0f172a' }}>{r.title}</h4>
+                  <h4 style={{ ...S.h4, marginBottom: '4px', color: '#0A0A0A' }}>{r.title}</h4>
                   <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{r.desc}</p>
                 </div>
               </div>
@@ -774,7 +774,7 @@ function LandingPage() {
       {/* CTA */}
       <section style={{ ...S.section, background: 'linear-gradient(160deg, #eff6ff 0%, #dbeafe 100%)', textAlign: 'center' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <h2 style={{ ...S.h2, marginBottom: '16px', color: '#0f172a' }}>Ready to Start Your Research Journey?</h2>
+          <h2 style={{ ...S.h2, marginBottom: '16px', color: '#0A0A0A' }}>Ready to Start Your Research Journey?</h2>
           <p style={{ color: '#334155', marginBottom: '32px', lineHeight: 1.7, fontSize: '15px' }}>Join thousands of informed investors. Pick the research plan that fits how you trade.</p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
@@ -894,7 +894,7 @@ function PricingCards({ compact = false }) {
   return (
     <div>
       {!compact && (
-        <div style={{ display: 'flex', gap: '4px', background: '#ffffff', padding: '4px', borderRadius: '10px', width: 'fit-content', margin: '0 auto 40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '4px', background: '#FEFDFB', padding: '4px', borderRadius: '10px', width: 'fit-content', margin: '0 auto 40px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {BILLING_CYCLES.map(b => (
             <button key={b.key} onClick={() => setCycle(b.key)}
               style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: cycle === b.key ? '#1d4ed8' : 'transparent', color: cycle === b.key ? '#fff' : '#94a3b8', transition: 'all 0.2s' }}>
@@ -959,7 +959,7 @@ function PricingPage() {
 
   const planDetails = [
     {
-      id: 'basic', name: 'Basic Equity', price: '₹999', color: '#334155', bg: '#f8fafc', border: '#e2e8f0',
+      id: 'basic', name: 'Basic Equity', price: '₹999', color: '#334155', bg: '#FAF9F5', border: '#e2e8f0',
       calls: '4–6', callType: 'equity calls/month', icon: '📊',
       headline: 'Start with research-backed large-cap equity calls.',
       highlights: ['Large Cap stocks only (NSE/BSE)', 'Entry + Target 1 + Stop Loss', 'Positional (1–4 weeks)', 'Weekly market view', 'Blog & education access'],
@@ -989,7 +989,7 @@ function PricingPage() {
   ];
 
   return (
-    <div style={{ paddingTop: '80px', background: '#ffffff' }}>
+    <div style={{ paddingTop: '80px', background: '#FEFDFB' }}>
 
       {/* Hero */}
       <section style={{ ...S.section, textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f0f4f8 60%)' }}>
@@ -1017,7 +1017,7 @@ function PricingPage() {
                 <span style={{ fontSize: '11px', color: p.color, fontWeight: 600, lineHeight: 1.4 }}>{p.callType}</span>
               </div>
 
-              <p style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '2px' }}>{p.price}</p>
+              <p style={{ fontSize: '28px', fontWeight: 800, color: '#0A0A0A', marginBottom: '2px' }}>{p.price}</p>
               <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '18px' }}>per month</p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
@@ -1044,15 +1044,15 @@ function PricingPage() {
       </section>
 
       {/* Comparison Table */}
-      <section style={{ ...S.section, background: '#ffffff', paddingTop: '60px' }}>
+      <section style={{ ...S.section, background: '#FEFDFB', paddingTop: '60px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '8px' }}>Full Comparison</h2>
           <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '40px' }}>Every feature, every plan — no surprises</p>
 
-          <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #1e40af', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #E5E3DA', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '680px' }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#FAF9F5' }}>
                   <th style={{ padding: '14px 18px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '12px', width: '32%' }}>Feature</th>
                   {[
                     { name: 'Basic', sub: '₹999/mo', color: '#334155' },
@@ -1069,7 +1069,7 @@ function PricingPage() {
               </thead>
               <tbody>
                 {/* Section: Calls */}
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#FAF9F5' }}>
                   <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0' }}>Research Calls</td>
                 </tr>
                 {PLAN_FEATURES.filter(f => ['equity_calls','fno_calls','intraday_calls','commodity_calls','ipo_calls','total_calls'].includes(f.key)).map((f, i) => (
@@ -1081,7 +1081,7 @@ function PricingPage() {
                   </tr>
                 ))}
                 {/* Section: Coverage */}
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#FAF9F5' }}>
                   <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Coverage & Targets</td>
                 </tr>
                 {PLAN_FEATURES.filter(f => ['stocks_covered','call_targets','options_strategy','lot_size'].includes(f.key)).map((f, i) => (
@@ -1097,7 +1097,7 @@ function PricingPage() {
                   </tr>
                 ))}
                 {/* Section: Services */}
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#FAF9F5' }}>
                   <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Reports & Support</td>
                 </tr>
                 {PLAN_FEATURES.filter(f => ['pdf_report','weekly_market','blog_access','telegram','performance_rpt','email_support','one_on_one','portfolio_review'].includes(f.key)).map((f, i) => (
@@ -1141,7 +1141,7 @@ function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ ...S.section, background: '#ffffff' }}>
+      <section style={{ ...S.section, background: '#FEFDFB' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '40px' }}>Frequently Asked Questions</h2>
           {faqs.map((faq, i) => (
@@ -1173,7 +1173,7 @@ function FaqItem({ q, a }) {
 // ─── AUTH LAYOUT WRAPPER ──────────────────────────────────────────────────────
 function AuthLayout({ title, subtitle, children }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: '#FEFDFB', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', minHeight: '560px' }}>
         {/* Left trust panel */}
         <div style={{ background: '#0f172a', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -1208,8 +1208,8 @@ function AuthLayout({ title, subtitle, children }) {
           </p>
         </div>
         {/* Right form panel */}
-        <div style={{ background: '#ffffff', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', letterSpacing: '-0.02em' }}>{title}</h1>
+        <div style={{ background: '#FEFDFB', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0A0A0A', marginBottom: '6px', letterSpacing: '-0.02em' }}>{title}</h1>
           {subtitle && <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '28px' }}>{subtitle}</p>}
           {children}
         </div>
@@ -1652,7 +1652,7 @@ function MyPerformanceWidget({ userProfile }) {
             <p style={{ fontSize: '11px', ...S.muted }}>Win Rate ({wins}/{closed.length})</p>
           </div>
           <div>
-            <p style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>
+            <p style={{ fontSize: '22px', fontWeight: 800, color: '#0A0A0A' }}>
               {avgReturn !== null ? (avgReturn >= 0 ? '+' : '') + avgReturn.toFixed(2) + '%' : '—'}
             </p>
             <p style={{ fontSize: '11px', ...S.muted }}>Avg Return / Closed Call</p>
@@ -1705,7 +1705,7 @@ function RecCard({ rec, userProfile, onClick }) {
       {isLocked && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', flexDirection: 'column', gap: '10px' }}>
           <span style={{ fontSize: '24px' }}>🔒</span>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{PLANS[rec.plan_required || 'basic']?.name} Required</p>
+          <p style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A' }}>{PLANS[rec.plan_required || 'basic']?.name} Required</p>
           <button onClick={e => { e.stopPropagation(); navigate('/subscription'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>Upgrade Plan</button>
         </div>
       )}
@@ -1715,7 +1715,7 @@ function RecCard({ rec, userProfile, onClick }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ ...S.badge, ...actionStyle(rec.action), fontSize: '11px', padding: '3px 10px' }}>{rec.action}</span>
           <div>
-            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>{rec.symbol}</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0A0A0A' }}>{rec.symbol}</span>
             <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '5px' }}>{rec.exchange}</span>
           </div>
         </div>
@@ -1735,9 +1735,9 @@ function RecCard({ rec, userProfile, onClick }) {
       </div>
 
       {/* Row 3 — Price grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#f8fafc', borderRadius: '10px', border: '1px solid #1e40af', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#FAF9F5', borderRadius: '10px', border: '1px solid #E5E3DA', overflow: 'hidden' }}>
         {[
-          { label: 'Entry', value: fmt(rec.entry_price), color: '#0f172a' },
+          { label: 'Entry', value: fmt(rec.entry_price), color: '#0A0A0A' },
           { label: 'Target', value: fmt(rec.target1), color: '#059669' },
           { label: 'Stop Loss', value: fmt(rec.stop_loss), color: '#dc2626' },
           { label: rec.exit_price ? 'Exit' : 'Upside', value: rec.exit_price ? fmt(rec.exit_price) : pct(rec.entry_price, rec.target1), color: '#059669' },
@@ -1785,7 +1785,7 @@ function ScreenerResultRow({ item }) {
   return (
     <div style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
-        <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{item.symbol} <span style={{ fontWeight: 400, fontSize: '11px', color: '#94a3b8' }}>{item.exchange}</span></p>
+        <p style={{ fontWeight: 700, fontSize: '14px', color: '#0A0A0A' }}>{item.symbol} <span style={{ fontWeight: 400, fontSize: '11px', color: '#94a3b8' }}>{item.exchange}</span></p>
         <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{item.meta?.note}{item.meta?.close ? ` · CMP ₹${fmt(item.meta.close)}` : ''}</p>
       </div>
       <span style={{ fontSize: '15px', fontWeight: 800, color: isPositive ? '#059669' : '#dc2626' }}>
@@ -1859,14 +1859,14 @@ function ScreenersPage({ user, userProfile }) {
                 : !cat.comingSoon ? recs.filter(cat.filter).length : null;
               return (
                 <div key={cat.key} onClick={() => !cat.comingSoon && setActiveCat(cat.key)}
-                  style={{ ...S.card, cursor: cat.comingSoon ? 'default' : 'pointer', border: isActive ? '2px solid #185FA5' : '2px solid #1e40af', opacity: cat.comingSoon ? 0.7 : 1, position: 'relative' }}>
+                  style={{ ...S.card, cursor: cat.comingSoon ? 'default' : 'pointer', border: isActive ? '2px solid #185FA5' : '1px solid #E5E3DA', opacity: cat.comingSoon ? 0.7 : 1, position: 'relative' }}>
                   {cat.planGate && (
                     <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', fontWeight: 700, color: '#94a3b8' }}>{locked ? '🔒' : ''}</span>
                   )}
                   <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', fontSize: '16px' }}>
                     {cat.icon}
                   </div>
-                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>{cat.label}</p>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A', marginBottom: '4px' }}>{cat.label}</p>
                   <p style={{ fontSize: '11px', color: '#94a3b8' }}>
                     {cat.comingSoon ? 'Coming soon' : locked ? `Unlock with ${PLANS[cat.planGate]?.name || cat.planGate}` : `${count} matching stock${count === 1 ? '' : 's'}`}
                   </p>
@@ -2153,7 +2153,7 @@ function YahooLineChart({ rec }) {
     <div style={{ ...S.card, padding: '0', overflow: 'hidden', marginBottom: '16px' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <div>
-          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
+          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0A0A0A' }}>
             📈 {sym} {exch}
             {lastPrice !== null && <span style={{ marginLeft: '10px', color: lineColor }}>₹{fmt(lastPrice)} ({changePct >= 0 ? '+' : ''}{changePct}%)</span>}
           </p>
@@ -2221,7 +2221,7 @@ function FundamentalsPanel({ rec }) {
   const Stat = ({ label, value, suffix = '' }) => (
     <div>
       <p style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</p>
-      <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{value !== null && value !== undefined ? `${fmt(value)}${suffix}` : '—'}</p>
+      <p style={{ fontSize: '15px', fontWeight: 700, color: '#0A0A0A' }}>{value !== null && value !== undefined ? `${fmt(value)}${suffix}` : '—'}</p>
     </div>
   );
 
@@ -2296,13 +2296,13 @@ function TVAdvancedChart({ rec }) {
     container.appendChild(wrapper);
   }, [symbol, tvInterval, chartStyle]);
 
-  const selStyle = { padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 600, background: '#f8fafc', color: '#0f172a', cursor: 'pointer' };
+  const selStyle = { padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 600, background: '#FAF9F5', color: '#0A0A0A', cursor: 'pointer' };
 
   return (
     <div style={{ ...S.card, padding: '0', overflow: 'hidden', marginBottom: '16px' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <div>
-          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>📈 Chart — {symbol}</p>
+          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0A0A0A' }}>📈 Chart — {symbol}</p>
           <p style={{ fontSize: '11px', color: '#64748b' }}>Powered by TradingView</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -2359,7 +2359,7 @@ function TVMiniChart({ rec, label }) {
   return (
     <div style={{ ...S.card, padding: '0', overflow: 'hidden' }}>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0' }}>
-        <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{label}</p>
+        <p style={{ fontWeight: 700, fontSize: '13px', color: '#0A0A0A' }}>{label}</p>
       </div>
       <div className="tradingview-widget-container" id={containerId} style={{ height: '220px', width: '100%' }} />
     </div>
@@ -2394,7 +2394,7 @@ function TVTechnicalAnalysis({ rec }) {
   return (
     <div style={{ ...S.card, padding: '0', overflow: 'hidden' }}>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0' }}>
-        <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>📐 Technical Analysis</p>
+        <p style={{ fontWeight: 700, fontSize: '13px', color: '#0A0A0A' }}>📐 Technical Analysis</p>
         <p style={{ fontSize: '11px', color: '#64748b' }}>Buy/Sell/Neutral signals across timeframes</p>
       </div>
       <div className="tradingview-widget-container" id={containerId} style={{ height: '350px', width: '100%' }} />
@@ -2572,7 +2572,7 @@ function ContactPage() {
     setSent(true);
   };
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FAF9F5' }}>
       <div style={{ ...S.section, paddingTop: '48px' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
@@ -2591,7 +2591,7 @@ function ContactPage() {
                 <div key={i} style={{ ...S.card, display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '16px' }}>
                   <div style={{ fontSize: '22px', width: '40px', height: '40px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
                   <div>
-                    <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{c.title}</p>
+                    <p style={{ fontWeight: 700, fontSize: '13px', color: '#0A0A0A' }}>{c.title}</p>
                     <p style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 600 }}>{c.value}</p>
                     <p style={{ fontSize: '12px', color: '#64748b' }}>{c.sub}</p>
                   </div>
@@ -2655,7 +2655,7 @@ function BlogPage() {
   const [selected, setSelected] = useState(null);
   const post = selected ? BLOG_POSTS.find(p => p.id === selected) : null;
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FAF9F5' }}>
       <div style={{ ...S.section, paddingTop: '48px' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           {post ? (
@@ -2691,7 +2691,7 @@ function BlogPage() {
                       <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8', fontSize: '11px' }}>{p.tag}</span>
                       <span style={{ fontSize: '11px', color: '#94a3b8' }}>{p.mins}</span>
                     </div>
-                    <h3 style={{ ...S.h4, marginBottom: '8px', color: '#0f172a' }}>{p.title}</h3>
+                    <h3 style={{ ...S.h4, marginBottom: '8px', color: '#0A0A0A' }}>{p.title}</h3>
                     <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6, marginBottom: '12px' }}>{p.summary}</p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '11px', color: '#94a3b8' }}>{p.date}</span>
@@ -2733,7 +2733,7 @@ function NotificationsPage({ user, userProfile }) {
   }, [user]);
 
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔔</div>
         <h2 style={S.h3}>Login to see notifications</h2>
@@ -2745,7 +2745,7 @@ function NotificationsPage({ user, userProfile }) {
   const typeIcon = { info: 'ℹ️', alert: '🔴', success: '✅', call: '📊', market: '📈' };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '4px' }}>🔔 Notifications</h1>
@@ -2762,7 +2762,7 @@ function NotificationsPage({ user, userProfile }) {
                       <span style={{ fontSize: '20px', flexShrink: 0 }}>{typeIcon[n.type] || 'ℹ️'}</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{n.title}</p>
+                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0A0A0A' }}>{n.title}</p>
                           <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(n.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                         </div>
                         <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6 }}>{n.body}</p>
@@ -2785,11 +2785,11 @@ function NotificationsPage({ user, userProfile }) {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{r.action} {r.symbol}</p>
+                      <p style={{ fontWeight: 700, color: '#0A0A0A', fontSize: '14px' }}>{r.action} {r.symbol}</p>
                       <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(r.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                     </div>
                     <p style={{ fontSize: '13px', color: '#64748b' }}>{r.stock_name} · Entry ₹{r.entry_price} · T1 ₹{r.target1} · SL ₹{r.stop_loss}</p>
-                    <span style={{ ...S.badge, fontSize: '11px', background: r.status === 'live' ? '#eff6ff' : '#f8fafc', color: r.status === 'live' ? '#1d4ed8' : '#64748b', marginTop: '6px' }}>
+                    <span style={{ ...S.badge, fontSize: '11px', background: r.status === 'live' ? '#eff6ff' : '#FAF9F5', color: r.status === 'live' ? '#1d4ed8' : '#64748b', marginTop: '6px' }}>
                       {r.status?.replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
@@ -2845,7 +2845,7 @@ function ProfilePage({ user, userProfile }) {
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '28px' }}>👤 My Profile</h1>
@@ -2878,7 +2878,7 @@ function ProfilePage({ user, userProfile }) {
             </div>
 
             <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 700, fontSize: '18px', color: '#0f172a' }}>{userProfile?.full_name || 'Investor'}</p>
+              <p style={{ fontWeight: 700, fontSize: '18px', color: '#0A0A0A' }}>{userProfile?.full_name || 'Investor'}</p>
               <p style={{ color: '#64748b', fontSize: '13px' }}>{user?.email}</p>
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
                 <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8' }}>{plan?.name || 'Basic Equity'}</span>
@@ -2917,7 +2917,7 @@ function ProfilePage({ user, userProfile }) {
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                     <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>{item.label}</span>
-                    <span style={{ fontSize: '13px', color: '#0f172a', fontWeight: 500 }}>{item.value}</span>
+                    <span style={{ fontSize: '13px', color: '#0A0A0A', fontWeight: 500 }}>{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -2962,7 +2962,7 @@ function ReportsPage({ user, userProfile }) {
   }, []);
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <h1 style={{ ...S.h2, marginBottom: '6px' }}>📄 Research Reports</h1>
@@ -2987,7 +2987,7 @@ function ReportsPage({ user, userProfile }) {
                   <div key={r.id} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'center', padding: '16px 20px', flexWrap: 'wrap' }}>
                     <div style={{ width: '48px', height: '48px', background: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>📄</div>
                     <div style={{ flex: 1, minWidth: '160px' }}>
-                      <p style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{r.symbol} — {r.stock_name}</p>
+                      <p style={{ fontWeight: 700, fontSize: '15px', color: '#0A0A0A' }}>{r.symbol} — {r.stock_name}</p>
                       <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
                         <span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '11px' }}>{r.action}</span>
                         <span style={{ fontSize: '12px', color: '#94a3b8' }}>{new Date(r.published_at).toLocaleDateString('en-IN')}</span>
@@ -3208,7 +3208,7 @@ function WatchlistPage({ user }) {
   const selSym = selected ? `${selected.exch || 'NSE'}:${selected.sym}` : null;
 
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>👁️</div>
         <h2 style={S.h3}>Login to manage your watchlist</h2>
@@ -3218,7 +3218,7 @@ function WatchlistPage({ user }) {
   );
 
   return (
-    <div style={{ paddingTop: '64px', background: '#ffffff', minHeight: '100vh' }}>
+    <div style={{ paddingTop: '64px', background: '#FEFDFB', minHeight: '100vh' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', height: 'calc(100vh - 64px)', maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* ── LEFT PANEL ── */}
@@ -3239,10 +3239,10 @@ function WatchlistPage({ user }) {
 
             {showAdd && (
               <div style={{ display: 'flex', gap: '4px' }}>
-                <select style={{ width: '60px', padding: '6px 3px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '11px', color: '#0f172a', background: '#f8fafc' }} value={exchange} onChange={e => setExchange(e.target.value)}>
+                <select style={{ width: '60px', padding: '6px 3px', border: '1px solid #E5E3DA', borderRadius: '6px', fontSize: '11px', color: '#0A0A0A', background: '#FAF9F5' }} value={exchange} onChange={e => setExchange(e.target.value)}>
                   <option>NSE</option><option>BSE</option><option>MCX</option>
                 </select>
-                <input style={{ flex: 1, padding: '6px 8px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '12px', color: '#0f172a', background: '#f8fafc', outline: 'none' }}
+                <input style={{ flex: 1, padding: '6px 8px', border: '1px solid #E5E3DA', borderRadius: '6px', fontSize: '12px', color: '#0A0A0A', background: '#FAF9F5', outline: 'none' }}
                   placeholder="e.g. RELIANCE" value={input}
                   onChange={e => setInput(e.target.value.toUpperCase())}
                   onKeyDown={e => e.key === 'Enter' && add()} autoFocus />
@@ -3274,7 +3274,7 @@ function WatchlistPage({ user }) {
                 <div key={sym}
                   onClick={() => setSelected({ sym, exch })}
                   style={{ padding: '9px 12px', borderBottom: '1px solid #f8fafc', cursor: 'pointer', background: isSelected ? '#eff6ff' : 'transparent', borderLeft: isSelected ? '3px solid #1e40af' : '3px solid transparent', transition: 'background 0.1s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc'; }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#FAF9F5'; }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}>
 
                   {/* Left: symbol + change */}
@@ -3301,7 +3301,7 @@ function WatchlistPage({ user }) {
 
                   {/* Right: price + alert + delete */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A' }}>
                       {p ? p.price.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—'}
                     </span>
                     <button onClick={e => { e.stopPropagation(); openAlertModal(sym, exch); }}
@@ -3316,7 +3316,7 @@ function WatchlistPage({ user }) {
             })}
           </div>
 
-          <div style={{ padding: '7px', borderTop: '1px solid #f1f5f9', background: '#f8fafc' }}>
+          <div style={{ padding: '7px', borderTop: '1px solid #f1f5f9', background: '#FAF9F5' }}>
             <p style={{ fontSize: '9px', color: '#94a3b8', textAlign: 'center' }}>Yahoo Finance · Auto-refreshes every 30s · May be delayed</p>
           </div>
         </div>
@@ -3386,7 +3386,7 @@ function WatchlistPage({ user }) {
               <div style={{ marginBottom: '16px' }}>
                 <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Existing alerts</p>
                 {alerts.filter(a => a.symbol === alertModal.sym).map(a => (
-                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#f8fafc', borderRadius: '8px', marginBottom: '4px', fontSize: '12px' }}>
+                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#FAF9F5', borderRadius: '8px', marginBottom: '4px', fontSize: '12px' }}>
                     <span style={{ color: a.triggered ? '#94a3b8' : '#0f172a' }}>
                       {a.direction === 'above' ? '≥' : '≤'} ₹{a.target_price} {a.triggered ? '(triggered)' : ''}
                     </span>
@@ -3496,7 +3496,7 @@ function OnboardingPage({ user, userProfile }) {
       <div style={{ width: '100%', maxWidth: '560px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
           <div style={S.navLogoIcon}>📈</div>
-          <span style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{APP_NAME}</span>
+          <span style={{ fontSize: '18px', fontWeight: 800, color: '#0A0A0A' }}>{APP_NAME}</span>
         </div>
         <div style={{ background: '#e2e8f0', borderRadius: '4px', height: '4px', marginBottom: '28px' }}>
           <div style={{ width: progressW + '%', height: '4px', background: '#1d4ed8', borderRadius: '4px', transition: 'width 0.4s ease' }} />
@@ -3572,10 +3572,10 @@ function OnboardingPage({ user, userProfile }) {
                 <div style={{ marginBottom: '16px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🔴 Live Right Now</p>
                   {liveCalls.slice(0, 2).map(r => (
-                    <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #1e40af', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={r.id} style={{ background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '10px', marginRight: '6px' }}>{r.action}</span>
-                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{r.symbol}</span>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#0A0A0A' }}>{r.symbol}</span>
                         <p style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>₹{r.entry_price} → T1 ₹{r.target1} · SL ₹{r.stop_loss}</p>
                       </div>
                     </div>
@@ -3680,7 +3680,7 @@ function PortfolioPage({ user }) {
   };
 
   if (!user) return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>💼</div>
         <h2 style={S.h3}>Login to track your portfolio</h2>
@@ -3696,11 +3696,11 @@ function PortfolioPage({ user }) {
   const realisedPnL = soldHistory.reduce((s, t) => s + t.realised_pnl, 0);
   const totalPnL = unrealisedPnL + realisedPnL;
 
-  const thStyle = { padding: '10px 14px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.07em', background: '#f8fafc' };
-  const tdStyle = { padding: '12px 14px', fontSize: '13px', color: '#0f172a' };
+  const thStyle = { padding: '10px 14px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.07em', background: '#FAF9F5' };
+  const tdStyle = { padding: '12px 14px', fontSize: '13px', color: '#0A0A0A' };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
@@ -3724,7 +3724,7 @@ function PortfolioPage({ user }) {
             {/* Current Value */}
             <div style={{ ...S.card, padding: '16px' }}>
               <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Current Value</p>
-              <p style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>₹{fmtCurr(totalCurrent)}</p>
+              <p style={{ fontSize: '20px', fontWeight: 800, color: '#0A0A0A' }}>₹{fmtCurr(totalCurrent)}</p>
               <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>as of latest CMP</p>
             </div>
             {/* Unrealised P&L with progress bar */}
@@ -3810,7 +3810,7 @@ function PortfolioPage({ user }) {
                   </div>
                 </div>
                 {sellForm.qty && sellForm.sell_price && (
-                  <div style={{ background: '#f8fafc', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                  <div style={{ background: '#FAF9F5', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
                     <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>Estimated realised P&L</p>
                     {(() => {
                       const pnl = (parseFloat(sellForm.sell_price) - sellModal.buy_price) * parseFloat(sellForm.qty || 0);
@@ -3836,7 +3836,7 @@ function PortfolioPage({ user }) {
           )}
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '16px', border: '1px solid #1e40af' }}>
+          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '16px', border: '1px solid #E5E3DA' }}>
             {[['holdings', `Open Holdings (${holdings.length})`], ['sold', `Sold / Closed (${soldHistory.length})`]].map(([t, label]) => (
               <button key={t} onClick={() => setTab(t)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: tab === t ? '#1e40af' : 'transparent', color: tab === t ? '#fff' : '#64748b', transition: 'all 0.15s' }}>{label}</button>
             ))}
@@ -3854,7 +3854,7 @@ function PortfolioPage({ user }) {
               <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc' }}>
+                    <tr style={{ background: '#FAF9F5' }}>
                       {['Symbol', 'Buy Date', 'Qty', 'Buy ₹', 'CMP ₹', 'Invested', 'Value', 'Unrealised P&L', '%', 'Actions'].map(h => (
                         <th key={h} style={thStyle}>{h}</th>
                       ))}
@@ -3871,7 +3871,7 @@ function PortfolioPage({ user }) {
                           onMouseEnter={e => e.currentTarget.style.background = '#fafbff'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                           <td style={tdStyle}>
-                            <p style={{ fontWeight: 700, color: '#0f172a' }}>{h.symbol}</p>
+                            <p style={{ fontWeight: 700, color: '#0A0A0A' }}>{h.symbol}</p>
                             <p style={{ fontSize: '11px', color: '#94a3b8' }}>{h.name} · {h.segment}</p>
                           </td>
                           <td style={{ ...tdStyle, fontSize: '12px', color: '#64748b' }}>{h.buy_date || '—'}</td>
@@ -3879,7 +3879,7 @@ function PortfolioPage({ user }) {
                           <td style={tdStyle}>₹{Number(h.buy_price).toLocaleString('en-IN')}</td>
                           <td style={tdStyle}>
                             <input type="number" defaultValue={h.cmp} onBlur={e => updateCMP(h.id, e.target.value)}
-                              style={{ width: '80px', padding: '4px 8px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '12px', color: '#0f172a' }} />
+                              style={{ width: '80px', padding: '4px 8px', border: '1px solid #E5E3DA', borderRadius: '6px', fontSize: '12px', color: '#0A0A0A' }} />
                           </td>
                           <td style={tdStyle}>₹{fmtCurr(invested)}</td>
                           <td style={tdStyle}>₹{fmtCurr(current)}</td>
@@ -3892,7 +3892,7 @@ function PortfolioPage({ user }) {
                               <button onClick={() => openSell(h)} style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '7px', padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 ↓ Sell
                               </button>
-                              <button onClick={() => removeHolding(h.id)} style={{ background: 'none', border: '1px solid #1e40af', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', padding: '5px 8px', display: 'flex', alignItems: 'center' }}>
+                              <button onClick={() => removeHolding(h.id)} style={{ background: 'none', border: '1px solid #E5E3DA', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', padding: '5px 8px', display: 'flex', alignItems: 'center' }}>
                                 🗑
                               </button>
                             </div>
@@ -3917,7 +3917,7 @@ function PortfolioPage({ user }) {
               <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc' }}>
+                    <tr style={{ background: '#FAF9F5' }}>
                       {['Symbol', 'Qty Sold', 'Buy Price', 'Sell Price', 'Buy Date', 'Sell Date', 'Realised P&L', '%'].map(h => (
                         <th key={h} style={thStyle}>{h}</th>
                       ))}
@@ -3926,7 +3926,7 @@ function PortfolioPage({ user }) {
                   <tbody>
                     {soldHistory.map(t => (
                       <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={tdStyle}><p style={{ fontWeight: 700, color: '#0f172a' }}>{t.symbol}</p><p style={{ fontSize: '11px', color: '#94a3b8' }}>{t.segment}</p></td>
+                        <td style={tdStyle}><p style={{ fontWeight: 700, color: '#0A0A0A' }}>{t.symbol}</p><p style={{ fontSize: '11px', color: '#94a3b8' }}>{t.segment}</p></td>
                         <td style={{ ...tdStyle, fontWeight: 600 }}>{t.qty_sold}</td>
                         <td style={tdStyle}>₹{Number(t.buy_price).toLocaleString('en-IN')}</td>
                         <td style={tdStyle}>₹{Number(t.sell_price).toLocaleString('en-IN')}</td>
@@ -3942,7 +3942,7 @@ function PortfolioPage({ user }) {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                    <tr style={{ background: '#FAF9F5', borderTop: '2px solid #e2e8f0' }}>
                       <td colSpan={6} style={{ ...tdStyle, fontWeight: 700, color: '#334155' }}>Total Realised P&L</td>
                       <td style={{ ...tdStyle, fontWeight: 800, fontSize: '15px', color: realisedPnL >= 0 ? '#059669' : '#dc2626' }}>
                         {realisedPnL >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(realisedPnL))}
@@ -4239,7 +4239,7 @@ function AdminPanel({ user, userProfile }) {
           </div>
 
           {/* Tabs */}
-          <div style={{ ...S.flex, gap: '4px', background: '#ffffff', padding: '4px', borderRadius: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ ...S.flex, gap: '4px', background: '#FEFDFB', padding: '4px', borderRadius: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
             {[
               { key: 'recommendations', label: '📊 Recommendations' },
               { key: 'add_recommendation', label: '➕ Add Call' },
@@ -4352,7 +4352,7 @@ function AdminPanel({ user, userProfile }) {
                     <input style={{ ...S.input, flex: 1, minWidth: '200px' }} placeholder="Search by name or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {[
-                        { label: 'Total', val: users.length, color: '#0f172a' },
+                        { label: 'Total', val: users.length, color: '#0A0A0A' },
                         { label: 'Active', val: users.filter(isActive).length, color: '#059669' },
                         { label: 'Expired', val: users.filter(u => !isActive(u)).length, color: '#dc2626' },
                       ].map((s,i) => (
@@ -4368,7 +4368,7 @@ function AdminPanel({ user, userProfile }) {
                   <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                       <thead>
-                        <tr style={{ background: '#f8fafc' }}>
+                        <tr style={{ background: '#FAF9F5' }}>
                           {['User', 'Plan', 'Status', 'Expires', 'Joined', 'Actions'].map(h => (
                             <th key={h} style={{ padding: '10px 14px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                           ))}
@@ -4383,7 +4383,7 @@ function AdminPanel({ user, userProfile }) {
                           return (
                             <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9', background: isSelected ? '#eff6ff' : u.suspended ? '#fef2f2' : 'transparent' }}>
                               <td style={{ padding: '11px 14px' }}>
-                                <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>{u.full_name || '—'}</p>
+                                <p style={{ fontWeight: 700, color: '#0A0A0A', fontSize: '13px' }}>{u.full_name || '—'}</p>
                                 <p style={{ fontSize: '11px', color: '#64748b' }}>{u.email}</p>
                                 {u.is_admin && <span style={{ fontSize: '9px', background: '#ede9fe', color: '#5b21b6', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>ADMIN</span>}
                               </td>
@@ -4459,7 +4459,7 @@ function AdminPanel({ user, userProfile }) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '12px', background: userEditForm.suspended ? '#fef2f2' : '#f8fafc', borderRadius: '8px', border: '1px solid ' + (userEditForm.suspended ? '#fecaca' : '#e2e8f0') }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '12px', background: userEditForm.suspended ? '#fef2f2' : '#FAF9F5', borderRadius: '8px', border: '1px solid ' + (userEditForm.suspended ? '#fecaca' : '#e2e8f0') }}>
                       <input type="checkbox" id="suspend-toggle" checked={userEditForm.suspended} onChange={e => setUserEditForm(f => ({ ...f, suspended: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
                       <label htmlFor="suspend-toggle" style={{ cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: userEditForm.suspended ? '#dc2626' : '#334155' }}>
                         {userEditForm.suspended ? '🚫 Account Suspended' : '✅ Account Active'}
@@ -4470,7 +4470,7 @@ function AdminPanel({ user, userProfile }) {
                       {userSaving ? 'Saving...' : '💾 Save Changes'}
                     </button>
 
-                    <div style={{ marginTop: '16px', padding: '10px', background: '#f8fafc', borderRadius: '8px' }}>
+                    <div style={{ marginTop: '16px', padding: '10px', background: '#FAF9F5', borderRadius: '8px' }}>
                       <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Account Info</p>
                       <p style={{ fontSize: '12px', color: '#64748b' }}>📅 Joined: {new Date(editUser.created_at).toLocaleDateString('en-IN')}</p>
                       <p style={{ fontSize: '12px', color: '#64748b' }}>📱 Mobile: {editUser.mobile || '—'}</p>
@@ -4492,7 +4492,7 @@ function AdminPanel({ user, userProfile }) {
                   <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Research Calls</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                     {[
-                      { label: 'Total Calls', value: analytics.totalRecs, color: '#0f172a' },
+                      { label: 'Total Calls', value: analytics.totalRecs, color: '#0A0A0A' },
                       { label: 'Live Now', value: analytics.liveRecs, color: '#1e40af' },
                       { label: 'Closed', value: analytics.closedRecs, color: '#64748b' },
                       { label: 'Win Rate', value: analytics.winRate + '%', color: analytics.winRate >= 50 ? '#059669' : '#dc2626' },
@@ -4509,7 +4509,7 @@ function AdminPanel({ user, userProfile }) {
                   <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Users & Revenue</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                     {[
-                      { label: 'Total Users', value: analytics.totalUsers, color: '#0f172a' },
+                      { label: 'Total Users', value: analytics.totalUsers, color: '#0A0A0A' },
                       { label: 'New This Week', value: analytics.newUsersWeek, color: '#1e40af' },
                       { label: 'New This Month', value: analytics.newUsersMonth, color: '#1e40af' },
                       { label: 'Active Subscribers', value: analytics.activeSubscribers, color: '#059669' },
@@ -4530,7 +4530,7 @@ function AdminPanel({ user, userProfile }) {
                         <div key={plan} style={{ marginBottom: '10px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', textTransform: 'capitalize' }}>{PLANS[plan]?.name || plan}</span>
-                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{count}</span>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A' }}>{count}</span>
                           </div>
                           <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
                             <div style={{ height: '6px', borderRadius: '3px', background: PLANS[plan]?.color || '#1d4ed8', width: analytics.activeSubscribers > 0 ? `${(count / analytics.activeSubscribers * 100).toFixed(0)}%` : '0%', transition: 'width 0.4s' }} />
@@ -4648,13 +4648,13 @@ function AdminPanel({ user, userProfile }) {
                     {notifications.map(n => {
                       const typeColor = n.type === 'alert' ? '#dc2626' : n.type === 'success' ? '#059669' : n.type === 'call' ? '#1e40af' : n.type === 'market' ? '#d97706' : '#64748b';
                       return (
-                        <div key={n.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #1e40af' }}>
+                        <div key={n.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 14px', background: '#FAF9F5', borderRadius: '10px', border: '1px solid #E5E3DA' }}>
                           <div style={{ width: '36px', height: '36px', background: '#eff6ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
                             {n.type === 'alert' ? '🔴' : n.type === 'success' ? '✅' : n.type === 'call' ? '📊' : n.type === 'market' ? '📈' : 'ℹ️'}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                              <p style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{n.title}</p>
+                              <p style={{ fontWeight: 700, fontSize: '13px', color: '#0A0A0A' }}>{n.title}</p>
                               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                                 <span style={{ fontSize: '10px', color: '#94a3b8' }}>{new Date(n.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                                 <span style={{ fontSize: '10px', background: '#eff6ff', color: '#1e40af', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
@@ -4793,7 +4793,7 @@ function AdminPanel({ user, userProfile }) {
                             </span>
                             <span style={{ fontSize: '11px', color: '#94a3b8' }}>{p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN') : ''}</span>
                           </div>
-                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', marginBottom: '2px' }}>{p.title}</p>
+                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#0A0A0A', marginBottom: '2px' }}>{p.title}</p>
                           <p style={{ fontSize: '12px', color: '#64748b' }}>{(p.summary || '').slice(0, 100)}{p.summary?.length > 100 ? '...' : ''}</p>
                           {p.slug && <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>/blog/{p.slug}</p>}
                         </div>
@@ -4840,7 +4840,7 @@ function AdminPanel({ user, userProfile }) {
                     {/* Overall KPIs */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                       {[
-                        { label: 'Total Closed Calls', value: perfData.total, color: '#0f172a' },
+                        { label: 'Total Closed Calls', value: perfData.total, color: '#0A0A0A' },
                         { label: 'Total Wins', value: perfData.wins, color: '#059669' },
                         { label: 'Overall Win Rate', value: perfData.total > 0 ? ((perfData.wins/perfData.total)*100).toFixed(1)+'%' : '—', color: perfData.wins/perfData.total >= 0.5 ? '#059669' : '#dc2626' },
                         { label: 'Avg Return / Call', value: (perfData.avgReturn >= 0 ? '+' : '') + perfData.avgReturn + '%', color: perfData.avgReturn >= 0 ? '#059669' : '#dc2626' },
@@ -4909,9 +4909,9 @@ function AdminPanel({ user, userProfile }) {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {calls.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '13px' }}>No data yet.</p>
                             : calls.map((r, i) => (
-                              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: i === 0 ? (green ? '#f0fdf4' : '#fef2f2') : '#f8fafc', borderRadius: '8px', border: '1px solid ' + (i === 0 ? (green ? '#bbf7d0' : '#fecaca') : '#f1f5f9') }}>
+                              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: i === 0 ? (green ? '#f0fdf4' : '#fef2f2') : '#FAF9F5', borderRadius: '8px', border: '1px solid ' + (i === 0 ? (green ? '#bbf7d0' : '#fecaca') : '#f1f5f9') }}>
                                 <div>
-                                  <p style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a' }}>{i+1}. {r.symbol}</p>
+                                  <p style={{ fontWeight: 700, fontSize: '12px', color: '#0A0A0A' }}>{i+1}. {r.symbol}</p>
                                   <p style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'capitalize' }}>{r.action} · {r.segment}</p>
                                 </div>
                                 <p style={{ fontWeight: 800, fontSize: '14px', color: r.ret >= 0 ? '#059669' : '#dc2626' }}>
@@ -4944,7 +4944,7 @@ function AdminPanel({ user, userProfile }) {
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                             <thead>
-                              <tr style={{ background: '#f8fafc' }}>
+                              <tr style={{ background: '#FAF9F5' }}>
                                 {['Symbol','Action','Segment','Entry','Exit/Target','Return %','Status'].map(h => (
                                   <th key={h} style={{ padding: '9px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                 ))}
@@ -4968,7 +4968,7 @@ function AdminPanel({ user, userProfile }) {
                               ))}
                             </tbody>
                             <tfoot>
-                              <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                              <tr style={{ background: '#FAF9F5', borderTop: '2px solid #e2e8f0' }}>
                                 <td colSpan={5} style={{ padding: '9px 12px', fontWeight: 700, color: '#334155' }}>Month Summary</td>
                                 <td style={{ padding: '9px 12px', fontWeight: 800, color: perfData.curMonthRecs.filter(r=>r.status==='target_hit').length / perfData.curMonthRecs.length >= 0.5 ? '#059669' : '#dc2626' }}>
                                   {((perfData.curMonthRecs.filter(r=>r.status==='target_hit').length / perfData.curMonthRecs.length) * 100).toFixed(1)}% win rate
@@ -5108,7 +5108,7 @@ function AdminPanel({ user, userProfile }) {
                     { label: '🎯 Target Hit', subj: 'Target Achieved on Research Call', body: `Dear Subscriber,\n\nOne of our research calls has hit its target. Please review your positions and consider booking profits.\n\nView performance: https://stock-vista-sandy.vercel.app/performance\n\nRemember to maintain stop-loss discipline on open positions.\n\nRegards,\n${ANALYST_NAME}\nStockVista` },
                     { label: '📈 Market Update', subj: 'Important Market Update from StockVista', body: `Dear Subscriber,\n\nOur analyst has published an important market update. Login to StockVista to read the full analysis.\n\nhttps://stock-vista-sandy.vercel.app/dashboard\n\nRegards,\n${ANALYST_NAME}\nStockVista · ${SEBI_REG}` },
                   ].map((t,i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #1e40af' }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#FAF9F5', borderRadius: '8px', border: '1px solid #E5E3DA' }}>
                       <p style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>{t.label}</p>
                       <button onClick={() => { setEF('subject', t.subj); setEF('body', t.body); }} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>Use Template</button>
                     </div>
@@ -5193,7 +5193,7 @@ function AdminPanel({ user, userProfile }) {
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                         <thead>
-                          <tr style={{ background: '#f8fafc' }}>
+                          <tr style={{ background: '#FAF9F5' }}>
                             {['Code','Type','Value','Plan','Uses','Expires','Status','Action'].map(h => (
                               <th key={h} style={{ padding: '9px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase' }}>{h}</th>
                             ))}
@@ -5303,7 +5303,7 @@ function AdminPanel({ user, userProfile }) {
                   <div style={{ ...S.card, padding: '0', overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                       <thead>
-                        <tr style={{ background: '#f8fafc' }}>
+                        <tr style={{ background: '#FAF9F5' }}>
                           <th style={{ padding: '10px 12px', borderBottom: '2px solid #e2e8f0' }}>
                             <input type="checkbox" checked={selectedRecs.length === filteredRecs.length && filteredRecs.length > 0} onChange={toggleAll} />
                           </th>
@@ -5316,7 +5316,7 @@ function AdminPanel({ user, userProfile }) {
                         {filteredRecs.slice(0,30).map(r => (
                           <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', background: selectedRecs.includes(r.id) ? '#eff6ff' : 'transparent' }}>
                             <td style={{ padding: '10px 12px' }}><input type="checkbox" checked={selectedRecs.includes(r.id)} onChange={() => toggle(r.id)} /></td>
-                            <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>{r.symbol}</td>
+                            <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0A0A0A' }}>{r.symbol}</td>
                             <td style={{ padding: '10px 12px' }}><span style={{ ...S.badge, ...actionStyle(r.action), fontSize: '11px' }}>{r.action}</span></td>
                             <td style={{ padding: '10px 12px', fontSize: '12px', color: '#64748b', textTransform: 'capitalize' }}>{r.status?.replace('_',' ')}</td>
                             <td style={{ padding: '10px 12px', fontSize: '12px', color: '#94a3b8', textTransform: 'capitalize' }}>{r.segment}</td>
@@ -5334,13 +5334,13 @@ function AdminPanel({ user, userProfile }) {
                   <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Update current market price for all live calls at once</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginBottom: '14px' }}>
                     {liveRecs.map(r => (
-                      <div key={r.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #1e40af' }}>
+                      <div key={r.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#FAF9F5', padding: '8px 10px', borderRadius: '8px', border: '1px solid #E5E3DA' }}>
                         <div style={{ flex: 1 }}>
-                          <p style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a' }}>{r.symbol}</p>
+                          <p style={{ fontWeight: 700, fontSize: '12px', color: '#0A0A0A' }}>{r.symbol}</p>
                           <p style={{ fontSize: '10px', color: '#94a3b8' }}>Entry ₹{r.entry_price}</p>
                         </div>
                         <input type="number" placeholder={String(r.cmp || r.entry_price)} value={cmpUpdates[r.id] || ''} onChange={e => setCmpUpdates(c => ({ ...c, [r.id]: e.target.value }))}
-                          style={{ width: '80px', padding: '5px 8px', border: '1px solid #1e40af', borderRadius: '6px', fontSize: '12px' }} />
+                          style={{ width: '80px', padding: '5px 8px', border: '1px solid #E5E3DA', borderRadius: '6px', fontSize: '12px' }} />
                       </div>
                     ))}
                     {liveRecs.length === 0 && <p style={{ color: '#94a3b8', fontSize: '13px' }}>No live calls at the moment.</p>}
@@ -5407,9 +5407,9 @@ function AdminPanel({ user, userProfile }) {
                       { key: 'show_watchlist_to_free', label: 'Watchlist', desc: 'Allow free users to access watchlist page' },
                       { key: 'show_blog_to_all', label: 'Blog / Education', desc: 'Show blog articles to all users (recommended for SEO)' },
                     ].map(f => (
-                      <div key={f.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #1e40af' }}>
+                      <div key={f.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#FAF9F5', borderRadius: '8px', border: '1px solid #E5E3DA' }}>
                         <div>
-                          <p style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>{f.label}</p>
+                          <p style={{ fontWeight: 600, fontSize: '13px', color: '#0A0A0A' }}>{f.label}</p>
                           <p style={{ fontSize: '11px', color: '#94a3b8' }}>{f.desc}</p>
                         </div>
                         <div onClick={() => setSettings(s => ({ ...s, [f.key]: !s[f.key] }))}
@@ -5478,7 +5478,7 @@ function AdminPanel({ user, userProfile }) {
                   <div style={{...S.card,padding:'0',overflowX:'auto'}}>
                     <table style={{width:'100%',borderCollapse:'collapse',fontSize:'12px'}}>
                       <thead>
-                        <tr style={{background:'#f8fafc'}}>
+                        <tr style={{background:'#FAF9F5'}}>
                           {['Timestamp','Action','Entity','Performed By','Details'].map(h=>(
                             <th key={h} style={{padding:'10px 14px',textAlign:'left',borderBottom:'2px solid #e2e8f0',color:'#94a3b8',fontWeight:700,fontSize:'10px',textTransform:'uppercase',letterSpacing:'0.05em',whiteSpace:'nowrap'}}>{h}</th>
                           ))}
@@ -5491,7 +5491,7 @@ function AdminPanel({ user, userProfile }) {
                           try{d=JSON.parse(log.details||'{}');}catch(e){}
                           return (
                             <tr key={log.id||i} style={{borderBottom:'1px solid #f1f5f9'}}
-                              onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+                              onMouseEnter={e=>e.currentTarget.style.background='#FAF9F5'}
                               onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                               <td style={{padding:'10px 14px',whiteSpace:'nowrap',color:'#64748b',fontSize:'11px'}}>
                                 <p>{new Date(log.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'})}</p>
@@ -5815,7 +5815,7 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
       </div>
 
       {existingRec?.id && (
-        <div style={{ ...S.card, marginTop: '8px', background: '#f8fafc' }}>
+        <div style={{ ...S.card, marginTop: '8px', background: '#FAF9F5' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📜 Edit History ({history.length})</p>
           {history.length === 0 ? (
             <p style={{ fontSize: '12px', color: '#94a3b8' }}>No edits recorded yet since this call was created.</p>
@@ -5987,7 +5987,7 @@ function PerformancePage() {
               <h3 style={{ ...S.h4, marginBottom: '16px' }}>Segment-wise Win Rate</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
                 {segBreakdown.map(s => (
-                  <div key={s.seg} style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', textAlign: 'center', border: '1px solid #1e40af' }}>
+                  <div key={s.seg} style={{ background: '#FAF9F5', borderRadius: '10px', padding: '14px', textAlign: 'center', border: '1px solid #E5E3DA' }}>
                     <div style={{ fontSize: '18px', fontWeight: 800, color: s.rate >= 60 ? '#059669' : s.rate >= 40 ? '#d97706' : '#b91c1c' }}>{s.rate}%</div>
                     <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginTop: '2px', textTransform: 'capitalize' }}>{s.seg}</div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>{s.wins}W / {s.total - s.wins}L of {s.total}</div>
@@ -6003,7 +6003,7 @@ function PerformancePage() {
               {bestCall && (
                 <div style={{ ...S.card, borderLeft: '4px solid #059669' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#059669', marginBottom: '4px' }}>🏆 BEST CALL</div>
-                  <div style={{ fontWeight: 800, fontSize: '18px', color: '#0f172a' }}>{bestCall.symbol}</div>
+                  <div style={{ fontWeight: 800, fontSize: '18px', color: '#0A0A0A' }}>{bestCall.symbol}</div>
                   <div style={{ fontSize: '24px', fontWeight: 800, color: '#059669' }}>+{bestCall.ret}%</div>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>{bestCall.action} · Entry {fmt(bestCall.entry_price)} → Exit {fmt(bestCall.exit_price || bestCall.target1)}</div>
                 </div>
@@ -6011,7 +6011,7 @@ function PerformancePage() {
               {worstCall && (
                 <div style={{ ...S.card, borderLeft: '4px solid #b91c1c' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#b91c1c', marginBottom: '4px' }}>📉 WORST CALL</div>
-                  <div style={{ fontWeight: 800, fontSize: '18px', color: '#0f172a' }}>{worstCall.symbol}</div>
+                  <div style={{ fontWeight: 800, fontSize: '18px', color: '#0A0A0A' }}>{worstCall.symbol}</div>
                   <div style={{ fontSize: '24px', fontWeight: 800, color: '#b91c1c' }}>{worstCall.ret}%</div>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>{worstCall.action} · Entry {fmt(worstCall.entry_price)} → Exit {fmt(worstCall.exit_price || worstCall.stop_loss)}</div>
                 </div>
@@ -6026,7 +6026,7 @@ function PerformancePage() {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {[['all', 'All'], ['win', '✅ Wins'], ['loss', '❌ Losses'], ['equity', 'Equity'], ['futures', 'F&O'], ['commodity', 'Commodity']].map(([val, label]) => (
                   <button key={val} onClick={() => setFilter(val)}
-                    style={{ ...S.btn, ...S.btnSm, background: filter === val ? '#1d4ed8' : '#f1f5f9', color: filter === val ? '#fff' : '#334155', border: '1px solid #1e40af' }}>
+                    style={{ ...S.btn, ...S.btnSm, background: filter === val ? '#1d4ed8' : '#f1f5f9', color: filter === val ? '#fff' : '#334155', border: '1px solid #E5E3DA' }}>
                     {label}
                   </button>
                 ))}
@@ -6044,7 +6044,7 @@ function PerformancePage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc' }}>
+                    <tr style={{ background: '#FAF9F5' }}>
                       {['#', 'Stock', 'Seg', 'Action', 'Entry', 'Exit/SL', 'Return', 'Status', 'Date'].map(h => (
                         <th key={h} style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '12px' }}>{h}</th>
                       ))}
@@ -6056,10 +6056,10 @@ function PerformancePage() {
                       const isWin = r.status === 'target_hit';
                       return (
                         <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseEnter={e => e.currentTarget.style.background = '#FAF9F5'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                           <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: '11px' }}>{idx + 1}</td>
-                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0A0A0A' }}>
                             {r.symbol}
                             <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 400 }}>{r.stock_name}</div>
                           </td>
@@ -6107,12 +6107,12 @@ function LegalSection({ title, children, icon }) {
 
 function LegalPage({ title, icon, children }) {
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FAF9F5' }}>
       <div style={{ ...S.section }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
           {/* Header */}
           <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '2px solid #bfdbfe', borderRadius: '16px', padding: '32px', marginBottom: '32px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>{icon} {title}</h1>
+            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0A0A0A', marginBottom: '8px' }}>{icon} {title}</h1>
             <p style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Last updated: June 2026 · {COMPANY_NAME} · {SEBI_REG}</p>
           </div>
           {children}
@@ -6337,9 +6337,9 @@ function SEBIDisclosurePage() {
             { label: 'Registered Address', value: 'Noida, Uttar Pradesh, India' },
             { label: 'Contact Email', value: CONTACT_EMAIL },
           ].map((item, i) => (
-            <div key={i} style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #1e40af' }}>
+            <div key={i} style={{ background: '#FAF9F5', borderRadius: '8px', padding: '12px', border: '1px solid #E5E3DA' }}>
               <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</p>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginTop: '4px' }}>{item.value}</p>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0A', marginTop: '4px' }}>{item.value}</p>
             </div>
           ))}
         </div>
@@ -6437,7 +6437,7 @@ function RiskDisclosurePage() {
           <li>You are capable of bearing financial losses</li>
           <li>You have consulted or will consult a qualified financial advisor</li>
         </ul>
-        <p style={{ marginTop: '12px', fontWeight: 600, color: '#0f172a' }}>SEBI RA Registration: {SEBI_REG} · {COMPANY_NAME} · Analyst: {ANALYST_NAME}</p>
+        <p style={{ marginTop: '12px', fontWeight: 600, color: '#0A0A0A' }}>SEBI RA Registration: {SEBI_REG} · {COMPANY_NAME} · Analyst: {ANALYST_NAME}</p>
       </LegalSection>
     </LegalPage>
   );
@@ -6645,7 +6645,7 @@ function SubscriptionPage({ user, userProfile }) {
   };
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB' }}>
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
@@ -6657,7 +6657,7 @@ function SubscriptionPage({ user, userProfile }) {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current Plan</p>
-                <p style={{ fontWeight: 700, fontSize: '18px', color: '#0f172a' }}>{PLANS[currentPlanId || 'basic']?.name || 'No Active Plan'}</p>
+                <p style={{ fontWeight: 700, fontSize: '18px', color: '#0A0A0A' }}>{PLANS[currentPlanId || 'basic']?.name || 'No Active Plan'}</p>
                 {isActive ? (
                   <p style={{ fontSize: '13px', color: '#059669', fontWeight: 600 }}>
                     ✅ Active · Expires {new Date(userProfile.plan_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -6694,7 +6694,7 @@ function SubscriptionPage({ user, userProfile }) {
           <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>Select a plan and billing cycle to subscribe.</p>
 
           {/* Billing cycle */}
-          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '24px', border: '1px solid #1e40af' }}>
+          <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '24px', border: '1px solid #E5E3DA' }}>
             {[
               { key: 'monthly', label: 'Monthly' },
               { key: 'quarterly', label: 'Quarterly', save: '-10%' },
@@ -6714,7 +6714,7 @@ function SubscriptionPage({ user, userProfile }) {
               const isCurrent = currentPlanId === p.id && isActive;
               return (
                 <div key={p.id} onClick={() => !isCurrent && setSelectedPlan(p.id)}
-                  style={{ ...S.card, cursor: isCurrent ? 'default' : 'pointer', border: isSelected ? `2px solid ${p.color}` : isCurrent ? '2px solid #059669' : '1.5px solid #1e40af', position: 'relative', transition: 'all 0.15s', padding: '20px', background: isSelected ? '#fafbff' : '#fff' }}>
+                  style={{ ...S.card, cursor: isCurrent ? 'default' : 'pointer', border: isSelected ? `2px solid ${p.color}` : isCurrent ? '2px solid #059669' : '1px solid #E5E3DA', position: 'relative', transition: 'all 0.15s', padding: '20px', background: isSelected ? '#fafbff' : '#fff' }}>
                   {p.popular && !isCurrent && (
                     <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#d97706', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>MOST POPULAR</div>
                   )}
@@ -6724,7 +6724,7 @@ function SubscriptionPage({ user, userProfile }) {
                   <div style={{ fontSize: '24px', marginBottom: '8px' }}>{p.icon}</div>
                   <p style={{ fontWeight: 700, fontSize: '14px', color: p.color, marginBottom: '4px' }}>{p.name}</p>
                   <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.4 }}>{p.desc}</p>
-                  <p style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>₹{prices[p.id][cycle].toLocaleString('en-IN')}</p>
+                  <p style={{ fontSize: '20px', fontWeight: 800, color: '#0A0A0A' }}>₹{prices[p.id][cycle].toLocaleString('en-IN')}</p>
                   <p style={{ fontSize: '11px', color: '#94a3b8' }}>/{cycle === 'monthly' ? 'month' : cycle === 'quarterly' ? '3 months' : 'year'}</p>
                   {isSelected && <div style={{ marginTop: '10px', fontSize: '12px', color: p.color, fontWeight: 700 }}>✓ Selected</div>}
                 </div>
@@ -6733,12 +6733,12 @@ function SubscriptionPage({ user, userProfile }) {
           </div>
 
           {/* Checkout */}
-          <div style={{ ...S.card, border: selectedPlan ? '2px solid #1e40af' : '1.5px solid #1e40af' }}>
+          <div style={{ ...S.card, border: selectedPlan ? '1px solid #E5E3DA' : '1px solid #E5E3DA' }}>
             {selectedPlan ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
                   <div>
-                    <p style={{ fontWeight: 700, fontSize: '16px', color: '#0f172a' }}>{planList.find(p => p.id === selectedPlan)?.name}</p>
+                    <p style={{ fontWeight: 700, fontSize: '16px', color: '#0A0A0A' }}>{planList.find(p => p.id === selectedPlan)?.name}</p>
                     <p style={{ fontSize: '13px', color: '#64748b' }}>{cycle === 'monthly' ? 'Monthly billing' : cycle === 'quarterly' ? 'Quarterly billing' : 'Annual billing · best value'}</p>
                   </div>
                   <p style={{ fontSize: '24px', fontWeight: 800, color: '#1e40af' }}>₹{prices[selectedPlan][cycle].toLocaleString('en-IN')}</p>
