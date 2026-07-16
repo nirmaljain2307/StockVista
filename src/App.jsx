@@ -27,10 +27,10 @@ const CONTACT_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_PHONE = '+91-7003950585';
 
 const PLANS = {
-  basic: { name: 'Basic Equity', color: '#334155', monthly: 999 },
-  premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499 },
-  fno: { name: 'F&O Pro', color: '#f59e0b', monthly: 3999 },
-  elite: { name: 'Elite All Access', color: '#a78bfa', monthly: 5999 },
+  basic: { name: 'Basic Equity', color: '#334155', monthly: 999, callLimit: 10 },
+  premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499, callLimit: 25 },
+  fno: { name: 'F&O Pro', color: '#f59e0b', monthly: 3999, callLimit: 40 },
+  elite: { name: 'Elite All Access', color: '#a78bfa', monthly: 5999, callLimit: null },
 };
 
 const PLAN_FEATURES = [
@@ -1667,13 +1667,20 @@ function MyPerformanceWidget({ userProfile }) {
 }
 
 // ─── RECOMMENDATION CARD ──────────────────────────────────────────────────────
-function RecCard({ rec, userProfile, onClick }) {
+function RecCard({ rec, userProfile, onClick, quotaLocked }) {
   const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
   const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
   const reqRank = planRank[rec.plan_required || 'basic'] ?? 0;
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
-  const hasAccess = hasActiveSub && userRank >= reqRank;
-  const isLocked = !hasAccess;
+  const hasTierAccess = hasActiveSub && userRank >= reqRank;
+  // Tier-lock (plan too low) keeps the full-card blur — nothing about the call
+  // is shown. Quota-lock (plan is fine, monthly limit is used up) shows a
+  // teaser instead — symbol, status and date stay visible so the subscriber
+  // knows a new call was published, but the trade details (action/entry/
+  // target/stop-loss) stay hidden until they upgrade.
+  const isFullLocked = !hasTierAccess;
+  const isQuotaTeaser = !isFullLocked && !!quotaLocked;
+  const isLocked = isFullLocked || isQuotaTeaser;
   const effStatus = rec.status || 'live';
   const isLiveish = ['live', 'near_target', 'near_sl'].includes(effStatus);
   const isEquity = (rec.segment || 'equity').toLowerCase() === 'equity';
@@ -1701,8 +1708,8 @@ function RecCard({ rec, userProfile, onClick }) {
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(29,78,216,0.05), 0 4px 16px rgba(29,78,216,0.03)'; }}
       onClick={onClick || (() => { if (!isLocked) navigate('/recommendations/' + rec.id); })}>
 
-      {/* Lock overlay */}
-      {isLocked && (
+      {/* Lock overlay — full card, tier-lock only */}
+      {isFullLocked && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', flexDirection: 'column', gap: '10px' }}>
           <span style={{ fontSize: '24px' }}>🔒</span>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A' }}>{PLANS[rec.plan_required || 'basic']?.name} Required</p>
@@ -1710,10 +1717,22 @@ function RecCard({ rec, userProfile, onClick }) {
         </div>
       )}
 
+      {/* New-call teaser banner — quota-lock only. Symbol/status/date below stay
+          visible; only the trade details (row 3+) get covered further down. */}
+      {isQuotaTeaser && (
+        <div style={{ background: '#FAECE7', border: '1px solid #F0997B', borderRadius: '8px', padding: '6px 10px', marginBottom: '10px', fontSize: '11px', color: '#712B13', fontWeight: 600 }}>
+          🔒 New call published — monthly limit reached
+        </div>
+      )}
+
       {/* Row 1 — Action badge + Symbol + Status badge + Date */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ ...S.badge, ...actionStyle(rec.action), fontSize: '11px', padding: '3px 10px' }}>{rec.action}</span>
+          {isQuotaTeaser ? (
+            <span style={{ ...S.badge, background: '#f1f5f9', color: '#94a3b8', fontSize: '11px', padding: '3px 10px' }}>🔒 LOCKED</span>
+          ) : (
+            <span style={{ ...S.badge, ...actionStyle(rec.action), fontSize: '11px', padding: '3px 10px' }}>{rec.action}</span>
+          )}
           <div>
             <span style={{ fontSize: '15px', fontWeight: 800, color: '#0A0A0A' }}>{rec.symbol}</span>
             <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '5px' }}>{rec.exchange}</span>
@@ -1735,7 +1754,13 @@ function RecCard({ rec, userProfile, onClick }) {
       </div>
 
       {/* Row 3 — Price grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#FAF9F5', borderRadius: '10px', border: '1px solid #E5E3DA', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#FAF9F5', borderRadius: '10px', border: '1px solid #E5E3DA', overflow: 'hidden', position: 'relative' }}>
+        {isQuotaTeaser && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(250,249,245,0.85)', backdropFilter: 'blur(5px)', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', padding: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#712B13' }}>Entry, target and stop-loss hidden — monthly limit reached</span>
+            <button onClick={e => { e.stopPropagation(); navigate('/subscription'); }} style={{ ...S.btn, ...S.btnSm, background: '#185FA5', color: '#fff' }}>Upgrade</button>
+          </div>
+        )}
         {[
           { label: 'Entry', value: fmt(rec.entry_price), color: '#0A0A0A' },
           { label: 'Target', value: fmt(rec.target1), color: '#059669' },
@@ -1752,7 +1777,7 @@ function RecCard({ rec, userProfile, onClick }) {
       {/* Row 4 — P&L + Risk + Links */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {pnl.points !== null && (
+          {pnl.points !== null && !isQuotaTeaser && (
             <span style={{ fontSize: '12px', fontWeight: 700, color: pnl.points >= 0 ? '#059669' : '#dc2626' }}>
               {pnl.points >= 0 ? '+' : ''}{pnl.points} pts ({pnl.pct >= 0 ? '+' : ''}{pnl.pct}%)
               {livePrice && <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>● Delayed · Yahoo</span>}
@@ -1958,8 +1983,33 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
     if (filters.risk) data = data.filter(r => r.risk_level === filters.risk);
     if (sort === 'newest') data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
     if (sort === 'oldest') data.sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
+
+    // Monthly call quota — per-plan cap on how many of this month's live calls a
+    // subscriber can view (in addition to the existing plan-tier gating above).
+    // Earliest calls of the month are granted first, so quota fills consistently
+    // as the month progresses rather than reshuffling on every new publish.
+    if (forceStatus === 'live-group') {
+      const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+      const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
+      const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+      const limit = PLANS[userProfile?.plan_id || 'basic']?.callLimit;
+      if (hasActiveSub && limit != null) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const thisMonthTierEligible = data
+          .filter(r => new Date(r.published_at) >= monthStart && (planRank[r.plan_required || 'basic'] ?? 0) <= userRank)
+          .sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
+        const allowedIds = new Set(thisMonthTierEligible.slice(0, limit).map(r => r.id));
+        data = data.map(r => {
+          const inThisMonth = new Date(r.published_at) >= monthStart;
+          const tierEligible = (planRank[r.plan_required || 'basic'] ?? 0) <= userRank;
+          return { ...r, _quotaLocked: inThisMonth && tierEligible && !allowedIds.has(r.id) };
+        });
+      }
+    }
+
     setFiltered(data);
-  }, [recs, search, filters, sort, forceStatus]);
+  }, [recs, search, filters, sort, forceStatus, userProfile]);
 
   const fetchRecs = async () => {
     const { data } = await supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false });
@@ -1980,6 +2030,22 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
             <h1 style={S.h2}>{forceStatus === 'live-group' ? 'Live Calls' : forceStatus === 'past-group' ? 'Past Recommendations' : 'Research Calls'}</h1>
             <p style={{ ...S.muted, marginTop: '4px' }}>{forceStatus === 'past-group' ? 'Closed, expired, target-hit, and stop-loss-hit calls with full track record.' : 'Expert stock picks with detailed analysis and entry/exit levels'}</p>
           </div>
+
+          {forceStatus === 'live-group' && userProfile?.plan_id && (() => {
+            const limit = PLANS[userProfile.plan_id]?.callLimit;
+            if (limit == null) return (
+              <div style={{ background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '10px', padding: '10px 16px', marginBottom: '20px', fontSize: '12px', color: '#0C447C' }}>
+                {PLANS[userProfile.plan_id]?.name} · Unlimited calls this month
+              </div>
+            );
+            const used = filtered.filter(r => !r._quotaLocked && new Date(r.published_at) >= new Date(new Date().getFullYear(), new Date().getMonth(), 1)).length;
+            return (
+              <div style={{ background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '10px', padding: '10px 16px', marginBottom: '20px', fontSize: '12px', color: '#0C447C', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <span>{PLANS[userProfile.plan_id]?.name} · {used} of {limit} calls used this month</span>
+                {used >= limit && <button onClick={() => navigate('/subscription')} style={{ ...S.btn, ...S.btnSm, background: '#185FA5', color: '#fff' }}>Upgrade for more</button>}
+              </div>
+            );
+          })()}
 
           {/* Stats */}
           <div style={{ ...S.grid4, marginBottom: '24px' }}>
@@ -2044,7 +2110,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
             </div>
           ) : (
             <div style={S.grid2}>
-              {filtered.map(r => <RecCard key={r.id} rec={r} userProfile={userProfile} />)}
+              {filtered.map(r => <RecCard key={r.id} rec={r} userProfile={userProfile} quotaLocked={r._quotaLocked} />)}
             </div>
           )}
 
@@ -2417,6 +2483,8 @@ function ChartPlaceholder({ label, icon }) {
 function RecommendationDetailPage({ id, userProfile }) {
   const [rec, setRec] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [quotaLocked, setQuotaLocked] = useState(false);
+  const [quotaChecked, setQuotaChecked] = useState(false);
 
   useEffect(() => {
     supabase.from('recommendations').select('*').eq('id', id).single().then(({ data }) => {
@@ -2425,8 +2493,68 @@ function RecommendationDetailPage({ id, userProfile }) {
     });
   }, [id]);
 
-  if (loading) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Loading...</div>;
+  // Same tier + monthly-quota access rules as RecCard, enforced here too — this
+  // page was previously reachable directly by URL with no access check at all,
+  // bypassing the card's lock overlay entirely.
+  useEffect(() => {
+    if (!rec) return;
+    const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+    const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
+    const limit = PLANS[userProfile?.plan_id || 'basic']?.callLimit;
+    const LIVE_GROUP = ['live', 'near_target', 'near_sl'];
+    const isLiveish = LIVE_GROUP.includes(rec.status);
+    if (limit == null || !isLiveish) { setQuotaLocked(false); setQuotaChecked(true); return; }
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (new Date(rec.published_at) < monthStart) { setQuotaLocked(false); setQuotaChecked(true); return; }
+    supabase.from('recommendations').select('id,published_at,plan_required')
+      .in('status', LIVE_GROUP)
+      .gte('published_at', monthStart.toISOString())
+      .order('published_at', { ascending: true })
+      .then(({ data }) => {
+        const eligible = (data || []).filter(r => (planRank[r.plan_required || 'basic'] ?? 0) <= userRank);
+        const allowedIds = new Set(eligible.slice(0, limit).map(r => r.id));
+        setQuotaLocked(!allowedIds.has(rec.id));
+        setQuotaChecked(true);
+      });
+  }, [rec, userProfile]);
+
+  if (loading || (rec && !quotaChecked)) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Loading...</div>;
   if (!rec) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Recommendation not found.</div>;
+
+  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
+  const reqRank = planRank[rec.plan_required || 'basic'] ?? 0;
+  const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
+  const hasTierAccess = hasActiveSub && userRank >= reqRank;
+  const isLocked = !hasTierAccess || quotaLocked;
+
+  if (isLocked) {
+    return (
+      <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
+        <div style={{ ...S.section, paddingTop: '40px' }}>
+          <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+            <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, marginBottom: '20px' }}>← Back</button>
+            <div style={{ ...S.card, textAlign: 'center', padding: '40px 24px' }}>
+              <span style={{ fontSize: '32px' }}>🔒</span>
+              {quotaLocked && hasTierAccess ? (
+                <>
+                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#0A0A0A', marginTop: '12px' }}>Monthly call limit reached</p>
+                  <p style={{ fontSize: '13px', ...S.muted, marginTop: '6px' }}>{PLANS[userProfile?.plan_id || 'basic']?.name} includes {PLANS[userProfile?.plan_id || 'basic']?.callLimit} calls/month. This call is beyond your current month's quota.</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#0A0A0A', marginTop: '12px' }}>{PLANS[rec.plan_required || 'basic']?.name} Required</p>
+                  <p style={{ fontSize: '13px', ...S.muted, marginTop: '6px' }}>Upgrade your plan to view this call's entry, targets, and stop-loss.</p>
+                </>
+              )}
+              <button onClick={() => navigate('/subscription')} style={{ ...S.btn, ...S.btnPrimary, marginTop: '16px' }}>Upgrade Plan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const pnl = calcPnL(rec);
   const effStatus = suggestStatus(rec);
