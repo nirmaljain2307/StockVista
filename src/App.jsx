@@ -264,6 +264,19 @@ const suggestStatus = (rec) => {
 const navigate = (path) => { window.history.pushState({}, '', path); window.dispatchEvent(new PopStateEvent('popstate')); };
 const getPath = () => window.location.pathname;
 
+// Inline style objects can't use `@media` — that key is silently dropped by
+// the browser. This hook is the real mobile-breakpoint switch; components
+// use it to change layout in JS instead of relying on dead CSS.
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= breakpoint);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 // ─── DISCLAIMER POPUP ─────────────────────────────────────────────────────────
 function DisclaimerPopup({ onAccept }) {
   return (
@@ -417,13 +430,14 @@ function Navbar({ user, userProfile, onLogout }) {
   const [screenersOpen, setScreenersOpen] = useState(false);
   const { t } = useLang();
   const path = getPath();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); return; }
     setSearchLoading(true);
     const timer = setTimeout(async () => {
       const q = searchQuery.trim();
-      const { data } = await supabase.from('recommendations').select('id,symbol,stock_name,exchange,action,status')
+      const { data } = await supabase.from('recommendations_feed').select('id,symbol,stock_name,exchange,action,status')
         .neq('status', 'draft')
         .or(`symbol.ilike.%${q}%,stock_name.ilike.%${q}%`)
         .order('published_at', { ascending: false })
@@ -460,7 +474,7 @@ function Navbar({ user, userProfile, onLogout }) {
       </div>
 
       {/* Desktop Nav */}
-      <div style={{ ...S.navLinks, '@media(max-width:768px)': { display: 'none' } }}>
+      <div style={{ ...S.navLinks, display: isMobile ? 'none' : 'flex' }}>
         {navItems.map(item => (
           <button key={item.path} onClick={() => navigate(item.path)}
             style={{ ...S.navLink, color: path === item.path ? '#185FA5' : '#0C447C' }}>
@@ -491,7 +505,7 @@ function Navbar({ user, userProfile, onLogout }) {
       </div>
 
       {/* Search */}
-      <div style={{ position: 'relative', flex: '0 1 260px' }}>
+      <div style={{ position: 'relative', flex: isMobile ? '0 1 auto' : '0 1 260px' }}>
         {searchOpen ? (
           <div>
             <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
@@ -588,16 +602,16 @@ function Navbar({ user, userProfile, onLogout }) {
 
         {/* Mobile Menu */}
         <button onClick={() => setMenuOpen(!menuOpen)}
-          style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, display: 'none' }}>☰</button>
+          style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, display: isMobile ? 'inline-flex' : 'none' }}>☰</button>
       </div>
 
       {/* Mobile Menu Drawer */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, background: '#f1f5f9', zIndex: 999, padding: '24px' }}>
-          <button onClick={() => setMenuOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer' }}>✕</button>
-          {navItems.map(item => (
+        <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, background: '#f1f5f9', zIndex: 999, padding: '24px', overflowY: 'auto' }}>
+          <button onClick={() => setMenuOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#0A0A0A', fontSize: '24px', cursor: 'pointer' }}>✕</button>
+          {[...navItems, { label: t('nav_screeners') || 'Screeners', path: '/screeners' }].map(item => (
             <button key={item.path} onClick={() => { navigate(item.path); setMenuOpen(false); }}
-              style={{ ...S.navLink, display: 'block', fontSize: '20px', fontWeight: 700, padding: '16px 0', color: path === item.path ? '#3b82f6' : '#e2e8f0' }}>
+              style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', fontSize: '18px', fontWeight: 700, padding: '14px 0', color: path === item.path ? '#185FA5' : '#0A0A0A' }}>
               {item.label}
             </button>
           ))}
@@ -621,7 +635,7 @@ function LandingPage() {
   const [liveStats, setLiveStats] = useState({ calls: 0, live: 0, segments: 0 });
 
   useEffect(() => {
-    supabase.from('recommendations').select('id, status, segment', { count: 'exact' })
+    supabase.from('recommendations_feed').select('id, status, segment', { count: 'exact' })
       .neq('status', 'draft')
       .then(({ data, count }) => {
         const segments = [...new Set((data || []).map(r => r.segment))].length;
@@ -1221,43 +1235,50 @@ function FaqItem({ q, a }) {
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
 // ─── AUTH LAYOUT WRAPPER ──────────────────────────────────────────────────────
 function AuthLayout({ title, subtitle, children }) {
+  const isMobile = useIsMobile(860);
   return (
-    <div style={{ minHeight: '100vh', background: '#FEFDFB', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', minHeight: '560px' }}>
-        {/* Left trust panel */}
-        <div style={{ background: '#0f172a', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+    <div style={{ minHeight: '100vh', background: '#FEFDFB', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? '0' : '20px' }}>
+      <div style={{ width: '100%', maxWidth: '900px', display: isMobile ? 'flex' : 'grid', flexDirection: isMobile ? 'column' : undefined, gridTemplateColumns: isMobile ? undefined : '1fr 1fr', borderRadius: isMobile ? 0 : '20px', overflow: 'hidden', boxShadow: isMobile ? 'none' : '0 4px 32px rgba(0,0,0,0.10)', minHeight: isMobile ? '100vh' : '560px' }}>
+        {/* Left trust panel — compact banner on mobile, full panel on desktop */}
+        <div style={{ background: '#0f172a', padding: isMobile ? '28px 24px' : '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: isMobile ? 'flex-start' : 'space-between' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: isMobile ? '16px' : '48px' }}>
               <div style={{ ...S.navLogoIcon }}><span>📈</span></div>
               <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{APP_NAME}</span>
             </div>
-            <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '12px', letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: isMobile ? '19px' : '26px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '10px', letterSpacing: '-0.02em' }}>
               Research-backed stock calls for every trader
             </h2>
-            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '36px' }}>
-              SEBI Registered Research Analyst providing equity, F&O, and commodity research with complete transparency.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {[
-                { icon: '🛡️', text: 'SEBI Registered Research Analyst' },
-                { icon: '📊', text: 'Live calls across Equity, F&O & Commodities' },
-                { icon: '📈', text: 'Complete track record — every call logged' },
-                { icon: '🔒', text: 'Transparent research, no guaranteed returns' },
-              ].map((t, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '1px' }}>{t.icon}</span>
-                  <span style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.5 }}>{t.text}</span>
+            {!isMobile && (
+              <>
+                <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '36px' }}>
+                  SEBI Registered Research Analyst providing equity, F&O, and commodity research with complete transparency.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {[
+                    { icon: '🛡️', text: 'SEBI Registered Research Analyst' },
+                    { icon: '📊', text: 'Live calls across Equity, F&O & Commodities' },
+                    { icon: '📈', text: 'Complete track record — every call logged' },
+                    { icon: '🔒', text: 'Transparent research, no guaranteed returns' },
+                  ].map((t, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                      <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '1px' }}>{t.icon}</span>
+                      <span style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.5 }}>{t.text}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
-          <p style={{ fontSize: '11px', color: '#475569', lineHeight: 1.6 }}>
-            {SEBI_REG} · {COMPANY_NAME}<br />
-            Investment involves risk of loss. Research only, not advice.
-          </p>
+          {!isMobile && (
+            <p style={{ fontSize: '11px', color: '#475569', lineHeight: 1.6 }}>
+              {SEBI_REG} · {COMPANY_NAME}<br />
+              Investment involves risk of loss. Research only, not advice.
+            </p>
+          )}
         </div>
         {/* Right form panel */}
-        <div style={{ background: '#FEFDFB', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ background: '#FEFDFB', padding: isMobile ? '28px 20px 40px' : '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: isMobile ? 1 : undefined }}>
           <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0A0A0A', marginBottom: '6px', letterSpacing: '-0.02em' }}>{title}</h1>
           {subtitle && <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '28px' }}>{subtitle}</p>}
           {children}
@@ -1524,7 +1545,7 @@ function Dashboard({ user, userProfile, riskAccepted, setRiskAccepted }) {
   }, []);
 
   const fetchRecs = async () => {
-    const { data } = await supabase.from('recommendations')
+    const { data } = await supabase.from('recommendations_feed')
       .select('*')
       .in('status', ['live', 'near_target', 'near_sl'])
       .order('published_at', { ascending: false })
@@ -1644,7 +1665,7 @@ function MyPerformanceWidget({ userProfile }) {
   const { t } = useLang();
 
   useEffect(() => {
-    supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: true })
+    supabase.from('recommendations_feed').select('*').neq('status', 'draft').order('published_at', { ascending: true })
       .then(({ data }) => { setRecs(data || []); setLoading(false); });
   }, []);
 
@@ -1882,7 +1903,7 @@ function ScreenersPage({ user, userProfile }) {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false }),
+      supabase.from('recommendations_feed').select('*').neq('status', 'draft').order('published_at', { ascending: false }),
       supabase.from('screener_results').select('*').in('category', ['breakouts', 'momentum']).order('metric_value', { ascending: false }),
     ]).then(([recsRes, marketRes]) => {
       setRecs(recsRes.data || []);
@@ -2083,7 +2104,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
   }, [recs, search, filters, sort, forceStatus, userProfile, segmentGroup, horizonFilter]);
 
   const fetchRecs = async () => {
-    const { data } = await supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false });
+    const { data } = await supabase.from('recommendations_feed').select('*').neq('status', 'draft').order('published_at', { ascending: false });
     setRecs(data || []);
     setLoading(false);
   };
@@ -2581,7 +2602,7 @@ function RecommendationDetailPage({ id, userProfile }) {
   const [quotaChecked, setQuotaChecked] = useState(false);
 
   useEffect(() => {
-    supabase.from('recommendations').select('*').eq('id', id).single().then(({ data }) => {
+    supabase.from('recommendations_feed').select('*').eq('id', id).single().then(({ data }) => {
       setRec(data);
       setLoading(false);
     });
@@ -2601,7 +2622,7 @@ function RecommendationDetailPage({ id, userProfile }) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     if (new Date(rec.published_at) < monthStart) { setQuotaLocked(false); setQuotaChecked(true); return; }
-    supabase.from('recommendations').select('id,published_at,plan_required')
+    supabase.from('recommendations_feed').select('id,published_at,plan_required')
       .in('status', LIVE_GROUP)
       .gte('published_at', monthStart.toISOString())
       .order('published_at', { ascending: true })
@@ -2944,7 +2965,7 @@ function NotificationsPage({ user, userProfile }) {
     if (!user) return;
     Promise.all([
       supabase.from('admin_notifications').select('*').order('created_at', { ascending: false }).limit(30),
-      supabase.from('recommendations').select('id, symbol, stock_name, action, status, published_at, entry_price, target1, stop_loss').neq('status', 'draft').order('published_at', { ascending: false }).limit(20),
+      supabase.from('recommendations_feed').select('id, symbol, stock_name, action, status, published_at, entry_price, target1, stop_loss').neq('status', 'draft').order('published_at', { ascending: false }).limit(20),
     ]).then(([n, r]) => {
       const plan = userProfile?.plan_id || 'basic';
       const filtered = (n.data || []).filter(notif => notif.plan_target === 'all' || notif.plan_target === plan);
@@ -3176,7 +3197,7 @@ function ReportsPage({ user, userProfile }) {
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
 
   useEffect(() => {
-    supabase.from('recommendations')
+    supabase.from('recommendations_feed')
       .select('id, symbol, stock_name, report_url, chart_url, published_at, plan_required, segment, action')
       .not('report_url', 'is', null)
       .order('published_at', { ascending: false })
@@ -3676,7 +3697,7 @@ function OnboardingPage({ user, userProfile }) {
   const [recommended, setRecommended] = useState(null);
 
   useEffect(() => {
-    supabase.from('recommendations').select('*').eq('status', 'live').limit(3)
+    supabase.from('recommendations_feed').select('*').eq('status', 'live').limit(3)
       .then(({ data }) => setLiveCalls(data || []));
   }, []);
 
@@ -6962,7 +6983,7 @@ function PerformancePage() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    supabase.from('recommendations').select('*').order('published_at', { ascending: true }).then(({ data }) => {
+    supabase.from('recommendations_track_record').select('*').order('published_at', { ascending: true }).then(({ data }) => {
       setRecs(data || []);
       setLoading(false);
     });
@@ -7396,12 +7417,20 @@ function CareersPage() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  // Best-effort upload — if the 'staff-applications' storage bucket is missing
+  // or misconfigured, we log it and return null rather than throwing, so a
+  // storage-side problem never blocks the applicant from submitting the form.
   const uploadDoc = async (file, prefix) => {
-    if (!file) return null;
-    const path = `${prefix}-${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage.from('staff-applications').upload(path, file);
-    if (error) throw error;
-    return path;
+    if (!file) return { path: null, failed: false };
+    try {
+      const path = `${prefix}-${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from('staff-applications').upload(path, file);
+      if (error) throw error;
+      return { path, failed: false };
+    } catch (e) {
+      console.warn(`Document upload skipped (${prefix}):`, e.message);
+      return { path: null, failed: true };
+    }
   };
 
   const handleSubmit = async () => {
@@ -7411,20 +7440,24 @@ function CareersPage() {
     }
     setSubmitting(true); setMsg('');
     try {
-      const [nism_cert_path, degree_cert_path, id_proof_path] = await Promise.all([
+      const [nism, degree, idProof] = await Promise.all([
         uploadDoc(files.nism, 'nism'),
         uploadDoc(files.degree, 'degree'),
         uploadDoc(files.id_proof, 'idproof'),
       ]);
       const { error } = await supabase.from('staff_applications').insert([{
-        ...form, nism_cert_path, degree_cert_path, id_proof_path,
+        ...form, nism_cert_path: nism.path, degree_cert_path: degree.path, id_proof_path: idProof.path,
       }]);
       setSubmitting(false);
       if (error) { setMsg('Error: ' + error.message); return; }
+      const anyUploadFailed = nism.failed || degree.failed || idProof.failed;
+      if (anyUploadFailed) {
+        setMsg('Application submitted. One or more documents could not be attached — our HR team will follow up separately for those.');
+      }
       setSubmitted(true);
     } catch (e) {
       setSubmitting(false);
-      setMsg('Error uploading documents: ' + e.message);
+      setMsg('Error: ' + e.message);
     }
   };
 
@@ -7435,6 +7468,7 @@ function CareersPage() {
           <span style={{ fontSize: '40px' }}>✅</span>
           <h2 style={{ ...S.h3, marginTop: '12px' }}>Application submitted</h2>
           <p style={{ ...S.muted, marginTop: '8px' }}>Our HR team will review your application and get back to you.</p>
+          {msg && <div style={{ background: '#FFF7E6', color: '#7A4E00', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginTop: '16px', textAlign: 'left' }}>{msg}</div>}
           <button onClick={() => navigate('/')} style={{ ...S.btn, ...S.btnPrimary, marginTop: '20px' }}>Back to home</button>
         </div>
       </div>
