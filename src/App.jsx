@@ -431,6 +431,19 @@ function Navbar({ user, userProfile, onLogout }) {
   const { t } = useLang();
   const path = getPath();
   const isMobile = useIsMobile();
+  const [recentNotifs, setRecentNotifs] = useState([]);
+
+  useEffect(() => {
+    if (!user) { setRecentNotifs([]); return; }
+    const plan = userProfile?.plan_id || 'basic';
+    supabase.from('admin_notifications').select('*').order('created_at', { ascending: false }).limit(20)
+      .then(({ data }) => {
+        const filtered = (data || []).filter(n => n.plan_target === 'all' || n.plan_target === plan).slice(0, 3);
+        setRecentNotifs(filtered);
+      });
+  }, [user, userProfile?.plan_id]);
+
+  const notifTypeIcon = { info: 'ℹ️', alert: '🔴', success: '✅', call: '📊', market: '📈' };
 
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); return; }
@@ -544,19 +557,19 @@ function Navbar({ user, userProfile, onLogout }) {
               <button onClick={() => setNotifOpen(!notifOpen)}
                 style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, position: 'relative' }}>
                 🔔
-                <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
+                {recentNotifs.length > 0 && (
+                  <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{recentNotifs.length}</span>
+                )}
               </button>
               {notifOpen && (
-                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#e2e8f0', border: '1px solid #334155', borderRadius: '12px', padding: '16px', width: '300px', zIndex: 100 }}>
-                  <p style={{ fontWeight: 700, marginBottom: '12px' }}>{t('nav_notifications')}</p>
-                  {[
-                    { title: 'New Recommendation', msg: 'RELIANCE BUY call published', type: '📊' },
-                    { title: 'Target Achieved', msg: 'TCS Target 1 hit — Book partial profits', type: '🎯' },
-                    { title: 'Subscription Reminder', msg: 'Your subscription expires in 5 days', type: '⏰' },
-                  ].map((n, i) => (
-                    <div key={i} style={{ padding: '10px 0', borderBottom: i < 2 ? '1px solid #334155' : 'none' }}>
-                      <p style={{ fontSize: '13px', fontWeight: 600 }}>{n.type} {n.title}</p>
-                      <p style={{ fontSize: '12px', ...S.muted, marginTop: '2px' }}>{n.msg}</p>
+                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#fff', border: '1px solid #E5E3DA', borderRadius: '12px', padding: '16px', width: '300px', zIndex: 100, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                  <p style={{ fontWeight: 700, marginBottom: '12px', color: '#0A0A0A' }}>{t('nav_notifications')}</p>
+                  {recentNotifs.length === 0 ? (
+                    <p style={{ fontSize: '13px', color: '#94a3b8', padding: '8px 0' }}>No notifications yet.</p>
+                  ) : recentNotifs.map((n, i) => (
+                    <div key={n.id} style={{ padding: '10px 0', borderBottom: i < recentNotifs.length - 1 ? '1px solid #E5E3DA' : 'none' }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#0A0A0A' }}>{notifTypeIcon[n.type] || 'ℹ️'} {n.title}</p>
+                      <p style={{ fontSize: '12px', ...S.muted, marginTop: '2px' }}>{n.body}</p>
                     </div>
                   ))}
                   <button onClick={() => navigate('/notifications')} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, width: '100%', justifyContent: 'center', marginTop: '8px' }}>{t('nav_viewall')}</button>
@@ -571,9 +584,9 @@ function Navbar({ user, userProfile, onLogout }) {
                 {(userProfile?.full_name || user.email || 'U')[0].toUpperCase()}
               </button>
               {userMenu && (
-                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#e2e8f0', border: '1px solid #334155', borderRadius: '12px', padding: '8px', width: '200px', zIndex: 100 }}>
+                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#fff', border: '1px solid #E5E3DA', borderRadius: '12px', padding: '8px', width: '200px', zIndex: 100, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
                   <p style={{ padding: '8px 12px', fontSize: '12px', ...S.muted }}>{user.email}</p>
-                  <div style={{ height: '1px', background: '#334155', margin: '4px 0' }} />
+                  <div style={{ height: '1px', background: '#E5E3DA', margin: '4px 0' }} />
                   {[
                     { label: '📊 ' + t('nav_dashboard'), path: '/dashboard' },
                     { label: '⚙️ ' + t('nav_profile'), path: '/profile' },
@@ -585,7 +598,7 @@ function Navbar({ user, userProfile, onLogout }) {
                       {item.label}
                     </button>
                   ))}
-                  <div style={{ height: '1px', background: '#334155', margin: '4px 0' }} />
+                  <div style={{ height: '1px', background: '#E5E3DA', margin: '4px 0' }} />
                   <button onClick={onLogout} style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#ef4444' }}>
                     🚪 {t('nav_signout')}
                   </button>
@@ -1457,6 +1470,7 @@ function RegisterPage({ setUser, setUserProfile }) {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const isMobile = useIsMobile(860);
 
   const handleRegister = async () => {
     if (!form.fullName || !form.email || !form.password) { setErr('Please fill all required fields.'); return; }
@@ -1485,7 +1499,7 @@ function RegisterPage({ setUser, setUserProfile }) {
   return (
     <AuthLayout title="Create account" subtitle="Start your research journey with StockVista.">
       {err && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{err}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
         <div style={S.formGroup}>
           <label style={S.label}>Full Name *</label>
           <input style={S.input} placeholder="Nishit Jain" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
@@ -1499,7 +1513,7 @@ function RegisterPage({ setUser, setUserProfile }) {
         <label style={S.label}>Email *</label>
         <input style={S.input} type="email" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
         <div style={S.formGroup}>
           <label style={S.label}>Password *</label>
           <input style={S.input} type="password" placeholder="Min 8 chars" value={form.password} onChange={e => set('password', e.target.value)} />
@@ -2808,6 +2822,7 @@ function RecommendationDetailPage({ id, userProfile }) {
 function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
+  const isMobile = useIsMobile();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const handle = () => {
     if (!form.name || !form.email || !form.message) return;
@@ -2853,7 +2868,7 @@ function ContactPage() {
               ) : (
                 <>
                   <h3 style={{ ...S.h3, marginBottom: '20px' }}>Send a Message</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                     <div style={S.formGroup}>
                       <label style={S.label}>Your Name *</label>
                       <input style={S.input} placeholder="Nishit Jain" value={form.name} onChange={e => set('name', e.target.value)} />
