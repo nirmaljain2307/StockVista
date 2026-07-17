@@ -30,10 +30,10 @@ const CONTACT_PHONE = '+91-7003950585';
 // any existing admin (is_admin=true) that hasn't been assigned an explicit
 // staff_role yet, so older admin accounts keep full access unchanged.
 const ROLE_TABS = {
-  owner: ['recommendations', 'add_recommendation', 'approvals', 'users', 'analytics', 'revenue', 'notifications', 'email', 'coupons', 'bulk', 'blog', 'performance', 'settings', 'audit', 'staff'],
+  owner: ['recommendations', 'add_recommendation', 'approvals', 'applications', 'users', 'analytics', 'revenue', 'notifications', 'email', 'coupons', 'bulk', 'blog', 'performance', 'settings', 'audit', 'staff'],
   research_analyst: ['recommendations', 'add_recommendation', 'performance', 'audit'],
   finance: ['revenue', 'coupons', 'audit'],
-  hr: ['staff'],
+  hr: ['staff', 'applications'],
   marketing: ['blog', 'notifications', 'email', 'coupons'],
   compliance_officer: ['audit'],
   customer_support: ['users', 'notifications'],
@@ -49,7 +49,7 @@ const effectiveStaffRole = (userProfile) => userProfile?.staff_role || (userProf
 
 const TAB_LABELS = {
   recommendations: 'Recommendations', add_recommendation: 'Add call', approvals: 'Approvals',
-  users: 'Users', analytics: 'Analytics', revenue: 'Revenue', notifications: 'Notifications',
+  applications: 'Applications', users: 'Users', analytics: 'Analytics', revenue: 'Revenue', notifications: 'Notifications',
   email: 'Email', coupons: 'Coupons', bulk: 'Bulk actions', blog: 'Blog', performance: 'Performance',
   settings: 'Settings', audit: 'Audit log', staff: 'Staff and roles',
 };
@@ -832,6 +832,7 @@ function Footer() {
     Company: [
       { label: 'About Us', path: '/about' },
       { label: 'Contact', path: '/contact' },
+      { label: 'Careers', path: '/careers' },
       { label: 'Grievance', path: '/grievance' },
       { label: 'Disclosure', path: '/disclosure' },
     ],
@@ -4343,6 +4344,67 @@ function AdminPanel({ user, userProfile }) {
     fetchPendingCoupons();
   };
 
+  // Staff applications (careers page submissions)
+  const [applications, setApplications] = useState([]);
+  const [appDocUrls, setAppDocUrls] = useState({});
+  const [hireModalApp, setHireModalApp] = useState(null);
+  const [hirePassword, setHirePassword] = useState('');
+  const [hireMsg, setHireMsg] = useState('');
+  const [hireLoading, setHireLoading] = useState(false);
+
+  const fetchApplications = async () => {
+    const { data } = await supabase.from('staff_applications').select('*').in('status', ['pending', 'recommended']).order('created_at', { ascending: false });
+    setApplications(data || []);
+  };
+
+  const getDocUrl = async (path) => {
+    if (!path) return null;
+    if (appDocUrls[path]) return appDocUrls[path];
+    const { data } = await supabase.storage.from('staff-applications').createSignedUrl(path, 300);
+    if (data?.signedUrl) setAppDocUrls(prev => ({ ...prev, [path]: data.signedUrl }));
+    return data?.signedUrl || null;
+  };
+
+  // HR can recommend an applicant, but cannot create the account themselves —
+  // only the owner can, with password re-confirmation, same principle as
+  // recommendation and coupon approvals.
+  const recommendApplication = async (app) => {
+    await supabase.from('staff_applications').update({ status: 'recommended', recommended_by_email: user.email }).eq('id', app.id);
+    await logAudit('RECOMMEND_APPLICATION', 'staff_application', app.id, { email: app.email, role_applied: app.role_applied });
+    fetchApplications();
+  };
+
+  const rejectApplication = async (app) => {
+    if (!confirm(`Reject ${app.full_name}'s application?`)) return;
+    await supabase.from('staff_applications').update({ status: 'rejected', reviewed_by_email: user.email }).eq('id', app.id);
+    await logAudit('REJECT_APPLICATION', 'staff_application', app.id, { email: app.email, role_applied: app.role_applied });
+    fetchApplications();
+  };
+
+  const confirmHire = async () => {
+    if (!hireModalApp || !hirePassword) return;
+    setHireLoading(true); setHireMsg('');
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: hirePassword });
+    if (authError) { setHireMsg('Incorrect password.'); setHireLoading(false); return; }
+    try {
+      const res = await fetch('/api/invite-staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: hireModalApp.email, role: hireModalApp.role_applied, invitedByEmail: user.email }),
+      });
+      const json = await res.json();
+      setHireLoading(false);
+      if (!res.ok) { setHireMsg('Error: ' + (json.error || 'Could not send invite.')); return; }
+      await supabase.from('staff_applications').update({ status: 'approved', reviewed_by_email: user.email }).eq('id', hireModalApp.id);
+      await logAudit('HIRE_APPLICANT', 'staff_application', hireModalApp.id, { email: hireModalApp.email, role: hireModalApp.role_applied });
+      setHireModalApp(null); setHirePassword(''); setHireMsg('');
+      fetchApplications();
+    } catch (e) {
+      setHireLoading(false);
+      setHireMsg('Network error sending invite.');
+    }
+  };
+
   const confirmApprove = async () => {
     if (!approveModalRec || !approvePassword) return;
     setApproveLoading(true); setApproveMsg('');
@@ -4418,6 +4480,8 @@ function AdminPanel({ user, userProfile }) {
       await fetchStaffList();
     } else if (activeTab === 'approvals') {
       await fetchPendingApprovals();
+    } else if (activeTab === 'applications') {
+      await fetchApplications();
     }
     setLoading(false);
   };
@@ -4591,6 +4655,7 @@ function AdminPanel({ user, userProfile }) {
               { key: 'recommendations', label: '📊 Recommendations' },
               { key: 'add_recommendation', label: '➕ Add Call' },
               { key: 'approvals', label: '✅ Approvals' },
+              { key: 'applications', label: '📋 Applications' },
               { key: 'users', label: '👥 Users' },
               { key: 'analytics', label: '📈 Analytics' },
               { key: 'revenue', label: '💰 Revenue' },
@@ -6033,6 +6098,97 @@ function AdminPanel({ user, userProfile }) {
             </div>
           )}
 
+          {activeTab === 'applications' && (
+            <div>
+              <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h3 style={{ ...S.h4, marginBottom: '2px' }}>Applications</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>{applications.length} application{applications.length === 1 ? '' : 's'} awaiting review</p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading...</div>
+              ) : applications.length === 0 ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
+                  <p style={S.muted}>No applications waiting right now.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {applications.map(app => (
+                    <div key={app.id} style={{ ...S.card, padding: '16px 18px' }}>
+                      <div style={{ ...S.flexBetween, marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: '14px' }}>{app.full_name}</p>
+                          <p style={{ fontSize: '12px', color: '#64748b' }}>Applying for {STAFF_ROLE_LABELS[app.role_applied] || app.role_applied}</p>
+                        </div>
+                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px', background: app.status === 'recommended' ? '#E6F1FB' : '#FAF9F5', color: app.status === 'recommended' ? '#0C447C' : '#5F5E5A' }}>
+                          {app.status === 'recommended' ? 'Recommended for hire' : 'Pending review'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '6px', fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                        <p style={{ margin: 0 }}>{app.email}</p>
+                        <p style={{ margin: 0 }}>{app.phone}</p>
+                        <p style={{ margin: 0 }}>{app.qualification || '—'}</p>
+                        <p style={{ margin: 0 }}>{app.certifications || '—'}</p>
+                      </div>
+                      {app.experience && <p style={{ fontSize: '12px', color: '#334155', marginBottom: '10px' }}>{app.experience}</p>}
+
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                        {[
+                          { label: 'NISM certificate', path: app.nism_cert_path },
+                          { label: 'Degree certificate', path: app.degree_cert_path },
+                          { label: 'ID proof', path: app.id_proof_path },
+                        ].filter(d => d.path).map(d => (
+                          <button key={d.label} onClick={async () => { const url = await getDocUrl(d.path); if (url) window.open(url, '_blank'); }}
+                            style={{ fontSize: '11px', padding: '5px 10px', borderRadius: '8px', background: '#FAF9F5', border: '1px solid #E5E3DA', color: '#0A0A0A', cursor: 'pointer' }}>
+                            📎 {d.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {myRole === 'hr' && app.status === 'pending' && (
+                          <>
+                            <button onClick={() => recommendApplication(app)} style={{ ...S.btn, ...S.btnSm, background: '#185FA5', color: '#fff' }}>Recommend for hire</button>
+                            <button onClick={() => rejectApplication(app)} style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>Reject</button>
+                          </>
+                        )}
+                        {myRole === 'owner' && (
+                          <>
+                            <button onClick={() => { setHireModalApp(app); setHirePassword(''); setHireMsg(''); }} style={{ ...S.btn, ...S.btnSm, background: '#185FA5', color: '#fff' }}>Hire and invite</button>
+                            <button onClick={() => rejectApplication(app)} style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>Reject</button>
+                          </>
+                        )}
+                      </div>
+                      {app.status === 'pending' && myRole === 'hr' && (
+                        <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '8px' }}>Owner still confirms with password before an account is created.</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {hireModalApp && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                  <div style={{ ...S.card, maxWidth: '380px', width: '100%' }}>
+                    <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Confirm your password to hire</p>
+                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>{hireModalApp.full_name} will get an invite email as {STAFF_ROLE_LABELS[hireModalApp.role_applied]}.</p>
+                    {hireMsg && <p style={{ fontSize: '12px', color: '#dc2626', marginBottom: '10px' }}>{hireMsg}</p>}
+                    <input type="password" style={{ ...S.input, marginBottom: '12px' }} placeholder="Your account password" value={hirePassword} onChange={e => setHirePassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirmHire()} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={confirmHire} disabled={hireLoading || !hirePassword} style={{ ...S.btn, ...S.btnPrimary, flex: 1, opacity: (hireLoading || !hirePassword) ? 0.6 : 1 }}>
+                        {hireLoading ? 'Confirming...' : 'Confirm and send invite'}
+                      </button>
+                      <button onClick={() => { setHireModalApp(null); setHirePassword(''); }} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'staff' && (
             <div>
               <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -7008,6 +7164,136 @@ function InvestorCharterPage() {
   );
 }
 
+function CareersPage() {
+  const empty = { full_name: '', phone: '', email: '', role_applied: 'research_analyst', qualification: '', experience: '', certifications: '' };
+  const [form, setForm] = useState(empty);
+  const [files, setFiles] = useState({ nism: null, degree: null, id_proof: null });
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const uploadDoc = async (file, prefix) => {
+    if (!file) return null;
+    const path = `${prefix}-${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from('staff-applications').upload(path, file);
+    if (error) throw error;
+    return path;
+  };
+
+  const handleSubmit = async () => {
+    if (!form.full_name || !form.phone || !form.email || !form.role_applied) {
+      setMsg('Name, phone, email and role are required.');
+      return;
+    }
+    setSubmitting(true); setMsg('');
+    try {
+      const [nism_cert_path, degree_cert_path, id_proof_path] = await Promise.all([
+        uploadDoc(files.nism, 'nism'),
+        uploadDoc(files.degree, 'degree'),
+        uploadDoc(files.id_proof, 'idproof'),
+      ]);
+      const { error } = await supabase.from('staff_applications').insert([{
+        ...form, nism_cert_path, degree_cert_path, id_proof_path,
+      }]);
+      setSubmitting(false);
+      if (error) { setMsg('Error: ' + error.message); return; }
+      setSubmitted(true);
+    } catch (e) {
+      setSubmitting(false);
+      setMsg('Error uploading documents: ' + e.message);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div style={{ paddingTop: '100px', minHeight: '100vh', textAlign: 'center' }}>
+        <div style={{ maxWidth: '440px', margin: '0 auto', padding: '0 20px' }}>
+          <span style={{ fontSize: '40px' }}>✅</span>
+          <h2 style={{ ...S.h3, marginTop: '12px' }}>Application submitted</h2>
+          <p style={{ ...S.muted, marginTop: '8px' }}>Our HR team will review your application and get back to you.</p>
+          <button onClick={() => navigate('/')} style={{ ...S.btn, ...S.btnPrimary, marginTop: '20px' }}>Back to home</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
+      <div style={{ ...S.section, paddingTop: '40px', paddingBottom: '60px' }}>
+        <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+          <h1 style={S.h2}>Join StockVista</h1>
+          <p style={{ ...S.muted, marginTop: '4px', marginBottom: '24px' }}>Apply for a role — our HR team will review your application.</p>
+
+          {msg && <div style={{ background: '#FCEBEB', color: '#791F1F', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{msg}</div>}
+
+          <div style={{ ...S.card }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={S.label}>Full Name *</label>
+                <input style={S.input} value={form.full_name} onChange={e => set('full_name', e.target.value)} />
+              </div>
+              <div>
+                <label style={S.label}>Role Applying For *</label>
+                <select style={S.select} value={form.role_applied} onChange={e => set('role_applied', e.target.value)}>
+                  <option value="research_analyst">Research Analyst</option>
+                  <option value="finance">Finance</option>
+                  <option value="hr">HR</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="compliance_officer">Compliance Officer</option>
+                  <option value="customer_support">Customer Support</option>
+                </select>
+              </div>
+              <div>
+                <label style={S.label}>Phone Number *</label>
+                <input style={S.input} value={form.phone} onChange={e => set('phone', e.target.value)} />
+              </div>
+              <div>
+                <label style={S.label}>Email Address *</label>
+                <input style={S.input} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+              </div>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Highest Qualification</label>
+              <input style={S.input} placeholder="e.g. B.Com, MBA Finance" value={form.qualification} onChange={e => set('qualification', e.target.value)} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Experience</label>
+              <textarea style={S.textarea} placeholder="Years of experience and previous roles" value={form.experience} onChange={e => set('experience', e.target.value)} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Certifications</label>
+              <input style={S.input} placeholder="e.g. NISM Series XV, CFA Level 2" value={form.certifications} onChange={e => set('certifications', e.target.value)} />
+            </div>
+
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '16px', marginBottom: '8px' }}>Documents</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))', gap: '10px', marginBottom: '16px' }}>
+              <div>
+                <label style={S.label}>NISM Certificate</label>
+                <input style={S.input} type="file" accept="application/pdf,image/*" onChange={e => setFiles(f => ({ ...f, nism: e.target.files[0] }))} />
+              </div>
+              <div>
+                <label style={S.label}>Degree Certificate</label>
+                <input style={S.input} type="file" accept="application/pdf,image/*" onChange={e => setFiles(f => ({ ...f, degree: e.target.files[0] }))} />
+              </div>
+              <div>
+                <label style={S.label}>ID Proof (KYC)</label>
+                <input style={S.input} type="file" accept="application/pdf,image/*" onChange={e => setFiles(f => ({ ...f, id_proof: e.target.files[0] }))} />
+              </div>
+            </div>
+
+            <button onClick={handleSubmit} disabled={submitting} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', opacity: submitting ? 0.7 : 1 }}>
+              {submitting ? 'Submitting...' : 'Submit Application'}
+            </button>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
 function GrievancePage() {
   return (
     <LegalPage title="Grievance Redressal" icon="📮">
@@ -7640,6 +7926,7 @@ export default function App() {
     if (path === '/terms') return <TermsPage />;
     if (path === '/refund') return <RefundPage />;
     if (path === '/grievance') return <GrievancePage />;
+    if (path === '/careers') return <CareersPage />;
     if (path === '/investor-charter') return <InvestorCharterPage />;
     if (path === '/disclosure' || path === '/sebi-disclosure') return <SEBIDisclosurePage />;
     if (path === '/faq') return <FAQPage />;
