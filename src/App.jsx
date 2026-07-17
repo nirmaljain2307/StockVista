@@ -4227,11 +4227,52 @@ function AdminPanel({ user, userProfile }) {
   const [staffSelectedRole, setStaffSelectedRole] = useState('research_analyst');
   const [staffNotFound, setStaffNotFound] = useState(false);
   const [staffInviteLoading, setStaffInviteLoading] = useState(false);
+  const [showAddStaffPopover, setShowAddStaffPopover] = useState(false);
+
+  // Single-step add: search and assign/invite happen together instead of two
+  // separate actions — if the email already has an account, the role is
+  // assigned directly; if not, an invite is sent automatically.
+  const addOrInviteStaff = async () => {
+    if (!staffSearchEmail.trim()) return;
+    setStaffSearchMsg(''); setStaffInviteLoading(true);
+    const { data } = await supabase.from('users').select('*').ilike('email', staffSearchEmail.trim()).limit(1);
+    if (data && data.length > 0) {
+      const { error } = await supabase.from('users').update({ staff_role: staffSelectedRole }).eq('id', data[0].id);
+      setStaffInviteLoading(false);
+      if (error) { setStaffSearchMsg('Error: ' + error.message); return; }
+      await logAudit('ASSIGN_STAFF_ROLE', 'user', data[0].id, { email: data[0].email, role: staffSelectedRole });
+      setStaffSearchMsg(`✅ ${data[0].email} assigned as ${STAFF_ROLE_LABELS[staffSelectedRole]}`);
+      setStaffSearchEmail(''); setShowAddStaffPopover(false);
+      fetchStaffList();
+      return;
+    }
+    try {
+      const res = await fetch('/api/invite-staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: staffSearchEmail.trim(), role: staffSelectedRole, invitedByEmail: user.email }),
+      });
+      const json = await res.json();
+      setStaffInviteLoading(false);
+      if (!res.ok) { setStaffSearchMsg('Error: ' + (json.error || 'Could not send invite.')); return; }
+      await logAudit('INVITE_STAFF_MEMBER', 'user', json.userId || 'new', { email: staffSearchEmail.trim(), role: staffSelectedRole });
+      setStaffSearchMsg(`✅ Invite sent to ${staffSearchEmail.trim()} as ${STAFF_ROLE_LABELS[staffSelectedRole]}`);
+      setStaffSearchEmail(''); setShowAddStaffPopover(false);
+      fetchStaffList();
+    } catch (e) {
+      setStaffInviteLoading(false);
+      setStaffSearchMsg('Network error sending invite.');
+    }
+  };
+
+  const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
 
   const fetchStaffList = async () => {
     const { data } = await supabase.from('users').select('*').not('staff_role', 'is', null).order('created_at', { ascending: true });
     setStaffList(data || []);
     fetchStaffActivity();
+    const { count } = await supabase.from('staff_applications').select('id', { count: 'exact', head: true }).in('status', ['pending', 'recommended']);
+    setPendingApplicationsCount(count || 0);
   };
 
   const [staffActivityCounts, setStaffActivityCounts] = useState({});
@@ -6196,6 +6237,36 @@ function AdminPanel({ user, userProfile }) {
                   <h3 style={{ ...S.h4, marginBottom: '2px' }}>Staff and Roles</h3>
                   <p style={{ fontSize: '12px', color: '#64748b' }}>{staffList.length} staff member{staffList.length === 1 ? '' : 's'} · Each role sees only its own admin tabs</p>
                 </div>
+                <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+                  <button onClick={() => setActiveTab('applications')} style={{ ...S.btn, ...S.btnSecondary, position: 'relative' }}>
+                    📋 Applications
+                    {pendingApplicationsCount > 0 && (
+                      <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#791F1F', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingApplicationsCount}</span>
+                    )}
+                  </button>
+                  <button onClick={() => { setShowAddStaffPopover(s => !s); setStaffSearchMsg(''); setStaffSearchEmail(''); }} style={{ ...S.btn, ...S.btnPrimary }}>+ Add staff</button>
+
+                  {showAddStaffPopover && (
+                    <div style={{ position: 'absolute', top: '44px', right: 0, background: '#FEFDFB', border: '1px solid #E5E3DA', borderRadius: '14px', padding: '16px', width: '280px', zIndex: 200, boxShadow: '0 8px 24px rgba(20,20,15,0.08)' }}>
+                      <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '12px' }}>Add staff member</p>
+                      <input style={{ ...S.input, marginBottom: '10px' }} placeholder="name@example.com" value={staffSearchEmail} onChange={e => setStaffSearchEmail(e.target.value)} />
+                      <select style={{ ...S.select, marginBottom: '14px', width: '100%' }} value={staffSelectedRole} onChange={e => setStaffSelectedRole(e.target.value)}>
+                        <option value="research_analyst">Research Analyst</option>
+                        <option value="finance">Finance</option>
+                        <option value="hr">HR</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="compliance_officer">Compliance Officer</option>
+                        <option value="customer_support">Customer Support</option>
+                        <option value="owner">Owner</option>
+                      </select>
+                      {staffSearchMsg && <p style={{ fontSize: '11px', marginBottom: '10px', color: staffSearchMsg.startsWith('✅') ? '#059669' : '#dc2626' }}>{staffSearchMsg}</p>}
+                      <button onClick={addOrInviteStaff} disabled={staffInviteLoading || !staffSearchEmail.trim()} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', opacity: (staffInviteLoading || !staffSearchEmail.trim()) ? 0.6 : 1 }}>
+                        {staffInviteLoading ? 'Sending...' : 'Send invite'}
+                      </button>
+                      <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '8px' }}>If they already have an account, this assigns the role directly instead.</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Roles overview — generated live from ROLE_TABS, not hardcoded,
@@ -6212,48 +6283,6 @@ function AdminPanel({ user, userProfile }) {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Add staff member */}
-              <div style={{ ...S.card, marginBottom: '20px' }}>
-                <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '10px' }}>Add staff member</p>
-                <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '12px' }}>Search by email — if they already have a StockVista account, assign a role directly. If not, invite them and their account gets created automatically.</p>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                  <input style={{ ...S.input, flex: 1, minWidth: '200px' }} placeholder="Search by email..." value={staffSearchEmail} onChange={e => { setStaffSearchEmail(e.target.value); setStaffNotFound(false); setStaffSearchResult(null); setStaffSearchMsg(''); }} />
-                  <select style={S.select} value={staffSelectedRole} onChange={e => setStaffSelectedRole(e.target.value)}>
-                    <option value="research_analyst">Research Analyst</option>
-                    <option value="finance">Finance</option>
-                    <option value="hr">HR</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="compliance_officer">Compliance Officer</option>
-                    <option value="customer_support">Customer Support</option>
-                    <option value="owner">Owner</option>
-                  </select>
-                  <button onClick={searchStaffByEmail} style={{ ...S.btn, ...S.btnSecondary }}>Search</button>
-                </div>
-                {staffSearchMsg && <p style={{ fontSize: '12px', marginBottom: '10px', color: staffSearchMsg.startsWith('✅') ? '#059669' : '#dc2626' }}>{staffSearchMsg}</p>}
-
-                {staffNotFound && (
-                  <div style={{ background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <p style={{ fontWeight: 700, fontSize: '13px', color: '#0C447C' }}>No account yet for {staffSearchEmail}</p>
-                      <p style={{ fontSize: '11px', color: '#0C447C' }}>Send them an invite — they'll get an email to create their password and log in as {STAFF_ROLE_LABELS[staffSelectedRole]}.</p>
-                    </div>
-                    <button onClick={inviteStaffMember} disabled={staffInviteLoading} style={{ ...S.btn, ...S.btnPrimary, opacity: staffInviteLoading ? 0.6 : 1 }}>
-                      {staffInviteLoading ? 'Sending...' : `Invite as ${STAFF_ROLE_LABELS[staffSelectedRole]}`}
-                    </button>
-                  </div>
-                )}
-
-                {staffSearchResult && (
-                  <div style={{ background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <p style={{ fontWeight: 700, fontSize: '13px' }}>{staffSearchResult.full_name || staffSearchResult.email}</p>
-                      <p style={{ fontSize: '11px', color: '#94a3b8' }}>{staffSearchResult.email}{staffSearchResult.staff_role ? ` · currently ${STAFF_ROLE_LABELS[staffSearchResult.staff_role]}` : ''}</p>
-                    </div>
-                    <button onClick={assignStaffRole} style={{ ...S.btn, ...S.btnPrimary }}>Assign as {STAFF_ROLE_LABELS[staffSelectedRole]}</button>
-                  </div>
-                )}
               </div>
 
               {/* Current staff list */}
