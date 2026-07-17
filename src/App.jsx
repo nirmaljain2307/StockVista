@@ -3287,6 +3287,7 @@ function ReportsPage({ user, userProfile }) {
 
 // ─── WATCHLIST PAGE ───────────────────────────────────────────────────────────
 function WatchlistPage({ user }) {
+  const isMobile = useIsMobile();
   const DEFAULT_SYMBOLS = [
     { sym: 'HDFCBANK', exch: 'NSE' }, { sym: 'RELIANCE', exch: 'NSE' },
     { sym: 'TCS', exch: 'NSE' }, { sym: 'INFY', exch: 'NSE' },
@@ -3625,7 +3626,7 @@ function WatchlistPage({ user }) {
             <h3 style={{ ...S.h4, marginBottom: '4px' }}>🔔 Set Price Alert — {alertModal.sym}</h3>
             <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>Get notified when the price crosses your target.</p>
             {alertMsg && <div style={{ padding: '8px 12px', borderRadius: '8px', marginBottom: '12px', background: alertMsg.startsWith('✅') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: alertMsg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: '12px' }}>{alertMsg}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
               <div>
                 <label style={S.label}>Condition</label>
                 <select style={S.select} value={alertForm.direction} onChange={e => setAlertForm(f => ({ ...f, direction: e.target.value }))}>
@@ -3855,6 +3856,7 @@ function OnboardingPage({ user, userProfile }) {
 
 // ─── PORTFOLIO TRACKER ────────────────────────────────────────────────────────
 function PortfolioPage({ user }) {
+  const isMobile = useIsMobile();
   const [holdings, setHoldings] = useState([]);
   const [soldHistory, setSoldHistory] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -4052,7 +4054,7 @@ function PortfolioPage({ user }) {
                   </div>
                 </div>
                 <div style={{ height: '1px', background: '#fee2e2', margin: '16px 0' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
                   <div>
                     <label style={S.label}>Qty to sell *</label>
                     <input style={S.input} type="number" max={sellModal.qty} placeholder={String(sellModal.qty)} value={sellForm.qty} onChange={e => setSF('qty', e.target.value)} />
@@ -6993,6 +6995,7 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
 
 // ─── PERFORMANCE PAGE ─────────────────────────────────────────────────────────
 function PerformancePage() {
+  const isMobile = useIsMobile();
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -7133,7 +7136,7 @@ function PerformancePage() {
 
           {/* Best / Worst Call Highlight */}
           {(bestCall || worstCall) && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
               {bestCall && (
                 <div style={{ ...S.card, borderLeft: '4px solid #059669' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#059669', marginBottom: '4px' }}>🏆 BEST CALL</div>
@@ -7602,10 +7605,11 @@ function GrievancePage() {
 }
 
 function SEBIDisclosurePage() {
+  const isMobile = useIsMobile();
   return (
     <LegalPage title="SEBI RA Disclosure" icon="🛡️">
       <LegalSection title="Registration Details" icon="📜">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginTop: '8px' }}>
           {[
             { label: 'Analyst Name', value: ANALYST_NAME },
             { label: 'Company', value: COMPANY_NAME },
