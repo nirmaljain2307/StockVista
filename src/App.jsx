@@ -4317,21 +4317,38 @@ function AdminPanel({ user, userProfile }) {
   const [staffInviteLoading, setStaffInviteLoading] = useState(false);
   const [showAddStaffPopover, setShowAddStaffPopover] = useState(false);
 
-  // Single-step add: search and assign/invite happen together instead of two
-  // separate actions — if the email already has an account, the role is
-  // assigned directly; if not, an invite is sent automatically.
+  // Adding staff now always requires a password re-confirmation. If the
+  // person doing it is the Owner, confirming applies the role immediately.
+  // If it's anyone else (e.g. HR), confirming only files a request — it
+  // takes effect once the Owner separately reviews and approves it with
+  // their own password.
+  const [addStaffModal, setAddStaffModal] = useState(null); // { email, userId, role }
+  const [addStaffPassword, setAddStaffPassword] = useState('');
+  const [addStaffLoading, setAddStaffLoading] = useState(false);
+  const [addStaffModalMsg, setAddStaffModalMsg] = useState('');
+
+  const [pendingStaffRequests, setPendingStaffRequests] = useState([]);
+  const [approveRequestModal, setApproveRequestModal] = useState(null); // the request row
+  const [approveRequestPassword, setApproveRequestPassword] = useState('');
+  const [approveRequestLoading, setApproveRequestLoading] = useState(false);
+  const [approveRequestMsg, setApproveRequestMsg] = useState('');
+
+  const fetchPendingStaffRequests = async () => {
+    const { data } = await supabase.from('staff_role_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+    setPendingStaffRequests(data || []);
+  };
+
+  // Single-step add: search happens here; the actual role change (direct
+  // apply for Owner, or a pending request for anyone else) happens in
+  // confirmAddStaff, gated behind a password re-confirmation.
   const addOrInviteStaff = async () => {
     if (!staffSearchEmail.trim()) return;
     setStaffSearchMsg(''); setStaffInviteLoading(true);
     const { data } = await supabase.from('users').select('*').ilike('email', staffSearchEmail.trim()).limit(1);
+    setStaffInviteLoading(false);
     if (data && data.length > 0) {
-      const { error } = await supabase.from('users').update({ staff_role: staffSelectedRole }).eq('id', data[0].id);
-      setStaffInviteLoading(false);
-      if (error) { setStaffSearchMsg('Error: ' + error.message); return; }
-      await logAudit('ASSIGN_STAFF_ROLE', 'user', data[0].id, { email: data[0].email, role: staffSelectedRole });
-      setStaffSearchMsg(`✅ ${data[0].email} assigned as ${STAFF_ROLE_LABELS[staffSelectedRole]}`);
-      setStaffSearchEmail(''); setShowAddStaffPopover(false);
-      fetchStaffList();
+      setAddStaffModal({ email: data[0].email, userId: data[0].id, role: staffSelectedRole });
+      setAddStaffPassword(''); setAddStaffModalMsg('');
       return;
     }
     // Inviting someone with no existing account requires a server-side
@@ -4339,8 +4356,71 @@ function AdminPanel({ user, userProfile }) {
     // which must never run in the browser). That backend endpoint isn't
     // built yet, so for now: tell the admin to have the person register
     // themselves first, then assign their role from here afterward.
-    setStaffInviteLoading(false);
     setStaffSearchMsg(`No account found for ${staffSearchEmail.trim()}. Ask them to create an account at ${window.location.origin}/register first — once they have, come back here and assign their role.`);
+  };
+
+  // Confirms the pending add-staff action with a password re-check. Owner
+  // applies the role directly; anyone else (e.g. HR) files a request that
+  // only takes effect once the Owner approves it separately.
+  const confirmAddStaff = async () => {
+    if (!addStaffModal || !addStaffPassword) return;
+    setAddStaffLoading(true); setAddStaffModalMsg('');
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: addStaffPassword });
+    if (authError) { setAddStaffModalMsg('Incorrect password.'); setAddStaffLoading(false); return; }
+    const { email, userId, role } = addStaffModal;
+    const iAmOwner = effectiveStaffRole(userProfile) === 'owner';
+    if (iAmOwner) {
+      const { error } = await supabase.from('users').update({ staff_role: role }).eq('id', userId);
+      setAddStaffLoading(false);
+      if (error) { setAddStaffModalMsg('Error: ' + error.message); return; }
+      await logAudit('ASSIGN_STAFF_ROLE', 'user', userId, { email, role });
+      setAddStaffModal(null); setAddStaffPassword('');
+      setStaffSearchMsg(`✅ ${email} assigned as ${STAFF_ROLE_LABELS[role]}`);
+      setStaffSearchEmail(''); setShowAddStaffPopover(false);
+      fetchStaffList();
+    } else {
+      const { error } = await supabase.from('staff_role_requests').insert([{
+        email, role, target_user_id: userId, requested_by_email: user.email,
+      }]);
+      setAddStaffLoading(false);
+      if (error) { setAddStaffModalMsg('Error: ' + error.message); return; }
+      await logAudit('REQUEST_STAFF_ROLE', 'user', userId, { email, role });
+      setAddStaffModal(null); setAddStaffPassword('');
+      setStaffSearchMsg(`✅ Request sent — ${email} will become ${STAFF_ROLE_LABELS[role]} once the Owner approves it.`);
+      setStaffSearchEmail(''); setShowAddStaffPopover(false);
+      fetchPendingStaffRequests();
+    }
+  };
+
+  // Owner-only: approve a pending staff request, gated behind the Owner's
+  // own password re-confirmation, same step-up pattern as recommendation
+  // and coupon approvals.
+  const confirmApproveStaffRequest = async () => {
+    if (!approveRequestModal || !approveRequestPassword) return;
+    setApproveRequestLoading(true); setApproveRequestMsg('');
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: approveRequestPassword });
+    if (authError) { setApproveRequestMsg('Incorrect password.'); setApproveRequestLoading(false); return; }
+    const req = approveRequestModal;
+    const { error: updateErr } = await supabase.from('users').update({ staff_role: req.role }).eq('id', req.target_user_id);
+    if (updateErr) { setApproveRequestMsg('Error: ' + updateErr.message); setApproveRequestLoading(false); return; }
+    const { error: reqErr } = await supabase.from('staff_role_requests')
+      .update({ status: 'approved', reviewed_by_email: user.email, reviewed_at: new Date().toISOString() })
+      .eq('id', req.id);
+    setApproveRequestLoading(false);
+    if (reqErr) { setApproveRequestMsg('Error: ' + reqErr.message); return; }
+    await logAudit('ASSIGN_STAFF_ROLE', 'user', req.target_user_id, { email: req.email, role: req.role, via: 'approved_request' });
+    setApproveRequestModal(null); setApproveRequestPassword('');
+    fetchPendingStaffRequests();
+    fetchStaffList();
+  };
+
+  const rejectStaffRequest = async (req) => {
+    if (!confirm(`Reject the request to make ${req.email} ${STAFF_ROLE_LABELS[req.role]}?`)) return;
+    await supabase.from('staff_role_requests')
+      .update({ status: 'rejected', reviewed_by_email: user.email, reviewed_at: new Date().toISOString() })
+      .eq('id', req.id);
+    await logAudit('REJECT_STAFF_REQUEST', 'user', req.target_user_id, { email: req.email, role: req.role });
+    fetchPendingStaffRequests();
   };
 
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
@@ -4608,6 +4688,7 @@ function AdminPanel({ user, userProfile }) {
     const allowed = ROLE_TABS[role] || [];
     if (allowed.includes('approvals')) fetchPendingApprovals();
     if (allowed.includes('staff') || allowed.includes('applications')) fetchStaffList();
+    if (allowed.includes('staff')) fetchPendingStaffRequests();
   }, [userProfile?.staff_role, userProfile?.is_admin]);
 
   const fetchData = async () => {
@@ -4819,6 +4900,7 @@ function AdminPanel({ user, userProfile }) {
                   if (tk === 'approvals') return pendingApprovals.length;
                   if (tk === 'applications') return pendingApplicationsCount;
                   if (tk === 'coupons') return pendingCoupons.length;
+                  if (tk === 'staff') return pendingStaffRequests.length;
                   return 0;
                 };
                 return (
@@ -6429,13 +6511,14 @@ function AdminPanel({ user, userProfile }) {
                         <option value="marketing">Marketing</option>
                         <option value="compliance_officer">Compliance Officer</option>
                         <option value="customer_support">Customer Support</option>
-                        <option value="owner">Owner</option>
                       </select>
                       {staffSearchMsg && <p style={{ fontSize: '11px', marginBottom: '10px', color: staffSearchMsg.startsWith('✅') ? '#059669' : '#dc2626' }}>{staffSearchMsg}</p>}
                       <button onClick={addOrInviteStaff} disabled={staffInviteLoading || !staffSearchEmail.trim()} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', opacity: (staffInviteLoading || !staffSearchEmail.trim()) ? 0.6 : 1 }}>
-                        {staffInviteLoading ? 'Sending...' : 'Send invite'}
+                        {staffInviteLoading ? 'Checking...' : 'Continue'}
                       </button>
-                      <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '8px' }}>If they already have an account, this assigns the role directly instead.</p>
+                      <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '8px' }}>
+                        You'll be asked to confirm with your password next. {effectiveStaffRole(userProfile) === 'owner' ? 'As Owner, this applies immediately.' : "Since you're not the Owner, this creates a request the Owner must approve."}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -6517,6 +6600,70 @@ function AdminPanel({ user, userProfile }) {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Pending staff requests — visible to Owner only. HR (or
+                  anyone else with Staff tab access) files these; only the
+                  Owner can approve, with their own password. */}
+              {effectiveStaffRole(userProfile) === 'owner' && pendingStaffRequests.length > 0 && (
+                <div style={{ ...S.card, marginTop: '20px', border: '1.5px solid #f59e0b' }}>
+                  <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '4px' }}>⏳ Pending staff requests</p>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>{pendingStaffRequests.length} request{pendingStaffRequests.length === 1 ? '' : 's'} waiting on your approval</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {pendingStaffRequests.map(req => (
+                      <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', padding: '10px 12px', background: '#FAF9F5', borderRadius: '8px' }}>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: '13px' }}>{req.email} → {STAFF_ROLE_LABELS[req.role] || req.role}</p>
+                          <p style={{ fontSize: '11px', color: '#94a3b8' }}>Requested by {req.requested_by_email}</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => { setApproveRequestModal(req); setApproveRequestPassword(''); setApproveRequestMsg(''); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>Approve</button>
+                          <button onClick={() => rejectStaffRequest(req)} style={{ ...S.btn, ...S.btnSm, background: '#fee2e2', color: '#991b1b' }}>Reject</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Password confirmation before adding/assigning staff */}
+              {addStaffModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                  <div style={{ ...S.card, maxWidth: '380px', width: '100%' }}>
+                    <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Confirm your password</p>
+                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>
+                      {effectiveStaffRole(userProfile) === 'owner'
+                        ? <>Make <strong>{addStaffModal.email}</strong> {STAFF_ROLE_LABELS[addStaffModal.role]}?</>
+                        : <>This sends a request to the Owner to make <strong>{addStaffModal.email}</strong> {STAFF_ROLE_LABELS[addStaffModal.role]}. It won't take effect until they approve it.</>}
+                    </p>
+                    {addStaffModalMsg && <p style={{ fontSize: '12px', color: '#dc2626', marginBottom: '10px' }}>{addStaffModalMsg}</p>}
+                    <input type="password" style={{ ...S.input, marginBottom: '12px' }} placeholder="Your account password" value={addStaffPassword} onChange={e => setAddStaffPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirmAddStaff()} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={confirmAddStaff} disabled={addStaffLoading || !addStaffPassword} style={{ ...S.btn, ...S.btnPrimary, flex: 1, opacity: (addStaffLoading || !addStaffPassword) ? 0.6 : 1 }}>
+                        {addStaffLoading ? 'Confirming...' : (effectiveStaffRole(userProfile) === 'owner' ? 'Confirm and assign' : 'Confirm and send request')}
+                      </button>
+                      <button onClick={() => { setAddStaffModal(null); setAddStaffPassword(''); }} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Owner password confirmation to approve a pending request */}
+              {approveRequestModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                  <div style={{ ...S.card, maxWidth: '380px', width: '100%' }}>
+                    <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Confirm your password to approve</p>
+                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Make <strong>{approveRequestModal.email}</strong> {STAFF_ROLE_LABELS[approveRequestModal.role]}, as requested by {approveRequestModal.requested_by_email}.</p>
+                    {approveRequestMsg && <p style={{ fontSize: '12px', color: '#dc2626', marginBottom: '10px' }}>{approveRequestMsg}</p>}
+                    <input type="password" style={{ ...S.input, marginBottom: '12px' }} placeholder="Your account password" value={approveRequestPassword} onChange={e => setApproveRequestPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirmApproveStaffRequest()} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={confirmApproveStaffRequest} disabled={approveRequestLoading || !approveRequestPassword} style={{ ...S.btn, ...S.btnPrimary, flex: 1, opacity: (approveRequestLoading || !approveRequestPassword) ? 0.6 : 1 }}>
+                        {approveRequestLoading ? 'Confirming...' : 'Confirm and approve'}
+                      </button>
+                      <button onClick={() => { setApproveRequestModal(null); setApproveRequestPassword(''); }} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
