@@ -5498,15 +5498,66 @@ function AdminPanel({ user, userProfile }) {
               fetchData();
             };
 
+            // Dynamic, unique-ish code — not guaranteed collision-free across
+            // the whole table, but astronomically unlikely to clash, and
+            // saveCoupon's insert would surface a duplicate-key error anyway
+            // if it ever did.
+            const generateCode = () => {
+              const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+              setCF('code', `SV-${rand}`);
+            };
+
+            const copyCode = (code) => {
+              navigator.clipboard?.writeText(code);
+              setCouponMsg(`✅ Copied ${code}`);
+              setTimeout(() => setCouponMsg(''), 1500);
+            };
+
+            // Status is fully derived from the data — never stored separately
+            // — so it can never drift out of sync with reality.
+            const getCouponStatus = (c) => {
+              if (!c.approved) return { label: 'Pending approval', bg: '#E6F1FB', color: '#0C447C' };
+              if (!c.active) return { label: 'Deactivated', bg: '#F1EFE8', color: '#5F5E5A' };
+              if (c.expires_at && new Date(c.expires_at) < new Date()) return { label: 'Expired', bg: '#F1EFE8', color: '#5F5E5A' };
+              if (c.max_uses && (c.uses || 0) >= c.max_uses) return { label: 'Exhausted', bg: '#FCEBEB', color: '#791F1F' };
+              if (c.expires_at) {
+                const daysLeft = (new Date(c.expires_at) - new Date()) / (1000 * 60 * 60 * 24);
+                if (daysLeft <= 3) return { label: 'Expiring soon', bg: '#FAEEDA', color: '#633806' };
+              }
+              return { label: 'Active', bg: '#EAF3DE', color: '#27500A' };
+            };
+
+            const activeCoupons = coupons.filter(c => c.approved && c.active);
+            const totalRedemptions = coupons.reduce((sum, c) => sum + (c.uses || 0), 0);
+            const pendingCount = coupons.filter(c => !c.approved).length;
+
             return (
               <div>
-                <div style={{ ...S.card, marginBottom: '16px', border: '2px solid #bfdbfe' }}>
-                  <h3 style={{ ...S.h4, marginBottom: '16px' }}>🎫 Create Coupon Code</h3>
-                  {couponMsg && <div style={{ background: couponMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', color: couponMsg.startsWith('✅') ? '#065f46' : '#991b1b', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px' }}>{couponMsg}</div>}
+                {/* Stats row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', gap: '12px', marginBottom: '20px' }}>
+                  {[
+                    { label: 'Active coupons', value: activeCoupons.length, color: '#0A0A0A' },
+                    { label: 'Total redemptions', value: totalRedemptions, color: '#27500A' },
+                    { label: 'Total coupons', value: coupons.length, color: '#185FA5' },
+                    { label: 'Pending approval', value: pendingCount, color: '#712B13' },
+                  ].map((s, i) => (
+                    <div key={i} style={{ background: '#FAF9F5', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                      <p style={{ fontSize: '20px', fontWeight: 800, color: s.color }}>{s.value}</p>
+                      <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ ...S.card, marginBottom: '16px' }}>
+                  <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                    <h3 style={{ ...S.h4, margin: 0 }}>🎫 Create Coupon</h3>
+                    <button onClick={generateCode} style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>↻ Generate code</button>
+                  </div>
+                  {couponMsg && <div style={{ background: couponMsg.startsWith('✅') ? '#EAF3DE' : '#FCEBEB', color: couponMsg.startsWith('✅') ? '#27500A' : '#791F1F', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px' }}>{couponMsg}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', gap: '10px', marginBottom: '12px' }}>
                     <div>
                       <label style={S.label}>Coupon Code *</label>
-                      <input style={{ ...S.input, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.08em' }} placeholder="LAUNCH50" value={couponForm.code} onChange={e => setCF('code', e.target.value.toUpperCase())} />
+                      <input style={{ ...S.input, fontFamily: 'monospace', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.08em' }} placeholder="LAUNCH50" value={couponForm.code} onChange={e => setCF('code', e.target.value.toUpperCase())} />
                     </div>
                     <div>
                       <label style={S.label}>Discount Type</label>
@@ -5539,48 +5590,52 @@ function AdminPanel({ user, userProfile }) {
                     </div>
                   </div>
                   <button onClick={saveCoupon} disabled={couponSaving} style={{ ...S.btn, ...S.btnPrimary, opacity: couponSaving ? 0.7 : 1 }}>
-                    {couponSaving ? 'Creating...' : '🎫 Create Coupon'}
+                    {couponSaving ? 'Creating...' : myRole === 'marketing' ? '📤 Submit for Approval' : '🎫 Create Coupon'}
                   </button>
                 </div>
 
-                <div style={{ ...S.card }}>
-                  <h3 style={{ ...S.h4, marginBottom: '14px' }}>Active Coupons</h3>
-                  {coupons.length === 0 ? (
-                    <p style={{ color: '#94a3b8', textAlign: 'center', padding: '32px', fontSize: '13px' }}>No coupons created yet.</p>
-                  ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                        <thead>
-                          <tr style={{ background: '#FAF9F5' }}>
-                            {['Code','Type','Value','Plan','Uses','Expires','Status','Action'].map(h => (
-                              <th key={h} style={{ padding: '9px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#94a3b8', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase' }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {coupons.map(c => (
-                            <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: c.active ? 1 : 0.5 }}>
-                              <td style={{ padding: '9px 12px', fontWeight: 800, letterSpacing: '0.06em', color: '#1e40af' }}>{c.code}</td>
-                              <td style={{ padding: '9px 12px', textTransform: 'capitalize', color: '#64748b' }}>{c.type}</td>
-                              <td style={{ padding: '9px 12px', fontWeight: 700 }}>{c.type === 'percent' ? c.value + '%' : '₹' + c.value}</td>
-                              <td style={{ padding: '9px 12px', color: '#64748b', textTransform: 'capitalize' }}>{c.plan_id === 'all' ? 'All' : PLANS[c.plan_id]?.name}</td>
-                              <td style={{ padding: '9px 12px', color: '#64748b' }}>{c.uses || 0}{c.max_uses ? ' / ' + c.max_uses : ' / ∞'}</td>
-                              <td style={{ padding: '9px 12px', color: '#64748b', fontSize: '11px' }}>{c.expires_at ? new Date(c.expires_at).toLocaleDateString('en-IN') : '—'}</td>
-                              <td style={{ padding: '9px 12px' }}>
-                                <span style={{ ...S.badge, background: c.active ? '#d1fae5' : '#f1f5f9', color: c.active ? '#065f46' : '#94a3b8', fontSize: '11px' }}>
-                                  {c.active ? 'Active' : 'Inactive'}
-                                </span>
-                              </td>
-                              <td style={{ padding: '9px 12px' }}>
-                                {c.active && <button onClick={() => deactivate(c.id)} style={{ ...S.btn, background: '#fee2e2', color: '#dc2626', border: 'none', ...S.btnSm, fontSize: '11px' }}>Deactivate</button>}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+                <p style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>All coupons ({coupons.length})</p>
+                {coupons.length === 0 ? (
+                  <div style={{ ...S.card, textAlign: 'center', padding: '32px' }}>
+                    <p style={{ color: '#94a3b8', fontSize: '13px' }}>No coupons created yet.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {coupons.map(c => {
+                      const status = getCouponStatus(c);
+                      const pct = c.max_uses ? Math.min(100, ((c.uses || 0) / c.max_uses) * 100) : 0;
+                      return (
+                        <div key={c.id} style={{ ...S.card, padding: '14px 18px' }}>
+                          <div style={{ ...S.flexBetween, marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '14px', color: '#0A0A0A', letterSpacing: '0.04em' }}>{c.code}</span>
+                              <button onClick={() => copyCode(c.code)} title="Copy code" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#94a3b8' }}>⧉</button>
+                            </div>
+                            <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px', background: status.bg, color: status.color }}>{status.label}</span>
+                          </div>
+                          <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                            {c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`} · {c.plan_id === 'all' ? 'All plans' : PLANS[c.plan_id]?.name}
+                            {c.expires_at ? ` · expires ${new Date(c.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+                            {c.submitted_by_email ? ` · submitted by ${c.submitted_by_email}` : ''}
+                          </p>
+                          {c.max_uses ? (
+                            <>
+                              <div style={{ height: '5px', background: '#FAF9F5', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ height: '5px', width: pct + '%', background: pct >= 100 ? '#791F1F' : '#185FA5' }} />
+                              </div>
+                              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{c.uses || 0} of {c.max_uses} used</p>
+                            </>
+                          ) : (
+                            <p style={{ fontSize: '10px', color: '#94a3b8' }}>{c.uses || 0} used · unlimited</p>
+                          )}
+                          {c.active && c.approved && (
+                            <button onClick={() => deactivate(c.id)} style={{ ...S.btn, ...S.btnSm, background: '#FCEBEB', color: '#791F1F', border: 'none', marginTop: '10px' }}>Deactivate</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })()}
