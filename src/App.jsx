@@ -62,6 +62,11 @@ const TAB_CATEGORIES = [
   { name: 'System', icon: '⚙️', tabs: ['bulk', 'audit', 'settings', 'analytics'] },
 ];
 
+const TIME_HORIZON_LABELS = {
+  intraday: 'Intraday', swing: 'Swing (2-6 days)', short_term: 'Short term (7-15 days)',
+  mid_term: 'Mid term (15 days-3 months)', long_term: 'Long term (3+ months)',
+};
+
 const TAB_ICONS = {
   recommendations: '📊', add_recommendation: '➕', approvals: '✅', applications: '📋',
   users: '👥', analytics: '📈', revenue: '💰', notifications: '🔔', email: '📧',
@@ -1797,7 +1802,7 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
         <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: '4px', textTransform: 'capitalize' }}>
           {rec.segment}{rec.commodity_type ? ` · ${rec.commodity_type}` : ''}
         </span>
-        <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: '4px', textTransform: 'capitalize' }}>{rec.time_horizon}</span>
+        <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: '4px' }}>{TIME_HORIZON_LABELS[rec.time_horizon] || rec.time_horizon}</span>
       </div>
 
       {/* Row 3 — Price grid */}
@@ -2005,7 +2010,9 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ segment: '', action: '', status: '', risk: '' });
+  const [filters, setFilters] = useState({ action: '', status: '', risk: '' });
+  const [segmentGroup, setSegmentGroup] = useState('equity');
+  const [horizonFilter, setHorizonFilter] = useState('all');
   const [sort, setSort] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
   const HIGH_RISK_SEGMENTS = ['futures', 'options'];
@@ -2015,8 +2022,8 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
   const [fnoGate, setFnoGate] = useState(false);
 
   useEffect(() => {
-    if (HIGH_RISK_SEGMENTS.includes(filters.segment) && !fnoAck) setFnoGate(true);
-  }, [filters.segment]);
+    if (segmentGroup === 'fno' && !fnoAck) setFnoGate(true);
+  }, [segmentGroup]);
 
   const acceptFnoRisk = () => {
     try { localStorage.setItem('fno_risk_ack_' + (user?.id || 'anon'), 'true'); } catch(e) {}
@@ -2024,7 +2031,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
     setFnoGate(false);
   };
   const declineFnoRisk = () => {
-    setFilters(f => ({ ...f, segment: '' }));
+    setSegmentGroup('equity');
     setFnoGate(false);
   };
 
@@ -2038,7 +2045,10 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
     if (forceStatus === 'live-group') data = data.filter(r => LIVE_GROUP.includes(r.status));
     if (forceStatus === 'past-group') data = data.filter(r => PAST_GROUP.includes(r.status));
     if (search) data = data.filter(r => r.symbol?.toLowerCase().includes(search.toLowerCase()) || r.stock_name?.toLowerCase().includes(search.toLowerCase()));
-    if (filters.segment) data = data.filter(r => r.segment === filters.segment);
+    if (segmentGroup === 'equity') data = data.filter(r => r.segment === 'equity');
+    else if (segmentGroup === 'fno') data = data.filter(r => ['futures', 'options'].includes(r.segment));
+    else if (segmentGroup === 'commodity') data = data.filter(r => r.segment === 'commodity');
+    if (horizonFilter !== 'all') data = data.filter(r => r.time_horizon === horizonFilter);
     if (filters.action) data = data.filter(r => r.action === filters.action);
     if (filters.status) data = data.filter(r => r.status === filters.status);
     if (filters.risk) data = data.filter(r => r.risk_level === filters.risk);
@@ -2070,7 +2080,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
     }
 
     setFiltered(data);
-  }, [recs, search, filters, sort, forceStatus, userProfile]);
+  }, [recs, search, filters, sort, forceStatus, userProfile, segmentGroup, horizonFilter]);
 
   const fetchRecs = async () => {
     const { data } = await supabase.from('recommendations').select('*').neq('status', 'draft').order('published_at', { ascending: false });
@@ -2124,6 +2134,30 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
             ))}
           </div>
 
+          {/* Segment tabs — Equity / F&O / Commodity always displayed separately */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+            {[
+              { key: 'equity', label: 'Equity' },
+              { key: 'fno', label: 'F&O' },
+              { key: 'commodity', label: 'Commodity' },
+            ].map(sg => (
+              <button key={sg.key} onClick={() => setSegmentGroup(sg.key)}
+                style={{ ...S.btn, ...S.btnSm, background: segmentGroup === sg.key ? '#185FA5' : 'transparent', color: segmentGroup === sg.key ? '#fff' : '#0A0A0A', border: segmentGroup === sg.key ? 'none' : '1px solid #E5E3DA' }}>
+                {sg.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Time horizon pills */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            {[{ key: 'all', label: 'All' }, ...Object.entries(TIME_HORIZON_LABELS).map(([key, label]) => ({ key, label }))].map(h => (
+              <button key={h.key} onClick={() => setHorizonFilter(h.key)}
+                style={{ fontSize: '11px', padding: '5px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: horizonFilter === h.key ? '#0A0A0A' : '#FAF9F5', color: horizonFilter === h.key ? '#fff' : '#6B6B63' }}>
+                {h.label}
+              </button>
+            ))}
+          </div>
+
           {/* Search + Filter */}
           <div style={{ ...S.flex, gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <input style={{ ...S.input, flex: 1, minWidth: '200px' }} placeholder="Search by stock name, symbol..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -2138,7 +2172,6 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
             <div style={{ ...S.card, marginBottom: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
                 {[
-                  { key: 'segment', label: 'Segment', opts: ['equity', 'futures', 'options', 'commodity'] },
                   { key: 'action', label: 'Action', opts: ['BUY', 'SELL', 'HOLD', 'AVOID', 'EXIT'] },
                   { key: 'status', label: 'Status', opts: ['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'] },
                   { key: 'risk', label: 'Risk', opts: ['low', 'medium', 'high'] },
@@ -2152,7 +2185,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
                   </div>
                 ))}
                 <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                  <button onClick={() => setFilters({ segment: '', action: '', status: '', risk: '' })} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, width: '100%', justifyContent: 'center' }}>
+                  <button onClick={() => setFilters({ action: '', status: '', risk: '' })} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm, width: '100%', justifyContent: 'center' }}>
                     🔄 Reset
                   </button>
                 </div>
@@ -2167,7 +2200,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
               <p style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</p>
               <p style={{ fontWeight: 700, marginBottom: '8px' }}>No recommendations found</p>
               <p style={S.muted}>Try adjusting your search or filters</p>
-              <button onClick={() => { setSearch(''); setFilters({ segment: '', action: '', status: '', risk: '' }); }} style={{ ...S.btn, ...S.btnSecondary, marginTop: '16px' }}>Reset Filters</button>
+              <button onClick={() => { setSearch(''); setFilters({ action: '', status: '', risk: '' }); setSegmentGroup('equity'); setHorizonFilter('all'); }} style={{ ...S.btn, ...S.btnSecondary, marginTop: '16px' }}>Reset Filters</button>
             </div>
           ) : (
             <div style={S.grid2}>
@@ -2659,7 +2692,7 @@ function RecommendationDetailPage({ id, userProfile }) {
 
           <div style={{ ...S.flex, gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
             <span style={{ ...S.badge, background: '#e2e8f0' }}>{effStatus.replace('_', ' ').toUpperCase()}</span>
-            <span style={{ ...S.badge, background: '#e2e8f0' }}>{rec.time_horizon}</span>
+            <span style={{ ...S.badge, background: '#e2e8f0' }}>{TIME_HORIZON_LABELS[rec.time_horizon] || rec.time_horizon}</span>
             <span style={{ ...S.badge, background: '#e2e8f0' }}>Risk: <span style={{ color: riskColor(rec.risk_level) }}>{rec.risk_level}</span></span>
             <span style={{ ...S.badge, background: '#e2e8f0' }}>{PLANS[rec.plan_required]?.name}</span>
           </div>
@@ -4300,6 +4333,50 @@ function AdminPanel({ user, userProfile }) {
       counts[row.performed_by_email] = (counts[row.performed_by_email] || 0) + 1;
     });
     setStaffActivityCounts(counts);
+  };
+
+  // Expand-to-see-detail timeline per staff member — reuses the existing
+  // audit_log, just filtered to that person and shown as a readable list
+  // instead of only a count.
+  const [expandedStaffEmail, setExpandedStaffEmail] = useState(null);
+  const [staffTimelines, setStaffTimelines] = useState({});
+  const [staffTimelineLoading, setStaffTimelineLoading] = useState(false);
+
+  const toggleStaffTimeline = async (email) => {
+    if (expandedStaffEmail === email) { setExpandedStaffEmail(null); return; }
+    setExpandedStaffEmail(email);
+    if (staffTimelines[email]) return;
+    setStaffTimelineLoading(true);
+    const { data } = await supabase.from('audit_log').select('*').eq('performed_by_email', email).order('created_at', { ascending: false }).limit(20);
+    setStaffTimelines(prev => ({ ...prev, [email]: data || [] }));
+    setStaffTimelineLoading(false);
+  };
+
+  // Turns an audit_log row into a short, readable sentence for the timeline —
+  // falls back to the raw action name for anything not explicitly mapped.
+  const describeAuditAction = (log) => {
+    let d = {};
+    try { d = JSON.parse(log.details || '{}'); } catch (e) {}
+    const sym = d.symbol ? ` ${d.symbol}` : '';
+    const map = {
+      CREATE_RECOMMENDATION: `Published${sym} call`,
+      UPDATE_RECOMMENDATION: `Updated${sym} call`,
+      UPDATE_STATUS: `Changed${sym} call status`,
+      SUBMIT_FOR_APPROVAL: `Submitted${sym} call for approval`,
+      APPROVE_RECOMMENDATION: `Approved${sym} call`,
+      REJECT_RECOMMENDATION: `Rejected${sym} call`,
+      SUBMIT_COUPON_FOR_APPROVAL: `Submitted coupon ${d.code || ''}`,
+      APPROVE_COUPON: `Approved coupon ${d.code || ''}`,
+      REJECT_COUPON: `Rejected coupon ${d.code || ''}`,
+      ASSIGN_STAFF_ROLE: `Assigned ${d.role || ''} role to ${d.email || ''}`,
+      INVITE_STAFF_MEMBER: `Invited ${d.email || ''}`,
+      REMOVE_STAFF_ROLE: `Removed staff access for ${d.email || ''}`,
+      RECOMMEND_APPLICATION: `Recommended ${d.email || ''} for hire`,
+      HIRE_APPLICANT: `Hired ${d.email || ''}`,
+      SEND_NOTIFICATION: `Sent notification "${d.title || ''}"`,
+      DELETE_RECOMMENDATION: `Deleted${sym} call`,
+    };
+    return map[log.action] || log.action?.replace(/_/g, ' ').toLowerCase() || 'Action';
   };
 
   const searchStaffByEmail = async () => {
@@ -6335,21 +6412,46 @@ function AdminPanel({ user, userProfile }) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {staffList.map(s => (
-                    <div key={s.id} style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: '13px' }}>{s.full_name || s.email}</p>
-                        <p style={{ fontSize: '11px', color: '#94a3b8' }}>{s.email}</p>
-                        <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
-                          {s.last_login_at ? `Last login ${new Date(s.last_login_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Never logged in yet'}
-                          {' · '}{staffActivityCounts[s.email] || 0} action{(staffActivityCounts[s.email] || 0) === 1 ? '' : 's'} this month
-                        </p>
+                    <div key={s.id} style={{ ...S.card, padding: '14px 18px' }}>
+                      <div onClick={() => toggleStaffTimeline(s.email)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', cursor: 'pointer' }}>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: '13px' }}>{s.full_name || s.email}</p>
+                          <p style={{ fontSize: '11px', color: '#94a3b8' }}>{s.email}</p>
+                          <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
+                            {s.last_login_at ? `Last login ${new Date(s.last_login_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Never logged in yet'}
+                            {' · '}{staffActivityCounts[s.email] || 0} action{(staffActivityCounts[s.email] || 0) === 1 ? '' : 's'} this month
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ ...S.badge, background: '#E6F1FB', color: '#0C447C', fontWeight: 700 }}>{STAFF_ROLE_LABELS[s.staff_role] || s.staff_role}</span>
+                          {s.id !== user.id && (
+                            <button onClick={e => { e.stopPropagation(); removeStaffRole(s); }} style={{ ...S.btn, ...S.btnSm, background: '#fee2e2', color: '#991b1b' }}>Remove</button>
+                          )}
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>{expandedStaffEmail === s.email ? '▲' : '▼'}</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ ...S.badge, background: '#E6F1FB', color: '#0C447C', fontWeight: 700 }}>{STAFF_ROLE_LABELS[s.staff_role] || s.staff_role}</span>
-                        {s.id !== user.id && (
-                          <button onClick={() => removeStaffRole(s)} style={{ ...S.btn, ...S.btnSm, background: '#fee2e2', color: '#991b1b' }}>Remove</button>
-                        )}
-                      </div>
+
+                      {expandedStaffEmail === s.email && (
+                        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #E5E3DA' }}>
+                          {staffTimelineLoading && !staffTimelines[s.email] ? (
+                            <p style={{ fontSize: '12px', color: '#94a3b8' }}>Loading...</p>
+                          ) : (staffTimelines[s.email] || []).length === 0 ? (
+                            <p style={{ fontSize: '12px', color: '#94a3b8' }}>No recorded activity yet.</p>
+                          ) : (
+                            (staffTimelines[s.email] || []).map((log, i) => (
+                              <div key={log.id || i} style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#185FA5', marginTop: '5px', flexShrink: 0 }} />
+                                <div>
+                                  <p style={{ fontSize: '12px', color: '#0A0A0A', margin: 0, textTransform: 'capitalize' }}>{describeAuditAction(log)}</p>
+                                  <p style={{ fontSize: '10px', color: '#94a3b8', margin: '2px 0 0' }}>
+                                    {new Date(log.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, {new Date(log.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -6505,7 +6607,7 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
     { k: 'exchange', label: 'Exchange', opts: ['NSE', 'BSE', 'MCX'] },
     { k: 'segment', label: 'Segment', opts: ['equity', 'futures', 'options', 'commodity'] },
     { k: 'action', label: 'Action *', opts: ['BUY', 'SELL', 'HOLD', 'AVOID', 'EXIT'] },
-    { k: 'time_horizon', label: 'Time Horizon', opts: ['intraday', 'swing', 'positional', 'longterm'] },
+    { k: 'time_horizon', label: 'Time Horizon', opts: ['intraday', 'swing', 'short_term', 'mid_term', 'long_term'] },
     { k: 'risk_level', label: 'Risk Level', opts: ['low', 'medium', 'high'] },
     { k: 'conviction', label: 'Conviction', opts: ['low', 'medium', 'high'] },
     { k: 'plan_required', label: 'Plan Required', opts: ['basic', 'premium', 'fno', 'elite'] },
