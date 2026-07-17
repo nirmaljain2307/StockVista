@@ -4141,6 +4141,7 @@ function PortfolioPage({ user }) {
 
 function AdminPanel({ user, userProfile }) {
   const [activeTab, setActiveTab] = useState('recommendations');
+  const [settingsSaved, setSettingsSaved] = useState(false);
   const [recs, setRecs] = useState([]);
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState(null);
