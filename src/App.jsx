@@ -4191,6 +4191,8 @@ function PortfolioPage({ user }) {
 function AdminPanel({ user, userProfile }) {
   const [activeTab, setActiveTab] = useState('recommendations');
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [adminSegmentGroup, setAdminSegmentGroup] = useState('all');
+  const [adminHorizonFilter, setAdminHorizonFilter] = useState('all');
   // These used to be declared with useState() inside conditional IIFEs in the
   // tab render blocks below (blog/performance/coupons/bulk) — a Rules-of-Hooks
   // violation: hooks only run when that tab's IIFE executes, so switching
@@ -4837,38 +4839,76 @@ function AdminPanel({ user, userProfile }) {
           {/* Recommendations List */}
           {activeTab === 'recommendations' && (
             loading ? <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading...</div> :
-            <div>
-              <div style={{ ...S.flex, justifyContent: 'flex-end', marginBottom: '12px' }}>
-                <button onClick={autoCheckStatus} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>🔄 Auto-check Status (CMP/Expiry)</button>
-              </div>
-              {recs.map(r => (
-                <div key={r.id} style={{ ...S.card, marginBottom: '10px' }}>
-                  <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '12px' }}>
-                    <div style={{ ...S.flex, gap: '10px' }}>
-                      <span style={{ ...S.badge, ...actionStyle(r.action) }}>{r.action}</span>
-                      <div>
-                        <p style={{ fontWeight: 700 }}>{r.symbol} — {r.stock_name}</p>
-                        <p style={{ fontSize: '12px', ...S.muted }}>
-                          Entry: {fmt(r.entry_price)} | T1: {fmt(r.target1)} | SL: {fmt(r.stop_loss)} | {r.segment} | {r.time_horizon}
-                        </p>
+            (() => {
+              let adminRecs = recs;
+              if (adminSegmentGroup === 'equity') adminRecs = adminRecs.filter(r => r.segment === 'equity');
+              else if (adminSegmentGroup === 'fno') adminRecs = adminRecs.filter(r => ['futures', 'options'].includes(r.segment));
+              else if (adminSegmentGroup === 'commodity') adminRecs = adminRecs.filter(r => r.segment === 'commodity');
+              if (adminHorizonFilter !== 'all') adminRecs = adminRecs.filter(r => r.time_horizon === adminHorizonFilter);
+
+              return (
+                <div>
+                  <div style={{ ...S.flex, justifyContent: 'flex-end', marginBottom: '12px' }}>
+                    <button onClick={autoCheckStatus} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>🔄 Auto-check Status (CMP/Expiry)</button>
+                  </div>
+
+                  {/* Segment tabs */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'all', label: 'All Segments' },
+                      { key: 'equity', label: 'Equity' },
+                      { key: 'fno', label: 'F&O' },
+                      { key: 'commodity', label: 'Commodity' },
+                    ].map(sg => (
+                      <button key={sg.key} onClick={() => setAdminSegmentGroup(sg.key)}
+                        style={{ ...S.btn, ...S.btnSm, background: adminSegmentGroup === sg.key ? '#185FA5' : 'transparent', color: adminSegmentGroup === sg.key ? '#fff' : '#0A0A0A', border: adminSegmentGroup === sg.key ? 'none' : '1px solid #E5E3DA' }}>
+                        {sg.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Time horizon pills */}
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    {[{ key: 'all', label: 'All' }, ...Object.entries(TIME_HORIZON_LABELS).map(([key, label]) => ({ key, label }))].map(h => (
+                      <button key={h.key} onClick={() => setAdminHorizonFilter(h.key)}
+                        style={{ fontSize: '11px', padding: '5px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: adminHorizonFilter === h.key ? '#0A0A0A' : '#FAF9F5', color: adminHorizonFilter === h.key ? '#fff' : '#6B6B63' }}>
+                        {h.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px' }}>{adminRecs.length} of {recs.length} calls</p>
+
+                  {adminRecs.map(r => (
+                    <div key={r.id} style={{ ...S.card, marginBottom: '10px' }}>
+                      <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '12px' }}>
+                        <div style={{ ...S.flex, gap: '10px' }}>
+                          <span style={{ ...S.badge, ...actionStyle(r.action) }}>{r.action}</span>
+                          <div>
+                            <p style={{ fontWeight: 700 }}>{r.symbol} — {r.stock_name}</p>
+                            <p style={{ fontSize: '12px', ...S.muted }}>
+                              Entry: {fmt(r.entry_price)} | T1: {fmt(r.target1)} | SL: {fmt(r.stop_loss)} | {r.segment} | {TIME_HORIZON_LABELS[r.time_horizon] || r.time_horizon}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ ...S.flex, gap: '8px', flexWrap: 'wrap' }}>
+                          <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)}
+                            style={{ ...S.select, width: 'auto', fontSize: '12px', padding: '6px 10px' }}>
+                            {['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'].map(s => (
+                              <option key={s} value={s}>{s.replace('_', ' ').toUpperCase()}</option>
+                            ))}
+                          </select>
+                          <button onClick={() => { setEditRec(r); setActiveTab('add_recommendation'); }}
+                            style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>✏️ Edit</button>
+                          <button onClick={() => deleteRec(r.id)}
+                            style={{ ...S.btn, ...S.btnDanger, ...S.btnSm }}>🗑️</button>
+                        </div>
                       </div>
                     </div>
-                    <div style={{ ...S.flex, gap: '8px', flexWrap: 'wrap' }}>
-                      <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)}
-                        style={{ ...S.select, width: 'auto', fontSize: '12px', padding: '6px 10px' }}>
-                        {['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'].map(s => (
-                          <option key={s} value={s}>{s.replace('_', ' ').toUpperCase()}</option>
-                        ))}
-                      </select>
-                      <button onClick={() => { setEditRec(r); setActiveTab('add_recommendation'); }}
-                        style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>✏️ Edit</button>
-                      <button onClick={() => deleteRec(r.id)}
-                        style={{ ...S.btn, ...S.btnDanger, ...S.btnSm }}>🗑️</button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()
           )}
 
           {/* Add/Edit Recommendation */}
