@@ -6427,16 +6427,24 @@ function AdminPanel({ user, userProfile }) {
               </div>
 
               {/* Roles overview — generated live from ROLE_TABS, not hardcoded,
-                  so it always matches what each role can actually access. */}
+                  so it always matches what each role can actually access.
+                  Items are clickable shortcuts only when the viewer's own
+                  role can access that tab — clicking one you can't reach
+                  would just bounce you back, so those render as plain text. */}
               <div style={{ ...S.card, marginBottom: '20px' }}>
                 <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '12px' }}>Admin panel tabs, by role</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
                   {Object.entries(ROLE_TABS).map(([role, tabKeys]) => (
                     <div key={role} style={{ border: '1px solid #E5E3DA', borderRadius: '10px', padding: '12px' }}>
                       <p style={{ fontWeight: 700, fontSize: '12px', marginBottom: '8px' }}>{STAFF_ROLE_LABELS[role]}</p>
-                      {tabKeys.map(tk => (
-                        <p key={tk} style={{ fontSize: '11px', color: '#185FA5', marginBottom: '3px' }}>{TAB_LABELS[tk] || tk}</p>
-                      ))}
+                      {tabKeys.map(tk => {
+                        const canNavigate = allowedTabKeys.includes(tk);
+                        return canNavigate ? (
+                          <p key={tk} onClick={() => setActiveTab(tk)} style={{ fontSize: '11px', color: '#185FA5', marginBottom: '3px', cursor: 'pointer', textDecoration: 'underline' }}>{TAB_LABELS[tk] || tk}</p>
+                        ) : (
+                          <p key={tk} style={{ fontSize: '11px', color: '#B4B2A9', marginBottom: '3px' }}>{TAB_LABELS[tk] || tk}</p>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
