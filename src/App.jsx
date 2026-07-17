@@ -4334,23 +4334,13 @@ function AdminPanel({ user, userProfile }) {
       fetchStaffList();
       return;
     }
-    try {
-      const res = await fetch('/api/invite-staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: staffSearchEmail.trim(), role: staffSelectedRole, invitedByEmail: user.email }),
-      });
-      const json = await res.json();
-      setStaffInviteLoading(false);
-      if (!res.ok) { setStaffSearchMsg('Error: ' + (json.error || 'Could not send invite.')); return; }
-      await logAudit('INVITE_STAFF_MEMBER', 'user', json.userId || 'new', { email: staffSearchEmail.trim(), role: staffSelectedRole });
-      setStaffSearchMsg(`✅ Invite sent to ${staffSearchEmail.trim()} as ${STAFF_ROLE_LABELS[staffSelectedRole]}`);
-      setStaffSearchEmail(''); setShowAddStaffPopover(false);
-      fetchStaffList();
-    } catch (e) {
-      setStaffInviteLoading(false);
-      setStaffSearchMsg('Network error sending invite.');
-    }
+    // Inviting someone with no existing account requires a server-side
+    // endpoint (creating an auth user needs the Supabase service_role key,
+    // which must never run in the browser). That backend endpoint isn't
+    // built yet, so for now: tell the admin to have the person register
+    // themselves first, then assign their role from here afterward.
+    setStaffInviteLoading(false);
+    setStaffSearchMsg(`No account found for ${staffSearchEmail.trim()}. Ask them to create an account at ${window.location.origin}/register first — once they have, come back here and assign their role.`);
   };
 
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
@@ -4433,24 +4423,11 @@ function AdminPanel({ user, userProfile }) {
   const inviteStaffMember = async () => {
     if (!staffSearchEmail.trim()) return;
     setStaffInviteLoading(true); setStaffSearchMsg('');
-    try {
-      const res = await fetch('/api/invite-staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: staffSearchEmail.trim(), role: staffSelectedRole, invitedByEmail: user.email }),
-      });
-      const json = await res.json();
-      setStaffInviteLoading(false);
-      if (!res.ok) { setStaffSearchMsg('Error: ' + (json.error || 'Could not send invite.')); return; }
-      await logAudit('INVITE_STAFF_MEMBER', 'user', json.userId || 'new', { email: staffSearchEmail.trim(), role: staffSelectedRole });
-      setStaffSearchMsg(`✅ Invite sent to ${staffSearchEmail.trim()} as ${STAFF_ROLE_LABELS[staffSelectedRole]}. They'll get an email to set their password.`);
-      setStaffNotFound(false);
-      setStaffSearchEmail('');
-      fetchStaffList();
-    } catch (e) {
-      setStaffInviteLoading(false);
-      setStaffSearchMsg('Network error sending invite.');
-    }
+    // Same as addOrInviteStaff — inviting an email with no existing account
+    // needs a server-side endpoint using the service_role key, which isn't
+    // built. Point the admin at the register flow instead.
+    setStaffInviteLoading(false);
+    setStaffSearchMsg(`No account found for ${staffSearchEmail.trim()}. Ask them to create an account at ${window.location.origin}/register first, then assign their role here.`);
   };
 
   const assignStaffRole = async () => {
@@ -4559,23 +4536,23 @@ function AdminPanel({ user, userProfile }) {
     setHireLoading(true); setHireMsg('');
     const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: hirePassword });
     if (authError) { setHireMsg('Incorrect password.'); setHireLoading(false); return; }
-    try {
-      const res = await fetch('/api/invite-staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: hireModalApp.email, role: hireModalApp.role_applied, invitedByEmail: user.email }),
-      });
-      const json = await res.json();
+    // Creating a brand-new account needs the service_role key (server-side
+    // only — never in the browser), which isn't set up yet. If the
+    // applicant already has a StockVista account, assign their role
+    // directly; otherwise ask them to register first, same as the Staff tab.
+    const { data: existing } = await supabase.from('users').select('*').ilike('email', hireModalApp.email).limit(1);
+    if (existing && existing.length > 0) {
+      const { error } = await supabase.from('users').update({ staff_role: hireModalApp.role_applied }).eq('id', existing[0].id);
       setHireLoading(false);
-      if (!res.ok) { setHireMsg('Error: ' + (json.error || 'Could not send invite.')); return; }
+      if (error) { setHireMsg('Error: ' + error.message); return; }
       await supabase.from('staff_applications').update({ status: 'approved', reviewed_by_email: user.email }).eq('id', hireModalApp.id);
       await logAudit('HIRE_APPLICANT', 'staff_application', hireModalApp.id, { email: hireModalApp.email, role: hireModalApp.role_applied });
       setHireModalApp(null); setHirePassword(''); setHireMsg('');
       fetchApplications();
-    } catch (e) {
-      setHireLoading(false);
-      setHireMsg('Network error sending invite.');
+      return;
     }
+    setHireLoading(false);
+    setHireMsg(`${hireModalApp.email} doesn't have a StockVista account yet. Email them asking to register at ${window.location.origin}/register — once they have, come back here and hire again to assign the role.`);
   };
 
   const confirmApprove = async () => {
