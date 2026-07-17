@@ -30,14 +30,21 @@ const CONTACT_PHONE = '+91-7003950585';
 // any existing admin (is_admin=true) that hasn't been assigned an explicit
 // staff_role yet, so older admin accounts keep full access unchanged.
 const ROLE_TABS = {
-  owner: ['recommendations', 'add_recommendation', 'users', 'analytics', 'revenue', 'notifications', 'email', 'coupons', 'bulk', 'blog', 'performance', 'settings', 'audit', 'staff'],
+  owner: ['recommendations', 'add_recommendation', 'approvals', 'users', 'analytics', 'revenue', 'notifications', 'email', 'coupons', 'bulk', 'blog', 'performance', 'settings', 'audit', 'staff'],
   research_analyst: ['recommendations', 'add_recommendation', 'performance', 'audit'],
   finance: ['revenue', 'coupons', 'audit'],
   hr: ['staff'],
+  marketing: ['blog', 'notifications', 'email', 'coupons'],
+  compliance_officer: ['audit'],
+  customer_support: ['users', 'notifications'],
 };
 const STAFF_ROLE_LABELS = {
   owner: 'Owner', research_analyst: 'Research Analyst', finance: 'Finance', hr: 'HR',
+  marketing: 'Marketing', compliance_officer: 'Compliance Officer', customer_support: 'Customer Support',
 };
+// Roles whose recommendation saves go to pending_approval instead of live —
+// currently just research_analyst. Owner publishes directly, no gate.
+const REQUIRES_APPROVAL_ROLES = ['research_analyst'];
 const effectiveStaffRole = (userProfile) => userProfile?.staff_role || (userProfile?.is_admin ? 'owner' : null);
 
 const PLANS = {
@@ -1355,6 +1362,9 @@ function LoginPage({ setUser, setUserProfile }) {
     const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
     setUser(data.user);
     setUserProfile(profile);
+    // Fire-and-forget — only meaningful for staff activity tracking, shouldn't
+    // block or fail the login itself if it errors.
+    supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', data.user.id).then(() => {}).catch(() => {});
     navigate('/dashboard');
     setLoading(false);
   };
@@ -4224,6 +4234,45 @@ function AdminPanel({ user, userProfile }) {
     fetchStaffList();
   };
 
+  // Pending approvals — recommendations submitted by a research analyst,
+  // waiting on the owner to approve (with password re-confirmation) before
+  // they go live to subscribers.
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [approveModalRec, setApproveModalRec] = useState(null);
+  const [approvePassword, setApprovePassword] = useState('');
+  const [approveMsg, setApproveMsg] = useState('');
+  const [approveLoading, setApproveLoading] = useState(false);
+
+  const fetchPendingApprovals = async () => {
+    const { data } = await supabase.from('recommendations').select('*').eq('status', 'pending_approval').order('created_at', { ascending: false });
+    setPendingApprovals(data || []);
+  };
+
+  const confirmApprove = async () => {
+    if (!approveModalRec || !approvePassword) return;
+    setApproveLoading(true); setApproveMsg('');
+    // Re-confirm the owner's password before publishing — a deliberate
+    // step-up check so an already-logged-in session can't approve calls
+    // without the owner actually re-entering their credentials.
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: approvePassword });
+    if (authError) { setApproveMsg('Incorrect password.'); setApproveLoading(false); return; }
+    const newStatus = approveModalRec.requested_status || 'live';
+    const { error } = await supabase.from('recommendations').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', approveModalRec.id);
+    setApproveLoading(false);
+    if (error) { setApproveMsg('Error: ' + error.message); return; }
+    await logAudit('APPROVE_RECOMMENDATION', 'recommendation', approveModalRec.id, { symbol: approveModalRec.symbol, approved_status: newStatus, submitted_by: approveModalRec.submitted_by_email });
+    if (newStatus === 'live') await sendTelegramAlert(approveModalRec);
+    setApproveModalRec(null); setApprovePassword(''); setApproveMsg('');
+    fetchPendingApprovals();
+  };
+
+  const rejectApproval = async (rec) => {
+    if (!confirm(`Reject ${rec.symbol} call from ${rec.submitted_by_email || 'analyst'}? It will be moved back to draft.`)) return;
+    await supabase.from('recommendations').update({ status: 'draft' }).eq('id', rec.id);
+    await logAudit('REJECT_RECOMMENDATION', 'recommendation', rec.id, { symbol: rec.symbol, submitted_by: rec.submitted_by_email });
+    fetchPendingApprovals();
+  };
+
   const logAudit = async (action, entity_type, entity_id, details) => {
     try {
       await supabase.from('audit_log').insert([{
@@ -4272,6 +4321,8 @@ function AdminPanel({ user, userProfile }) {
       setAuditLogs(data || []);
     } else if (activeTab === 'staff') {
       await fetchStaffList();
+    } else if (activeTab === 'approvals') {
+      await fetchPendingApprovals();
     }
     setLoading(false);
   };
@@ -4444,6 +4495,7 @@ function AdminPanel({ user, userProfile }) {
             {[
               { key: 'recommendations', label: '📊 Recommendations' },
               { key: 'add_recommendation', label: '➕ Add Call' },
+              { key: 'approvals', label: '✅ Approvals' },
               { key: 'users', label: '👥 Users' },
               { key: 'analytics', label: '📈 Analytics' },
               { key: 'revenue', label: '💰 Revenue' },
@@ -4503,7 +4555,7 @@ function AdminPanel({ user, userProfile }) {
 
           {/* Add/Edit Recommendation */}
           {activeTab === 'add_recommendation' && (
-            <AddRecForm existingRec={editRec} onSave={() => { setEditRec(null); setActiveTab('recommendations'); fetchData(); }} adminId={user.id} logAudit={logAudit} />
+            <AddRecForm existingRec={editRec} onSave={() => { setEditRec(null); setActiveTab('recommendations'); fetchData(); }} adminId={user.id} adminEmail={user.email} logAudit={logAudit} myRole={myRole} />
           )}
 
           {/* Users */}
@@ -5726,6 +5778,62 @@ function AdminPanel({ user, userProfile }) {
             );
           })()}
 
+          {activeTab === 'approvals' && (
+            <div>
+              <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h3 style={{ ...S.h4, marginBottom: '2px' }}>Pending Approvals</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>{pendingApprovals.length} call{pendingApprovals.length === 1 ? '' : 's'} waiting on your approval before going live</p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading...</div>
+              ) : pendingApprovals.length === 0 ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
+                  <p style={S.muted}>Nothing waiting on approval right now.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {pendingApprovals.map(rec => (
+                    <div key={rec.id} style={{ ...S.card, padding: '14px 18px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <span style={{ fontWeight: 700, fontSize: '14px' }}>{rec.symbol} <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '12px' }}>{rec.exchange}</span></span>
+                          <span style={{ ...S.badge, marginLeft: '8px', ...actionStyle(rec.action) }}>{rec.action}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>submitted by {rec.submitted_by_email || 'analyst'}</span>
+                      </div>
+                      <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>Entry {fmt(rec.entry_price)} · Target {fmt(rec.target1)} · SL {fmt(rec.stop_loss)} · wants status: <strong>{rec.requested_status}</strong></p>
+                      {rec.rationale && <p style={{ fontSize: '12px', color: '#334155', marginBottom: '10px', whiteSpace: 'pre-wrap' }}>{rec.rationale}</p>}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => { setApproveModalRec(rec); setApprovePassword(''); setApproveMsg(''); }} style={{ ...S.btn, ...S.btnSm, background: '#185FA5', color: '#fff' }}>Approve and publish</button>
+                        <button onClick={() => rejectApproval(rec)} style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>Reject</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {approveModalRec && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                  <div style={{ ...S.card, maxWidth: '380px', width: '100%' }}>
+                    <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Confirm your password to publish</p>
+                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>{approveModalRec.symbol} will go live to subscribers as soon as you confirm.</p>
+                    {approveMsg && <p style={{ fontSize: '12px', color: '#dc2626', marginBottom: '10px' }}>{approveMsg}</p>}
+                    <input type="password" style={{ ...S.input, marginBottom: '12px' }} placeholder="Your account password" value={approvePassword} onChange={e => setApprovePassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirmApprove()} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={confirmApprove} disabled={approveLoading || !approvePassword} style={{ ...S.btn, ...S.btnPrimary, flex: 1, opacity: (approveLoading || !approvePassword) ? 0.6 : 1 }}>
+                        {approveLoading ? 'Confirming...' : `Confirm and publish ${approveModalRec.symbol}`}
+                      </button>
+                      <button onClick={() => { setApproveModalRec(null); setApprovePassword(''); }} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'staff' && (
             <div>
               <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -5755,6 +5863,9 @@ function AdminPanel({ user, userProfile }) {
                         <option value="research_analyst">Research Analyst</option>
                         <option value="finance">Finance</option>
                         <option value="hr">HR</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="compliance_officer">Compliance Officer</option>
+                        <option value="customer_support">Customer Support</option>
                         <option value="owner">Owner</option>
                       </select>
                       <button onClick={assignStaffRole} style={{ ...S.btn, ...S.btnPrimary }}>Assign role</button>
@@ -5777,6 +5888,9 @@ function AdminPanel({ user, userProfile }) {
                       <div>
                         <p style={{ fontWeight: 700, fontSize: '13px' }}>{s.full_name || s.email}</p>
                         <p style={{ fontSize: '11px', color: '#94a3b8' }}>{s.email}</p>
+                        <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
+                          {s.last_login_at ? `Last login ${new Date(s.last_login_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Never logged in yet'}
+                        </p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ ...S.badge, background: '#E6F1FB', color: '#0C447C', fontWeight: 700 }}>{STAFF_ROLE_LABELS[s.staff_role] || s.staff_role}</span>
@@ -5796,7 +5910,7 @@ function AdminPanel({ user, userProfile }) {
   );
 }
 
-function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
+function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole }) {
   const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '' };
   const [form, setForm] = useState(existingRec || empty);
   const [loading, setLoading] = useState(false);
@@ -5883,6 +5997,17 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
     if (!form.stock_name || !form.symbol || !form.action) { setMsg('Stock name, symbol and action are required.'); return; }
     setLoading(true);
     const payload = { ...form, created_by: adminId, updated_at: new Date().toISOString() };
+
+    // Research analysts can't publish directly — a new call with any non-draft
+    // status goes to pending_approval instead, and the owner must approve
+    // (with a password re-confirmation) before it's actually live.
+    const needsApproval = REQUIRES_APPROVAL_ROLES.includes(myRole) && !existingRec?.id && form.status !== 'draft';
+    if (needsApproval) {
+      payload.requested_status = form.status;
+      payload.status = 'pending_approval';
+      payload.submitted_by_email = adminEmail;
+    }
+
     let error;
     if (existingRec?.id) {
       // Snapshot what changed before overwriting — published calls should never
@@ -5902,14 +6027,18 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
     } else {
       const res = await supabase.from('recommendations').insert([payload]);
       error = res.error;
+      if (!error && needsApproval && logAudit) {
+        await logAudit('SUBMIT_FOR_APPROVAL', 'recommendation', 'new', { symbol: form.symbol, requested_status: form.status });
+      }
     }
     setLoading(false);
     if (error) { setMsg(error.message); return; }
-    // Send Telegram alert when publishing a live call
-    if (form.status === 'live' && !existingRec?.id) {
+    // Send Telegram alert when actually publishing a live call (not when it's
+    // just submitted for approval — payload.status reflects what was really saved)
+    if (payload.status === 'live' && !existingRec?.id) {
       await sendTelegramAlert(form);
     }
-    setMsg('✅ Saved successfully!');
+    setMsg(needsApproval ? '✅ Submitted for owner approval — not live yet.' : '✅ Saved successfully!');
     setTimeout(onSave, 1200);
   };
 
@@ -6205,9 +6334,15 @@ function AddRecForm({ existingRec, onSave, adminId, logAudit }) {
         </div>
       )}
 
+      {REQUIRES_APPROVAL_ROLES.includes(myRole) && !existingRec?.id && (
+        <div style={{ background: '#FAEEDA', border: '1px solid #EF9F27', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', fontSize: '12px', color: '#633806' }}>
+          ⏳ As a Research Analyst, your calls go to the owner for approval before they go live to subscribers — this won't publish immediately.
+        </div>
+      )}
+
       <div style={{ ...S.flex, gap: '12px', marginTop: '8px' }}>
         <button onClick={handleSave} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, opacity: loading ? 0.7 : 1 }}>
-          {loading ? 'Saving...' : existingRec ? '✓ Update Call' : '✓ Publish Call'}
+          {loading ? 'Saving...' : existingRec ? '✓ Update Call' : REQUIRES_APPROVAL_ROLES.includes(myRole) ? '📤 Submit for Approval' : '✓ Publish Call'}
         </button>
         <button onClick={onSave} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
       </div>
