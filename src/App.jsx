@@ -4142,6 +4142,20 @@ function PortfolioPage({ user }) {
 function AdminPanel({ user, userProfile }) {
   const [activeTab, setActiveTab] = useState('recommendations');
   const [settingsSaved, setSettingsSaved] = useState(false);
+  // These used to be declared with useState() inside conditional IIFEs in the
+  // tab render blocks below (blog/performance/coupons/bulk) — a Rules-of-Hooks
+  // violation: hooks only run when that tab's IIFE executes, so switching
+  // tabs changes how many hooks fire between renders and crashes the whole
+  // page with "Rendered more hooks than during the previous render". Moved
+  // here so they're always declared, every render, regardless of active tab.
+  const [blogSaving, setBlogSaving] = useState(false);
+  const [blogMsg, setBlogMsg] = useState('');
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [couponMsg, setCouponMsg] = useState('');
+  const [couponSaving, setCouponSaving] = useState(false);
+  const [segFilter, setSegFilter] = useState('all');
+  const [cmpUpdates, setCmpUpdates] = useState({});
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [recs, setRecs] = useState([]);
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -4295,6 +4309,38 @@ function AdminPanel({ user, userProfile }) {
   const fetchPendingApprovals = async () => {
     const { data } = await supabase.from('recommendations').select('*').eq('status', 'pending_approval').order('created_at', { ascending: false });
     setPendingApprovals(data || []);
+    fetchPendingCoupons();
+  };
+
+  const [pendingCoupons, setPendingCoupons] = useState([]);
+  const [approveModalCoupon, setApproveModalCoupon] = useState(null);
+  const [couponApprovePassword, setCouponApprovePassword] = useState('');
+  const [couponApproveMsg, setCouponApproveMsg] = useState('');
+  const [couponApproveLoading, setCouponApproveLoading] = useState(false);
+
+  const fetchPendingCoupons = async () => {
+    const { data } = await supabase.from('coupons').select('*').eq('approved', false).order('created_at', { ascending: false });
+    setPendingCoupons(data || []);
+  };
+
+  const confirmApproveCoupon = async () => {
+    if (!approveModalCoupon || !couponApprovePassword) return;
+    setCouponApproveLoading(true); setCouponApproveMsg('');
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: couponApprovePassword });
+    if (authError) { setCouponApproveMsg('Incorrect password.'); setCouponApproveLoading(false); return; }
+    const { error } = await supabase.from('coupons').update({ active: true, approved: true }).eq('id', approveModalCoupon.id);
+    setCouponApproveLoading(false);
+    if (error) { setCouponApproveMsg('Error: ' + error.message); return; }
+    await logAudit('APPROVE_COUPON', 'coupon', approveModalCoupon.id, { code: approveModalCoupon.code, submitted_by: approveModalCoupon.submitted_by_email });
+    setApproveModalCoupon(null); setCouponApprovePassword(''); setCouponApproveMsg('');
+    fetchPendingCoupons();
+  };
+
+  const rejectCoupon = async (coupon) => {
+    if (!confirm(`Reject coupon ${coupon.code} from ${coupon.submitted_by_email || 'marketing'}? It will be deleted.`)) return;
+    await supabase.from('coupons').delete().eq('id', coupon.id);
+    await logAudit('REJECT_COUPON', 'coupon', coupon.id, { code: coupon.code, submitted_by: coupon.submitted_by_email });
+    fetchPendingCoupons();
   };
 
   const confirmApprove = async () => {
@@ -4979,8 +5025,6 @@ function AdminPanel({ user, userProfile }) {
 
           {/* ─── BLOG MANAGER TAB ─── */}
           {activeTab === 'blog' && (() => {
-            const [blogSaving, setBlogSaving] = useState(false);
-            const [blogMsg, setBlogMsg] = useState('');
             const TAGS = ['Education', 'F&O', 'Commodity', 'Markets', 'Technical', 'Fundamental', 'IPO', 'Risk Management'];
 
             const saveBlog = async () => {
@@ -5114,8 +5158,6 @@ function AdminPanel({ user, userProfile }) {
 
           {/* ─── PERFORMANCE TRACKER TAB ─── */}
           {activeTab === 'performance' && (() => {
-            const [csvLoading, setCsvLoading] = useState(false);
-
             const exportPerfCSV = () => {
               if (!perfData) return;
               const headers = ['Symbol', 'Stock Name', 'Action', 'Segment', 'Entry', 'Exit', 'Return %', 'Status', 'Date'];
@@ -5422,17 +5464,31 @@ function AdminPanel({ user, userProfile }) {
 
           {/* ─── COUPONS TAB ─── */}
           {activeTab === 'coupons' && (() => {
-            const [couponMsg, setCouponMsg] = useState('');
-            const [couponSaving, setCouponSaving] = useState(false);
-
             const saveCoupon = async () => {
               if (!couponForm.code || !couponForm.value) { setCouponMsg('Code and value required.'); return; }
               setCouponSaving(true);
-              const payload = { ...couponForm, code: couponForm.code.toUpperCase(), value: parseFloat(couponForm.value), max_uses: parseInt(couponForm.max_uses) || null, uses: 0, active: true, created_at: new Date().toISOString() };
+              // Marketing can create coupons but they stay inactive and
+              // unapproved until the owner signs off (with password
+              // re-confirmation) — same principle as the recommendation
+              // approval workflow, applied here since coupons directly
+              // affect revenue.
+              const needsApproval = myRole === 'marketing';
+              const payload = {
+                ...couponForm, code: couponForm.code.toUpperCase(), value: parseFloat(couponForm.value),
+                max_uses: parseInt(couponForm.max_uses) || null, uses: 0,
+                active: !needsApproval, approved: !needsApproval,
+                submitted_by_email: needsApproval ? user.email : null,
+                created_at: new Date().toISOString(),
+              };
               const { error } = await supabase.from('coupons').insert([payload]);
               setCouponSaving(false);
               if (error) { setCouponMsg('Error: ' + error.message); return; }
-              setCouponMsg('✅ Coupon created!');
+              if (needsApproval) {
+                await logAudit('SUBMIT_COUPON_FOR_APPROVAL', 'coupon', 'new', { code: payload.code });
+                setCouponMsg('✅ Submitted for owner approval — not active yet.');
+              } else {
+                setCouponMsg('✅ Coupon created!');
+              }
               setCouponForm({ code: '', type: 'percent', value: '', plan_id: 'all', max_uses: '', expires_at: '' });
               fetchData();
             };
@@ -5534,9 +5590,6 @@ function AdminPanel({ user, userProfile }) {
             const liveRecs = recs.filter(r => ['live','near_target','near_sl'].includes(r.status));
             const allClosed = recs.filter(r => ['target_hit','sl_hit','expired','closed'].includes(r.status));
             const segments = [...new Set(recs.map(r => r.segment))].filter(Boolean);
-            const [segFilter, setSegFilter] = useState('all');
-            const [cmpUpdates, setCmpUpdates] = useState({});
-            const [bulkLoading, setBulkLoading] = useState(false);
 
             const filteredRecs = segFilter === 'all' ? recs : recs.filter(r => r.segment === segFilter);
             const toggle = (id) => setSelectedRecs(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
@@ -5875,6 +5928,49 @@ function AdminPanel({ user, userProfile }) {
                         {approveLoading ? 'Confirming...' : `Confirm and publish ${approveModalRec.symbol}`}
                       </button>
                       <button onClick={() => { setApproveModalRec(null); setApprovePassword(''); }} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Pending coupons — Marketing-created, waiting on owner approval */}
+              <div style={{ marginTop: '32px' }}>
+                <h3 style={{ ...S.h4, marginBottom: '4px' }}>Pending Coupons</h3>
+                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>{pendingCoupons.length} coupon{pendingCoupons.length === 1 ? '' : 's'} from Marketing waiting on approval</p>
+                {pendingCoupons.length === 0 ? (
+                  <div style={{ ...S.card, textAlign: 'center', padding: '30px' }}>
+                    <p style={S.muted}>Nothing waiting on coupon approval right now.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {pendingCoupons.map(c => (
+                      <div key={c.id} style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: '14px' }}>{c.code} <span style={{ fontWeight: 400, fontSize: '12px', color: '#94a3b8' }}>{c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`} · {c.plan_id}</span></p>
+                          <p style={{ fontSize: '11px', color: '#94a3b8' }}>submitted by {c.submitted_by_email || 'marketing'}{c.max_uses ? ` · max ${c.max_uses} uses` : ''}{c.expires_at ? ` · expires ${c.expires_at}` : ''}</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => { setApproveModalCoupon(c); setCouponApprovePassword(''); setCouponApproveMsg(''); }} style={{ ...S.btn, ...S.btnSm, background: '#185FA5', color: '#fff' }}>Approve and activate</button>
+                          <button onClick={() => rejectCoupon(c)} style={{ ...S.btn, ...S.btnSm, ...S.btnSecondary }}>Reject</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {approveModalCoupon && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                  <div style={{ ...S.card, maxWidth: '380px', width: '100%' }}>
+                    <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Confirm your password to activate</p>
+                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Coupon {approveModalCoupon.code} will become usable by subscribers as soon as you confirm.</p>
+                    {couponApproveMsg && <p style={{ fontSize: '12px', color: '#dc2626', marginBottom: '10px' }}>{couponApproveMsg}</p>}
+                    <input type="password" style={{ ...S.input, marginBottom: '12px' }} placeholder="Your account password" value={couponApprovePassword} onChange={e => setCouponApprovePassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirmApproveCoupon()} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={confirmApproveCoupon} disabled={couponApproveLoading || !couponApprovePassword} style={{ ...S.btn, ...S.btnPrimary, flex: 1, opacity: (couponApproveLoading || !couponApprovePassword) ? 0.6 : 1 }}>
+                        {couponApproveLoading ? 'Confirming...' : `Confirm and activate ${approveModalCoupon.code}`}
+                      </button>
+                      <button onClick={() => { setApproveModalCoupon(null); setCouponApprovePassword(''); }} style={{ ...S.btn, ...S.btnSecondary }}>Cancel</button>
                     </div>
                   </div>
                 </div>
