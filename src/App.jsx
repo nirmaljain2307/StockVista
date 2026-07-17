@@ -8108,7 +8108,48 @@ function PWAInstallPrompt() {
   );
 }
 
-export default function App() {
+// ─── ERROR BOUNDARY ────────────────────────────────────────────────────────────
+// Without this, ANY uncaught error anywhere in the component tree — a bad
+// date parse, a null dereference on a slow/odd API response, anything —
+// blanks the entire app to a white screen with zero recovery UI. This catches
+// that and shows a "something went wrong, reload" screen instead. It does
+// NOT catch errors in event handlers, async code, or during SSR — only
+// render-time errors in the component tree below it — so this is a safety
+// net, not a substitute for fixing bugs at the source.
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error, info) {
+    console.error('StockVista crashed:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEFDFB', padding: '24px', textAlign: 'center' }}>
+          <div style={{ maxWidth: '360px' }}>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚠️</div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0A0A0A', marginBottom: '8px' }}>Something went wrong</h2>
+            <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>
+              StockVista hit an unexpected error. Reloading usually fixes it — if it keeps happening, please contact support.
+            </p>
+            <button onClick={() => window.location.reload()}
+              style={{ background: '#185FA5', color: '#fff', border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+              Reload page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function AppInner() {
   const [path, setPath] = useState(getPath());
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -8184,18 +8225,18 @@ export default function App() {
     if (path === '/live-calls') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="live-group" />;
     if (path === '/past-recommendations') return <RecommendationsPage user={user} userProfile={userProfile} riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} forceStatus="past-group" />;
     if (path.startsWith('/recommendations/')) return <RecommendationDetailPage id={path.split('/recommendations/')[1]} userProfile={userProfile} />;
-    if (path === '/reports') return <ReportsPage user={user} userProfile={userProfile} />;
-    if (path === '/watchlist') return <WatchlistPage user={user} />;
+    if (path === '/reports') return protectedPage(ReportsPage);
+    if (path === '/watchlist') return protectedPage(WatchlistPage);
     if (path === '/forgot-password') return <ForgotPasswordPage />;
     if (path === '/reset-password') return <ResetPasswordPage />;
-    if (path === '/onboarding') return <OnboardingPage user={user} userProfile={userProfile} />;
-    if (path === '/portfolio') return <PortfolioPage user={user} />;
+    if (path === '/onboarding') return protectedPage(OnboardingPage);
+    if (path === '/portfolio') return protectedPage(PortfolioPage);
     if (path === '/performance') return <PerformancePage />;
     if (path === '/about') return <AboutPage />;
     if (path === '/contact') return <ContactPage />;
     if (path === '/blog') return <BlogPage />;
-    if (path === '/notifications') return <NotificationsPage user={user} userProfile={userProfile} />;
-    if (path === '/profile') return <ProfilePage user={user} userProfile={userProfile} />;
+    if (path === '/notifications') return protectedPage(NotificationsPage);
+    if (path === '/profile') return protectedPage(ProfilePage);
     if (path === '/disclaimer') return <DisclaimerPage />;
     if (path === '/privacy') return <PrivacyPage />;
     if (path === '/terms') return <TermsPage />;
@@ -8220,5 +8261,13 @@ export default function App() {
         <PWAInstallPrompt />
       </div>
     </LanguageProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppInner />
+    </ErrorBoundary>
   );
 }
