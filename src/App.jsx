@@ -5294,7 +5294,6 @@ function AdminPanel({ user, userProfile }) {
           {/* ─── REVENUE TAB ─── */}
           {activeTab === 'revenue' && (
             <div>
-              {!revenueData && !loading ? fetchRevenue() : null}
               {loading || !revenueData ? (
                 <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading revenue data...</div>
               ) : (
