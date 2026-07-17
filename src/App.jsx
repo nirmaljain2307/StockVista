@@ -54,6 +54,21 @@ const TAB_LABELS = {
   settings: 'Settings', audit: 'Audit log', staff: 'Staff and roles',
 };
 
+const TAB_CATEGORIES = [
+  { name: 'Research', icon: '📊', tabs: ['recommendations', 'add_recommendation', 'approvals', 'performance'] },
+  { name: 'People', icon: '👥', tabs: ['users', 'applications', 'staff'] },
+  { name: 'Revenue', icon: '💰', tabs: ['revenue', 'coupons'] },
+  { name: 'Content', icon: '✍️', tabs: ['blog', 'email', 'notifications'] },
+  { name: 'System', icon: '⚙️', tabs: ['bulk', 'audit', 'settings', 'analytics'] },
+];
+
+const TAB_ICONS = {
+  recommendations: '📊', add_recommendation: '➕', approvals: '✅', applications: '📋',
+  users: '👥', analytics: '📈', revenue: '💰', notifications: '🔔', email: '📧',
+  coupons: '🎫', bulk: '⚡', blog: '✍️', performance: '🏆', settings: '⚙️',
+  audit: '📋', staff: '🧑‍💼',
+};
+
 const PLANS = {
   basic: { name: 'Basic Equity', color: '#334155', monthly: 999, callLimit: 10, screenerResultLimit: 5 },
   premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499, callLimit: 25, screenerResultLimit: null },
@@ -4491,6 +4506,16 @@ function AdminPanel({ user, userProfile }) {
     fetchData();
   }, [activeTab, userProfile?.staff_role, userProfile?.is_admin]);
 
+  // Sidebar badge counts (Approvals/Applications/Coupons) need to be accurate
+  // even before the user visits those tabs, so fetch them once on mount
+  // rather than waiting for fetchData's per-tab dispatch.
+  useEffect(() => {
+    const role = effectiveStaffRole(userProfile);
+    const allowed = ROLE_TABS[role] || [];
+    if (allowed.includes('approvals')) fetchPendingApprovals();
+    if (allowed.includes('staff') || allowed.includes('applications')) fetchStaffList();
+  }, [userProfile?.staff_role, userProfile?.is_admin]);
+
   const fetchData = async () => {
     setLoading(true);
     if (activeTab === 'recommendations') {
@@ -4690,32 +4715,47 @@ function AdminPanel({ user, userProfile }) {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div style={{ ...S.flex, gap: '4px', background: '#FEFDFB', padding: '4px', borderRadius: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
-            {[
-              { key: 'recommendations', label: '📊 Recommendations' },
-              { key: 'add_recommendation', label: '➕ Add Call' },
-              { key: 'approvals', label: '✅ Approvals' },
-              { key: 'applications', label: '📋 Applications' },
-              { key: 'users', label: '👥 Users' },
-              { key: 'analytics', label: '📈 Analytics' },
-              { key: 'revenue', label: '💰 Revenue' },
-              { key: 'notifications', label: '🔔 Notifications' },
-              { key: 'email', label: '📧 Email' },
-              { key: 'coupons', label: '🎫 Coupons' },
-              { key: 'bulk', label: '⚡ Bulk Actions' },
-              { key: 'blog', label: '✍️ Blog' },
-              { key: 'performance', label: '🏆 Performance' },
-              { key: 'settings', label: '⚙️ Settings' },
-              { key: 'audit', label: '📋 Audit Log' },
-              { key: 'staff', label: '🧑‍💼 Staff and Roles' },
-            ].filter(t => allowedTabKeys.includes(t.key)).map(t => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: activeTab === t.key ? '#1d4ed8' : 'transparent', color: activeTab === t.key ? '#fff' : '#94a3b8' }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+          {/* Categorized sidebar navigation */}
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+            <div style={{ width: '190px', flexShrink: 0, background: '#FAF9F5', borderRadius: '12px', padding: '16px 12px' }}>
+              {TAB_CATEGORIES.map(cat => {
+                const visibleTabs = cat.tabs.filter(tk => allowedTabKeys.includes(tk));
+                if (visibleTabs.length === 0) return null;
+                const badgeFor = (tk) => {
+                  if (tk === 'approvals') return pendingApprovals.length;
+                  if (tk === 'applications') return pendingApplicationsCount;
+                  if (tk === 'coupons') return pendingCoupons.length;
+                  return 0;
+                };
+                return (
+                  <div key={cat.name} style={{ marginBottom: '14px' }}>
+                    <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '4px 8px 6px' }}>{cat.name}</p>
+                    {visibleTabs.map(tk => {
+                      const badge = badgeFor(tk);
+                      const isActive = activeTab === tk;
+                      return (
+                        <button key={tk} onClick={() => setActiveTab(tk)}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '8px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                            background: isActive ? '#185FA5' : 'transparent', marginBottom: '2px',
+                          }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '13px' }}>{TAB_ICONS[tk]}</span>
+                            <span style={{ fontSize: '12px', fontWeight: isActive ? 700 : 400, color: isActive ? '#fff' : '#0A0A0A' }}>{TAB_LABELS[tk] || tk}</span>
+                          </span>
+                          {badge > 0 && (
+                            <span style={{ fontSize: '9px', fontWeight: 700, background: isActive ? 'rgba(255,255,255,0.25)' : '#791F1F', color: '#fff', borderRadius: '20px', padding: '1px 6px' }}>{badge}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* Recommendations List */}
           {activeTab === 'recommendations' && (
@@ -6316,6 +6356,9 @@ function AdminPanel({ user, userProfile }) {
               )}
             </div>
           )}
+
+            </div>
+          </div>
         </div>
       </div>
     </div>
