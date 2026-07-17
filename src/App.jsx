@@ -26,6 +26,20 @@ const GRIEVANCE_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_PHONE = '+91-7003950585';
 
+// Staff role → which admin panel tabs they can see. 'owner' is implicit for
+// any existing admin (is_admin=true) that hasn't been assigned an explicit
+// staff_role yet, so older admin accounts keep full access unchanged.
+const ROLE_TABS = {
+  owner: ['recommendations', 'add_recommendation', 'users', 'analytics', 'revenue', 'notifications', 'email', 'coupons', 'bulk', 'blog', 'performance', 'settings', 'audit', 'staff'],
+  research_analyst: ['recommendations', 'add_recommendation', 'performance', 'audit'],
+  finance: ['revenue', 'coupons', 'audit'],
+  hr: ['staff'],
+};
+const STAFF_ROLE_LABELS = {
+  owner: 'Owner', research_analyst: 'Research Analyst', finance: 'Finance', hr: 'HR',
+};
+const effectiveStaffRole = (userProfile) => userProfile?.staff_role || (userProfile?.is_admin ? 'owner' : null);
+
 const PLANS = {
   basic: { name: 'Basic Equity', color: '#334155', monthly: 999, callLimit: 10, screenerResultLimit: 5 },
   premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499, callLimit: 25, screenerResultLimit: null },
@@ -516,7 +530,7 @@ function Navbar({ user, userProfile, onLogout }) {
                     { label: '📊 ' + t('nav_dashboard'), path: '/dashboard' },
                     { label: '⚙️ ' + t('nav_profile'), path: '/profile' },
                     { label: '💳 ' + t('nav_subscription'), path: '/subscription' },
-                    ...(userProfile?.is_admin ? [{ label: '🛡️ ' + t('nav_admin'), path: '/admin' }] : []),
+                    ...(effectiveStaffRole(userProfile) ? [{ label: '🛡️ ' + t('nav_admin'), path: '/admin' }] : []),
                   ].map(item => (
                     <button key={item.path} onClick={() => { navigate(item.path); setUserMenu(false); }}
                       style={{ ...S.navLink, display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px', color: '#0A0A0A' }}>
@@ -4172,6 +4186,44 @@ function AdminPanel({ user, userProfile }) {
   // Revenue state
   const [revenueData, setRevenueData] = useState(null);
 
+  // Staff & Roles state
+  const [staffList, setStaffList] = useState([]);
+  const [staffSearchEmail, setStaffSearchEmail] = useState('');
+  const [staffSearchResult, setStaffSearchResult] = useState(null);
+  const [staffSearchMsg, setStaffSearchMsg] = useState('');
+  const [staffSelectedRole, setStaffSelectedRole] = useState('research_analyst');
+
+  const fetchStaffList = async () => {
+    const { data } = await supabase.from('users').select('*').not('staff_role', 'is', null).order('created_at', { ascending: true });
+    setStaffList(data || []);
+  };
+
+  const searchStaffByEmail = async () => {
+    setStaffSearchMsg(''); setStaffSearchResult(null);
+    if (!staffSearchEmail.trim()) return;
+    const { data } = await supabase.from('users').select('*').ilike('email', staffSearchEmail.trim()).limit(1);
+    if (!data || data.length === 0) { setStaffSearchMsg('No user found with that email. They must sign up for an account first.'); return; }
+    setStaffSearchResult(data[0]);
+  };
+
+  const assignStaffRole = async () => {
+    if (!staffSearchResult) return;
+    const { error } = await supabase.from('users').update({ staff_role: staffSelectedRole }).eq('id', staffSearchResult.id);
+    if (error) { setStaffSearchMsg('Error: ' + error.message); return; }
+    await logAudit('ASSIGN_STAFF_ROLE', 'user', staffSearchResult.id, { email: staffSearchResult.email, role: staffSelectedRole });
+    setStaffSearchMsg(`✅ ${staffSearchResult.email} assigned as ${STAFF_ROLE_LABELS[staffSelectedRole]}`);
+    setStaffSearchResult(null);
+    setStaffSearchEmail('');
+    fetchStaffList();
+  };
+
+  const removeStaffRole = async (staffUser) => {
+    if (!confirm(`Remove ${STAFF_ROLE_LABELS[staffUser.staff_role]} access for ${staffUser.email}?`)) return;
+    await supabase.from('users').update({ staff_role: null }).eq('id', staffUser.id);
+    await logAudit('REMOVE_STAFF_ROLE', 'user', staffUser.id, { email: staffUser.email, previous_role: staffUser.staff_role });
+    fetchStaffList();
+  };
+
   const logAudit = async (action, entity_type, entity_id, details) => {
     try {
       await supabase.from('audit_log').insert([{
@@ -4185,9 +4237,12 @@ function AdminPanel({ user, userProfile }) {
   };
 
   useEffect(() => {
-    if (!userProfile?.is_admin) { navigate('/'); return; }
+    const role = effectiveStaffRole(userProfile);
+    if (!role) { navigate('/'); return; }
+    const allowed = ROLE_TABS[role] || [];
+    if (!allowed.includes(activeTab)) { setActiveTab(allowed[0] || 'recommendations'); return; }
     fetchData();
-  }, [activeTab]);
+  }, [activeTab, userProfile?.staff_role, userProfile?.is_admin]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -4215,6 +4270,8 @@ function AdminPanel({ user, userProfile }) {
     } else if (activeTab === 'audit') {
       const { data } = await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(200);
       setAuditLogs(data || []);
+    } else if (activeTab === 'staff') {
+      await fetchStaffList();
     }
     setLoading(false);
   };
@@ -4365,9 +4422,11 @@ function AdminPanel({ user, userProfile }) {
     fetchData();
   };
 
-  if (!userProfile?.is_admin) return <div style={{ paddingTop: '100px', textAlign: 'center' }}>Access Denied</div>;
+  const myRole = effectiveStaffRole(userProfile);
+  if (!myRole) return <div style={{ paddingTop: '100px', textAlign: 'center' }}>Access Denied</div>;
 
-  const tabs = ['recommendations', 'users', 'add_recommendation'];
+  const allowedTabKeys = ROLE_TABS[myRole] || [];
+  const tabs = allowedTabKeys;
 
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
@@ -4396,7 +4455,8 @@ function AdminPanel({ user, userProfile }) {
               { key: 'performance', label: '🏆 Performance' },
               { key: 'settings', label: '⚙️ Settings' },
               { key: 'audit', label: '📋 Audit Log' },
-            ].map(t => (
+              { key: 'staff', label: '🧑‍💼 Staff and Roles' },
+            ].filter(t => allowedTabKeys.includes(t.key)).map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
                 style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: activeTab === t.key ? '#1d4ed8' : 'transparent', color: activeTab === t.key ? '#fff' : '#94a3b8' }}>
                 {t.label}
@@ -5665,6 +5725,71 @@ function AdminPanel({ user, userProfile }) {
               </div>
             );
           })()}
+
+          {activeTab === 'staff' && (
+            <div>
+              <div style={{ ...S.flexBetween, marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h3 style={{ ...S.h4, marginBottom: '2px' }}>Staff and Roles</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>{staffList.length} staff member{staffList.length === 1 ? '' : 's'} · Each role sees only its own admin tabs</p>
+                </div>
+              </div>
+
+              {/* Add staff member */}
+              <div style={{ ...S.card, marginBottom: '20px' }}>
+                <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '10px' }}>Add staff member</p>
+                <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '12px' }}>They must already have a StockVista account (sign up normally first) — search by the email they registered with, then assign a role.</p>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                  <input style={{ ...S.input, flex: 1, minWidth: '200px' }} placeholder="Search by email..." value={staffSearchEmail} onChange={e => setStaffSearchEmail(e.target.value)} />
+                  <button onClick={searchStaffByEmail} style={{ ...S.btn, ...S.btnSecondary }}>Search</button>
+                </div>
+                {staffSearchMsg && <p style={{ fontSize: '12px', marginBottom: '10px', color: staffSearchMsg.startsWith('✅') ? '#059669' : '#dc2626' }}>{staffSearchMsg}</p>}
+                {staffSearchResult && (
+                  <div style={{ background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '13px' }}>{staffSearchResult.full_name || staffSearchResult.email}</p>
+                      <p style={{ fontSize: '11px', color: '#94a3b8' }}>{staffSearchResult.email}{staffSearchResult.staff_role ? ` · currently ${STAFF_ROLE_LABELS[staffSearchResult.staff_role]}` : ''}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <select style={S.select} value={staffSelectedRole} onChange={e => setStaffSelectedRole(e.target.value)}>
+                        <option value="research_analyst">Research Analyst</option>
+                        <option value="finance">Finance</option>
+                        <option value="hr">HR</option>
+                        <option value="owner">Owner</option>
+                      </select>
+                      <button onClick={assignStaffRole} style={{ ...S.btn, ...S.btnPrimary }}>Assign role</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Current staff list */}
+              {loading ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px', ...S.muted }}>Loading...</div>
+              ) : staffList.length === 0 ? (
+                <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
+                  <p style={S.muted}>No staff members assigned yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {staffList.map(s => (
+                    <div key={s.id} style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <p style={{ fontWeight: 700, fontSize: '13px' }}>{s.full_name || s.email}</p>
+                        <p style={{ fontSize: '11px', color: '#94a3b8' }}>{s.email}</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ ...S.badge, background: '#E6F1FB', color: '#0C447C', fontWeight: 700 }}>{STAFF_ROLE_LABELS[s.staff_role] || s.staff_role}</span>
+                        {s.id !== user.id && (
+                          <button onClick={() => removeStaffRole(s)} style={{ ...S.btn, ...S.btnSm, background: '#fee2e2', color: '#991b1b' }}>Remove</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
