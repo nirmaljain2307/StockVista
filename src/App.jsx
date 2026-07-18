@@ -7948,34 +7948,15 @@ function SubscriptionPage({ user, userProfile }) {
     { id: 'elite',   name: 'Elite All Access',  icon: '💎', color: '#7c3aed', desc: 'Everything + Telegram + 1-on-1' },
   ];
 
-  const DEV_BYPASS_CODE = 'NRJDEV2026'; // Remove this before going live
-  const [bypassCode, setBypassCode] = useState('');
-  const [bypassMsg, setBypassMsg] = useState('');
+  const [paymentMsg, setPaymentMsg] = useState('');
   const [activating, setActivating] = useState(false);
 
   const handleSubscribe = async () => {
     if (!selectedPlan) return;
 
-    // Dev bypass — skip payment
-    if (bypassCode === DEV_BYPASS_CODE) {
-      setActivating(true);
-      const expiry = new Date();
-      expiry.setFullYear(expiry.getFullYear() + 1); // 1 year
-      const { error } = await supabase.from('users').update({
-        plan_id: selectedPlan,
-        plan_expires_at: expiry.toISOString(),
-        updated_at: new Date().toISOString(),
-      }).eq('id', user.id);
-      setActivating(false);
-      if (error) { setBypassMsg('Error: ' + error.message); return; }
-      setBypassMsg('✅ Plan activated! Refreshing...');
-      setTimeout(() => window.location.reload(), 1500);
-      return;
-    }
-
     // Real payment via Razorpay
     setActivating(true);
-    setBypassMsg('');
+    setPaymentMsg('');
     try {
       const orderRes = await fetch('/api/create-subscription-order', {
         method: 'POST',
@@ -7985,14 +7966,14 @@ function SubscriptionPage({ user, userProfile }) {
       const order = await orderRes.json();
       if (!orderRes.ok) {
         setActivating(false);
-        setBypassMsg('Error: ' + (order.error || 'Could not start payment.'));
+        setPaymentMsg('Error: ' + (order.error || 'Could not start payment.'));
         return;
       }
 
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setActivating(false);
-        setBypassMsg('Error: Could not load payment gateway. Check your connection and try again.');
+        setPaymentMsg('Error: Could not load payment gateway. Check your connection and try again.');
         return;
       }
 
@@ -8006,7 +7987,7 @@ function SubscriptionPage({ user, userProfile }) {
         prefill: { email: user.email, contact: userProfile?.mobile || '' },
         theme: { color: '#1e40af' },
         handler: async (response) => {
-          setBypassMsg('Verifying payment...');
+          setPaymentMsg('Verifying payment...');
           try {
             const verifyRes = await fetch('/api/verify-subscription-payment', {
               method: 'POST',
@@ -8023,29 +8004,29 @@ function SubscriptionPage({ user, userProfile }) {
             const verify = await verifyRes.json();
             setActivating(false);
             if (!verifyRes.ok || !verify.success) {
-              setBypassMsg('Error: ' + (verify.error || `Verification failed. Contact support with payment ID: ${response.razorpay_payment_id}`));
+              setPaymentMsg('Error: ' + (verify.error || `Verification failed. Contact support with payment ID: ${response.razorpay_payment_id}`));
               return;
             }
             try {
               localStorage.setItem('sv_cooloff_' + user.id, JSON.stringify({ paymentId: response.razorpay_payment_id, createdAt: Date.now() }));
             } catch(e) {}
-            setBypassMsg('✅ Plan activated! Refreshing...');
+            setPaymentMsg('✅ Plan activated! Refreshing...');
             setTimeout(() => window.location.reload(), 1200);
           } catch (e) {
             setActivating(false);
-            setBypassMsg(`Error verifying payment. Contact support with payment ID: ${response.razorpay_payment_id}`);
+            setPaymentMsg(`Error verifying payment. Contact support with payment ID: ${response.razorpay_payment_id}`);
           }
         },
         modal: { ondismiss: () => { setActivating(false); } },
       });
       rzp.on('payment.failed', (resp) => {
         setActivating(false);
-        setBypassMsg('❌ Payment failed: ' + (resp?.error?.description || 'Please try again.'));
+        setPaymentMsg('❌ Payment failed: ' + (resp?.error?.description || 'Please try again.'));
       });
       rzp.open();
     } catch (e) {
       setActivating(false);
-      setBypassMsg('Error: Could not start payment. ' + e.message);
+      setPaymentMsg('Error: Could not start payment. ' + e.message);
     }
   };
 
@@ -8148,23 +8129,9 @@ function SubscriptionPage({ user, userProfile }) {
                   </div>
                   <p style={{ fontSize: '24px', fontWeight: 800, color: '#1e40af' }}>₹{prices[selectedPlan][cycle].toLocaleString('en-IN')}</p>
                 </div>
-                {/* Dev bypass field */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                  <input
-                    style={{ ...S.input, flex: 1, fontSize: '13px' }}
-                    placeholder="Dev bypass code (testing only)"
-                    value={bypassCode}
-                    onChange={e => { setBypassCode(e.target.value); setBypassMsg(''); }}
-                  />
-                  {bypassCode && (
-                    <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px', background: bypassCode === 'NRJDEV2026' ? '#dcfce7' : '#fee2e2', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: bypassCode === 'NRJDEV2026' ? '#166534' : '#991b1b', whiteSpace: 'nowrap' }}>
-                      {bypassCode === 'NRJDEV2026' ? '✓ Valid' : '✕ Invalid'}
-                    </div>
-                  )}
-                </div>
-                {bypassMsg && <p style={{ fontSize: '13px', color: bypassMsg.startsWith('✅') ? '#059669' : '#dc2626', marginBottom: '12px', fontWeight: 600 }}>{bypassMsg}</p>}
+                {paymentMsg && <p style={{ fontSize: '13px', color: paymentMsg.startsWith('✅') ? '#059669' : '#dc2626', marginBottom: '12px', fontWeight: 600 }}>{paymentMsg}</p>}
                 <button onClick={handleSubscribe} disabled={activating} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', fontSize: '15px', padding: '13px', opacity: activating ? 0.7 : 1 }}>
-                  {activating ? 'Activating...' : bypassCode === 'NRJDEV2026' ? '⚡ Activate Plan (Dev Mode)' : '🔒 Proceed to Payment →'}
+                  {activating ? 'Activating...' : '🔒 Proceed to Payment →'}
                 </button>
                 <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '10px' }}>Secured by Razorpay · UPI · Cards · Net Banking</p>
               </>
