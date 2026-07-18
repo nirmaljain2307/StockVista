@@ -1058,7 +1058,10 @@ function LandingPage() {
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>PRICING</p>
           <h2 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h2>
-          <p style={{ color: '#64748b', marginBottom: '48px' }}>Flexible plans for traders of all experience levels.</p>
+          <p style={{ color: '#64748b', marginBottom: '24px' }}>Flexible plans for traders of all experience levels.</p>
+          <div style={{ maxWidth: '340px', margin: '0 auto 32px', textAlign: 'left' }}>
+            <CouponOffersBox />
+          </div>
           <PricingCards compact={true} />
           <button onClick={() => navigate('/pricing')} style={{ ...S.btn, ...S.btnSecondary, marginTop: '24px' }}>View Full Plan Comparison →</button>
         </div>
@@ -1323,7 +1326,10 @@ function PricingPage() {
           </div>
           <h1 style={{ ...S.h2, marginBottom: '12px' }}>Choose Your Research Plan</h1>
           <p style={{ color: '#64748b', marginBottom: '12px', fontSize: '15px' }}>Flexible plans for every type of trader. Quality over quantity — every call is high-conviction.</p>
-          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '48px' }}>⚠️ Call counts are monthly ranges. We publish only when high-conviction setups exist. No padding, no quota-filling.</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '32px' }}>⚠️ Call counts are monthly ranges. We publish only when high-conviction setups exist. No padding, no quota-filling.</p>
+          <div style={{ maxWidth: '340px', margin: '0 auto 32px', textAlign: 'left' }}>
+            <CouponOffersBox />
+          </div>
         </div>
 
         {/* Plan cards */}
