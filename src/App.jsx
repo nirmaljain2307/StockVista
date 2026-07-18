@@ -8273,10 +8273,11 @@ function SubscriptionPage({ user, userProfile }) {
             </div>
           )}
 
-          <div style={{ display: isMobile ? 'block' : 'flex', gap: '24px', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ ...S.h3, marginBottom: '6px' }}>Choose Your Plan</h2>
           <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>Select a plan and billing cycle to subscribe.</p>
+
+          <div style={{ display: isMobile ? 'block' : 'flex', gap: '24px', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* Billing cycle */}
           <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '10px', width: 'fit-content', marginBottom: '24px', border: '1px solid #E5E3DA' }}>
