@@ -635,6 +635,59 @@ function Navbar({ user, userProfile, onLogout }) {
 }
 
 // ─── LANDING PAGE ─────────────────────────────────────────────────────────────
+// ─── FEATURED COUPON BANNER ────────────────────────────────────────────────────
+// Shows whichever coupon the admin has marked "featured" in the Coupons tab.
+// Admin can turn this on/off or swap which coupon shows just by toggling it
+// there — no code change needed. Renders nothing if no coupon is featured.
+function FeaturedCouponBanner() {
+  const [coupon, setCoupon] = useState(null);
+  const [dismissed, setDismissed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    supabase.rpc('get_featured_coupon').then(({ data }) => {
+      if (data && data[0]) setCoupon(data[0]);
+    });
+  }, []);
+
+  if (!coupon || dismissed) return null;
+
+  const planName = coupon.plan_id === 'all' ? 'every plan' : PLANS[coupon.plan_id]?.name || coupon.plan_id;
+  const title = coupon.type === 'free'
+    ? `${coupon.free_months} month${coupon.free_months === 1 ? '' : 's'} free on ${planName}`
+    : coupon.type === 'percent' ? `${coupon.value}% off ${planName}` : `₹${coupon.value} off ${planName}`;
+
+  const urgencyParts = [];
+  if (coupon.expires_at) urgencyParts.push(`Ends ${new Date(coupon.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`);
+  if (coupon.max_uses) urgencyParts.push(`limited to first ${coupon.max_uses} signups`);
+
+  const copyCode = () => {
+    navigator.clipboard?.writeText(coupon.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div style={{ background: '#1e40af', borderRadius: '0', padding: '12px 44px 12px 16px', display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', flexWrap: 'wrap' }}>
+      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: '18px' }}>🎁</span>
+      </div>
+      <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+        <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', margin: 0 }}>{title}</p>
+        {urgencyParts.length > 0 && (
+          <p style={{ fontSize: '12px', color: '#fff', opacity: 0.8, margin: '2px 0 0' }}>{urgencyParts.join(' · ')}</p>
+        )}
+      </div>
+      <button onClick={copyCode} style={{ background: '#fff', color: '#1e40af', border: 'none', padding: '8px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0, fontWeight: 700 }}>
+        <span style={{ fontFamily: 'monospace', fontSize: '13px', letterSpacing: '0.05em' }}>{copied ? 'Copied!' : coupon.code}</span>
+        {!copied && <span style={{ fontSize: '13px' }}>⧉</span>}
+      </button>
+      <button onClick={() => setDismissed(true)} aria-label="Dismiss"
+        style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer', opacity: 0.7 }}>✕</button>
+    </div>
+  );
+}
+
 function LandingPage() {
   const features = [
     { icon: '🎯', title: 'Accurate Recommendations', desc: 'Research-backed stock calls with detailed technical and fundamental analysis.' },
@@ -666,6 +719,7 @@ function LandingPage() {
 
   return (
     <div>
+      <FeaturedCouponBanner />
       {/* Hero */}
       <section style={{ paddingTop: '140px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 60%, #fefce8 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(29,78,216,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(245,158,11,0.1) 0%, transparent 50%)', pointerEvents: 'none' }} />
@@ -703,7 +757,6 @@ function LandingPage() {
             { value: liveStats.calls > 0 ? liveStats.calls + '+' : 'Growing', label: 'Research Calls Published', real: true },
             { value: liveStats.live > 0 ? liveStats.live : '—', label: 'Live Calls Right Now', real: true },
             { value: liveStats.segments > 0 ? liveStats.segments : '4', label: 'Market Segments Covered', real: true },
-            { value: '7+', label: 'Years Market Experience', real: true },
           ].map((s, i) => (
             <div key={i}>
               <div style={{ fontSize: '28px', fontWeight: 800, color: '#1d4ed8' }}>{s.value}</div>
@@ -1066,6 +1119,7 @@ function PricingPage() {
 
   return (
     <div style={{ paddingTop: '80px', background: '#FEFDFB' }}>
+      <FeaturedCouponBanner />
 
       {/* Hero */}
       <section style={{ ...S.section, textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f0f4f8 60%)' }}>
@@ -5877,6 +5931,19 @@ function AdminPanel({ user, userProfile }) {
               setTimeout(() => setCouponMsg(''), 1500);
             };
 
+            // Only one coupon is ever featured at a time — turning one on
+            // automatically turns any other off, so the site banner never
+            // shows two conflicting offers.
+            const toggleFeaturedCoupon = async (c) => {
+              const turningOn = !c.featured;
+              if (turningOn) {
+                await supabase.from('coupons').update({ featured: false }).eq('featured', true);
+              }
+              await supabase.from('coupons').update({ featured: turningOn }).eq('id', c.id);
+              await logAudit(turningOn ? 'FEATURE_COUPON' : 'UNFEATURE_COUPON', 'coupon', c.id, { code: c.code });
+              fetchData();
+            };
+
             // Status is fully derived from the data — never stored separately
             // — so it can never drift out of sync with reality.
             const getCouponStatus = (c) => {
@@ -5960,6 +6027,10 @@ function AdminPanel({ user, userProfile }) {
                       <label style={S.label}>Expiry Date</label>
                       <input style={S.input} type="date" value={couponForm.expires_at} onChange={e => setCF('expires_at', e.target.value)} />
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '18px' }}>
+                      <input type="checkbox" id="cf-featured" checked={!!couponForm.featured} onChange={e => setCF('featured', e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                      <label htmlFor="cf-featured" style={{ fontSize: '13px', color: '#0A0A0A', cursor: 'pointer' }}>📣 Show as banner on site</label>
+                    </div>
                   </div>
                   <button onClick={saveCoupon} disabled={couponSaving} style={{ ...S.btn, ...S.btnPrimary, opacity: couponSaving ? 0.7 : 1 }}>
                     {couponSaving ? 'Creating...' : myRole === 'marketing' ? '📤 Submit for Approval' : '🎫 Create Coupon'}
@@ -5983,7 +6054,13 @@ function AdminPanel({ user, userProfile }) {
                               <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '14px', color: '#0A0A0A', letterSpacing: '0.04em' }}>{c.code}</span>
                               <button onClick={() => copyCode(c.code)} title="Copy code" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#94a3b8' }}>⧉</button>
                             </div>
-                            <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px', background: status.bg, color: status.color }}>{status.label}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button onClick={() => toggleFeaturedCoupon(c)} title={c.featured ? 'Remove from site banner' : 'Show as banner on site'}
+                                style={{ ...S.badge, fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: 'none', background: c.featured ? '#FAEEDA' : '#F1EFE8', color: c.featured ? '#854F0B' : '#5F5E5A' }}>
+                                📣 {c.featured ? 'Featured' : 'Feature'}
+                              </button>
+                              <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px', background: status.bg, color: status.color }}>{status.label}</span>
+                            </div>
                           </div>
                           <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
                             {c.type === 'free' ? `Free for ${c.free_months} month${c.free_months === 1 ? '' : 's'}` : c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`} · {c.plan_id === 'all' ? 'All plans' : PLANS[c.plan_id]?.name}
