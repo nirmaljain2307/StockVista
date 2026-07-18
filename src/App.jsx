@@ -1277,20 +1277,34 @@ function PricingCards({ compact = false }) {
     { id: 'elite', name: 'Elite All Access', desc: 'Complete research suite across every segment', color: '#a78bfa', popular: false, features: Object.keys(PLAN_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {})) },
   ];
 
+  const CYCLE_MONTHS = { monthly: 1, quarterly: 3, halfyearly: 6, yearly: 12 };
+
   return (
     <div>
+      <style>{`@keyframes svPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } } @keyframes svPriceFade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       {!compact && (
-        <div style={{ display: 'flex', gap: '4px', background: '#FEFDFB', padding: '4px', borderRadius: '10px', width: 'fit-content', margin: '0 auto 40px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {BILLING_CYCLES.map(b => (
-            <button key={b.key} onClick={() => setCycle(b.key)}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: cycle === b.key ? '#1d4ed8' : 'transparent', color: cycle === b.key ? '#fff' : '#94a3b8', transition: 'all 0.2s' }}>
-              {b.label} {b.discount > 0 && <span style={{ fontSize: '11px', color: cycle === b.key ? '#93c5fd' : '#10b981' }}>-{b.discount}%</span>}
-            </button>
-          ))}
-        </div>
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', marginBottom: '14px' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', animation: 'svPulse 1.6s ease-in-out infinite' }} />
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Live pricing · updates instantly</span>
+          </div>
+          <div style={{ display: 'flex', gap: '4px', background: '#FEFDFB', padding: '4px', borderRadius: '10px', width: 'fit-content', margin: '0 auto 40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {BILLING_CYCLES.map(b => (
+              <button key={b.key} onClick={() => setCycle(b.key)}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: cycle === b.key ? '#1d4ed8' : 'transparent', color: cycle === b.key ? '#fff' : '#94a3b8', transition: 'all 0.2s' }}>
+                {b.label} {b.discount > 0 && <span style={{ fontSize: '11px', color: cycle === b.key ? '#93c5fd' : '#10b981' }}>-{b.discount}%</span>}
+              </button>
+            ))}
+          </div>
+        </>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: compact ? 'repeat(auto-fit, minmax(220px, 1fr))' : 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-        {planDefs.map(plan => (
+        {planDefs.map(plan => {
+          const activeCycle = compact ? 'monthly' : cycle;
+          const months = CYCLE_MONTHS[activeCycle];
+          const fullPrice = prices[plan.id].monthly * months;
+          const saved = fullPrice - prices[plan.id][activeCycle];
+          return (
           <div key={plan.id} style={{ ...S.card, position: 'relative', borderColor: plan.popular ? '#f59e0b' : '#1e293b', transition: 'all 0.2s' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
@@ -1302,12 +1316,15 @@ function PricingCards({ compact = false }) {
             <div style={{ fontSize: '24px', marginBottom: '4px' }}>{plan.id === 'basic' ? '📊' : plan.id === 'premium' ? '📈' : plan.id === 'fno' ? '⚡' : '💎'}</div>
             <h3 style={{ ...S.h3, color: plan.color, marginBottom: '4px' }}>{plan.name}</h3>
             <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>{plan.desc}</p>
-            <div style={{ marginBottom: '20px' }}>
-              <span style={{ fontSize: '32px', fontWeight: 800 }}>
-                {prices[plan.id][compact ? 'monthly' : cycle] === 0 ? 'Free' : '₹' + fmtCurr(prices[plan.id][compact ? 'monthly' : cycle])}
+            <div style={{ marginBottom: saved > 0 ? '4px' : '20px' }}>
+              <span key={activeCycle} style={{ fontSize: '32px', fontWeight: 800, display: 'inline-block', animation: 'svPriceFade 0.25s ease' }}>
+                {prices[plan.id][activeCycle] === 0 ? 'Free' : '₹' + fmtCurr(prices[plan.id][activeCycle])}
               </span>
-              <span style={{ fontSize: '13px', ...S.muted }}>/{compact ? 'mo' : cycle === 'monthly' ? 'month' : cycle}</span>
+              <span style={{ fontSize: '13px', ...S.muted }}>/{compact ? 'mo' : activeCycle === 'monthly' ? 'month' : activeCycle}</span>
             </div>
+            {!compact && saved > 0 && (
+              <p style={{ fontSize: '11px', color: '#059669', fontWeight: 600, marginBottom: '20px' }}>You save ₹{fmtCurr(saved)} vs monthly billing</p>
+            )}
             {!compact && (
               <div style={{ marginBottom: '20px' }}>
                 {PLAN_FEATURES.map(f => (
@@ -1325,7 +1342,7 @@ function PricingCards({ compact = false }) {
               {compact ? 'Subscribe' : currentUser ? 'Manage Subscription' : 'Subscribe Now'}
             </button>
           </div>
-        ))}
+        );})}
       </div>
     </div>
   );
