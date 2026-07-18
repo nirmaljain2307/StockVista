@@ -886,8 +886,8 @@ function LandingPage() {
       .order('published_at', { ascending: false })
       .then(({ data }) => {
         const all = data || [];
-        const free = all.filter(r => r.is_free);
-        const rest = all.filter(r => !r.is_free);
+        const free = all.filter(r => r.plan_required === 'free');
+        const rest = all.filter(r => r.plan_required !== 'free');
         setFreeRecs(free.slice(0, 4));
         setTeaserRecs(rest.slice(0, Math.max(0, 4 - free.slice(0, 4).length)));
       });
@@ -2006,11 +2006,14 @@ function MyPerformanceWidget({ userProfile }) {
 
 // ─── RECOMMENDATION CARD ──────────────────────────────────────────────────────
 function RecCard({ rec, userProfile, onClick, quotaLocked }) {
-  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
   const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
-  const reqRank = planRank[rec.plan_required || 'basic'] ?? 0;
+  const reqRank = planRank[rec.plan_required || 'basic'] ?? 1;
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
-  const hasTierAccess = hasActiveSub && userRank >= reqRank;
+  // Free calls (plan_required = 'free') are visible to everyone — subscribed
+  // or not — so they skip the active-subscription check entirely.
+  const isFreeCall = reqRank === 0;
+  const hasTierAccess = isFreeCall || (hasActiveSub && userRank >= reqRank);
   // Tier-lock (plan too low) keeps the full-card blur — nothing about the call
   // is shown. Quota-lock (plan is fine, monthly limit is used up) shows a
   // teaser instead — symbol, status and date stay visible so the subscriber
@@ -2346,20 +2349,23 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
     // Earliest calls of the month are granted first, so quota fills consistently
     // as the month progresses rather than reshuffling on every new publish.
     if (forceStatus === 'live-group') {
-      const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+      const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
       const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
       const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
       const limit = PLANS[userProfile?.plan_id || 'basic']?.callLimit;
       if (hasActiveSub && limit != null) {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Free calls never touch the quota — they're excluded from both the
+        // eligible-count and the lock check below.
         const thisMonthTierEligible = data
-          .filter(r => new Date(r.published_at) >= monthStart && (planRank[r.plan_required || 'basic'] ?? 0) <= userRank)
+          .filter(r => r.plan_required !== 'free' && new Date(r.published_at) >= monthStart && (planRank[r.plan_required || 'basic'] ?? 1) <= userRank)
           .sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
         const allowedIds = new Set(thisMonthTierEligible.slice(0, limit).map(r => r.id));
         data = data.map(r => {
+          if (r.plan_required === 'free') return { ...r, _quotaLocked: false };
           const inThisMonth = new Date(r.published_at) >= monthStart;
-          const tierEligible = (planRank[r.plan_required || 'basic'] ?? 0) <= userRank;
+          const tierEligible = (planRank[r.plan_required || 'basic'] ?? 1) <= userRank;
           return { ...r, _quotaLocked: inThisMonth && tierEligible && !allowedIds.has(r.id) };
         });
       }
@@ -2884,7 +2890,8 @@ function RecommendationDetailPage({ id, userProfile }) {
   // bypassing the card's lock overlay entirely.
   useEffect(() => {
     if (!rec) return;
-    const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+    if (rec.plan_required === 'free') { setQuotaLocked(false); setQuotaChecked(true); return; }
+    const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
     const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
     const limit = PLANS[userProfile?.plan_id || 'basic']?.callLimit;
     const LIVE_GROUP = ['live', 'near_target', 'near_sl'];
@@ -2898,7 +2905,7 @@ function RecommendationDetailPage({ id, userProfile }) {
       .gte('published_at', monthStart.toISOString())
       .order('published_at', { ascending: true })
       .then(({ data }) => {
-        const eligible = (data || []).filter(r => (planRank[r.plan_required || 'basic'] ?? 0) <= userRank);
+        const eligible = (data || []).filter(r => r.plan_required !== 'free' && (planRank[r.plan_required || 'basic'] ?? 1) <= userRank);
         const allowedIds = new Set(eligible.slice(0, limit).map(r => r.id));
         setQuotaLocked(!allowedIds.has(rec.id));
         setQuotaChecked(true);
@@ -2908,11 +2915,12 @@ function RecommendationDetailPage({ id, userProfile }) {
   if (loading || (rec && !quotaChecked)) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Loading...</div>;
   if (!rec) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Recommendation not found.</div>;
 
-  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
   const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
-  const reqRank = planRank[rec.plan_required || 'basic'] ?? 0;
+  const reqRank = planRank[rec.plan_required || 'basic'] ?? 1;
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
-  const hasTierAccess = hasActiveSub && userRank >= reqRank;
+  const isFreeCall = reqRank === 0;
+  const hasTierAccess = isFreeCall || (hasActiveSub && userRank >= reqRank);
   const isLocked = !hasTierAccess || quotaLocked;
 
   if (isLocked) {
@@ -2986,7 +2994,7 @@ function RecommendationDetailPage({ id, userProfile }) {
             <span style={{ ...S.badge, background: '#e2e8f0' }}>{effStatus.replace('_', ' ').toUpperCase()}</span>
             <span style={{ ...S.badge, background: '#e2e8f0' }}>{TIME_HORIZON_LABELS[rec.time_horizon] || rec.time_horizon}</span>
             <span style={{ ...S.badge, background: '#e2e8f0' }}>Risk: <span style={{ color: riskColor(rec.risk_level) }}>{rec.risk_level}</span></span>
-            <span style={{ ...S.badge, background: '#e2e8f0' }}>{PLANS[rec.plan_required]?.name}</span>
+            <span style={{ ...S.badge, background: '#e2e8f0' }}>{rec.plan_required === 'free' ? 'Free' : PLANS[rec.plan_required]?.name}</span>
           </div>
 
           {/* Uploaded chart image */}
@@ -3494,10 +3502,10 @@ function ReportsPage({ user, userProfile }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {reports.map(r => {
-                const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+                const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
                 const userRank = planRank[userProfile?.plan_id || 'basic'] ?? 0;
-                const reqRank = planRank[r.plan_required || 'basic'] ?? 0;
-                const hasAccess = isActive && userRank >= reqRank;
+                const reqRank = planRank[r.plan_required || 'basic'] ?? 1;
+                const hasAccess = reqRank === 0 || (isActive && userRank >= reqRank);
                 return (
                   <div key={r.id} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'center', padding: '16px 20px', flexWrap: 'wrap' }}>
                     <div style={{ width: '48px', height: '48px', background: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>📄</div>
@@ -6967,7 +6975,7 @@ function AdminPanel({ user, userProfile }) {
 }
 
 function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole }) {
-  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '', is_free: false };
+  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '' };
   const [form, setForm] = useState(existingRec || empty);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
@@ -7047,7 +7055,7 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
   // Fields we track for edit-history purposes — the ones that actually change
   // what the call means (price levels, direction, status, plan tier). We don't
   // bother tracking every text-note field to keep the audit log readable.
-  const TRACKED_FIELDS = ['action', 'entry_price', 'target1', 'target2', 'target3', 'stop_loss', 'exit_price', 'status', 'plan_required', 'is_free'];
+  const TRACKED_FIELDS = ['action', 'entry_price', 'target1', 'target2', 'target3', 'stop_loss', 'exit_price', 'status', 'plan_required'];
 
   const handleSave = async () => {
     if (!form.stock_name || !form.symbol || !form.action) { setMsg('Stock name, symbol and action are required.'); return; }
@@ -7109,7 +7117,7 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
     { k: 'time_horizon', label: 'Time Horizon', opts: ['intraday', 'swing', 'short_term', 'mid_term', 'long_term'] },
     { k: 'risk_level', label: 'Risk Level', opts: ['low', 'medium', 'high'] },
     { k: 'conviction', label: 'Conviction', opts: ['low', 'medium', 'high'] },
-    { k: 'plan_required', label: 'Plan Required', opts: ['basic', 'premium', 'fno', 'elite'] },
+    { k: 'plan_required', label: 'Plan Required', opts: ['free', 'basic', 'premium', 'fno', 'elite'] },
     { k: 'status', label: 'Status', opts: ['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'] },
   ];
   const priceFields = [
@@ -7180,12 +7188,11 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
         <input style={S.input} type="datetime-local" value={form.expiry_at || ''} onChange={e => set('expiry_at', e.target.value)} />
       </div>
 
-      <div style={{ ...S.formGroup, background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <input type="checkbox" id="is_free_toggle" checked={!!form.is_free} onChange={e => set('is_free', e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-        <label htmlFor="is_free_toggle" style={{ fontSize: '13px', color: '#047857', cursor: 'pointer' }}>
-          <strong>Free call</strong> — shown publicly on the homepage to non-subscribers (still needs the same disclosures as any other call)
-        </label>
-      </div>
+      {form.plan_required === 'free' && (
+        <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#047857' }}>
+          <strong>Free call</strong> — shown publicly on the homepage to non-subscribers, and viewable by every logged-in user regardless of plan. Still needs the same disclosures as any other call.
+        </div>
+      )}
 
       <div style={{ ...S.card, marginBottom: '16px', background: '#faf5ff', border: '1.5px solid #c084fc' }}>
         <div style={{ ...S.flexBetween, flexWrap: 'wrap', gap: '8px', marginBottom: aiDraft || aiErr ? '12px' : 0 }}>
