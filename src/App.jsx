@@ -790,7 +790,8 @@ function FeaturedCouponBanner() {
 
   return (
     <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
-      style={{ background: '#0f172a', padding: coupons.length > 1 ? '12px 44px 20px 16px' : '12px 44px 12px 16px', display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', flexWrap: 'wrap' }}>
+      style={{ background: 'linear-gradient(90deg, #0f172a, #1d4ed8, #0f172a, #0f172a)', backgroundSize: '300% 100%', animation: 'bannerGradient 6s ease infinite', padding: coupons.length > 1 ? '12px 44px 20px 16px' : '12px 44px 12px 16px', display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', flexWrap: 'wrap' }}>
+      <style>{`@keyframes bannerGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
       <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <span style={{ fontSize: '19px' }}>🎁</span>
       </div>
@@ -1064,7 +1065,8 @@ function LandingPage() {
             Research-backed buy/sell/hold calls for equity, F&O, commodity, and intraday trading. Not tips — rigorous analysis with entry, targets, and stop-loss.
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
+            <style>{`@keyframes ctaGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
+            <button onClick={() => navigate('/register')} style={{ ...S.btn, fontSize: '16px', padding: '14px 32px', color: '#fff', border: 'none', background: 'linear-gradient(90deg, #1d4ed8, #10b981, #1d4ed8)', backgroundSize: '300% 100%', animation: 'ctaGradient 5s ease infinite' }}>
               Get Started →
             </button>
             <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary, fontSize: '16px', padding: '14px 32px' }}>
