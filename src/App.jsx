@@ -2489,15 +2489,17 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
           {/* Stats */}
           <div style={{ ...S.grid4, marginBottom: '24px' }}>
             {[
-              { label: 'Live', value: stats.live, color: '#10b981', icon: '📊' },
-              { label: 'Target Hit', value: stats.target_hit, color: '#3b82f6', icon: '🎯' },
-              { label: 'SL Hit', value: stats.sl_hit, color: '#ef4444', icon: '⚠️' },
-              { label: 'Total Calls', value: stats.total, color: '#334155', icon: '📋' },
+              { label: 'Live', value: stats.live, icon: '📊', bg: '#E6F1FB', color: '#185FA5' },
+              { label: 'Target Hit', value: stats.target_hit, icon: '🎯', bg: '#EAF3DE', color: '#3B6D11' },
+              { label: 'SL Hit', value: stats.sl_hit, icon: '⚠️', bg: '#FCEBEB', color: '#A32D2D' },
+              { label: 'Total Calls', value: stats.total, icon: '📋', bg: '#EEEDFE', color: '#534AB7' },
             ].map((s, i) => (
               <div key={i} style={{ ...S.card }}>
-                <div style={{ fontSize: '24px' }}>{s.icon}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>{s.icon}</div>
+                  <div style={{ fontSize: '12px', ...S.muted }}>{s.label}</div>
+                </div>
                 <div style={{ fontSize: '24px', fontWeight: 800, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: '12px', ...S.muted }}>{s.label}</div>
               </div>
             ))}
           </div>
