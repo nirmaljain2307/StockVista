@@ -845,6 +845,7 @@ function OfferPopupToast() {
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const isMobile = useIsMobile();
   const [offForSession, setOffForSession] = useState(() => {
     try { return sessionStorage.getItem('sv_offer_popup_off') === 'true'; } catch (e) { return false; }
   });
@@ -886,7 +887,7 @@ function OfferPopupToast() {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9998, width: '270px', background: '#fff', border: `1px solid ${theme.ring}`, borderRadius: '14px', padding: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+    <div style={{ position: 'fixed', bottom: isMobile ? '96px' : '16px', right: isMobile ? undefined : '16px', left: isMobile ? '50%' : undefined, transform: isMobile ? 'translateX(-50%)' : undefined, zIndex: 9998, width: '270px', maxWidth: 'calc(100vw - 32px)', background: '#fff', border: `1px solid ${theme.ring}`, borderRadius: '14px', padding: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
       <button onClick={dismiss} aria-label="Dismiss"
         style={{ position: 'absolute', top: '8px', right: '10px', background: 'none', border: 'none', color: '#94a3b8', fontSize: '13px', cursor: 'pointer' }}>✕</button>
       <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
@@ -957,10 +958,10 @@ function LandingPage() {
   ];
 
   return (
-    <div>
+    <div style={{ paddingTop: '64px' }}>
       <FeaturedCouponBanner />
       {/* Hero */}
-      <section style={{ paddingTop: '140px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 60%, #fefce8 100%)', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ paddingTop: '76px', paddingBottom: '80px', textAlign: 'center', background: 'linear-gradient(160deg, #eff6ff 0%, #f1f5f9 60%, #fefce8 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(29,78,216,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(245,158,11,0.1) 0%, transparent 50%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', maxWidth: '800px', margin: '0 auto', padding: '0 20px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#334155' }}>
