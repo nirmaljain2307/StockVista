@@ -4301,7 +4301,7 @@ function AdminPanel({ user, userProfile }) {
 
   // Coupon state
   const [coupons, setCoupons] = useState([]);
-  const [couponForm, setCouponForm] = useState({ code: '', type: 'percent', value: '', plan_id: 'all', max_uses: '', expires_at: '' });
+  const [couponForm, setCouponForm] = useState({ code: '', type: 'percent', value: '', free_months: '', plan_id: 'all', max_uses: '', expires_at: '' });
   const setCF = (k,v) => setCouponForm(f => ({ ...f, [k]: v }));
 
   // Revenue state
@@ -5825,7 +5825,9 @@ function AdminPanel({ user, userProfile }) {
           {/* ─── COUPONS TAB ─── */}
           {activeTab === 'coupons' && (() => {
             const saveCoupon = async () => {
-              if (!couponForm.code || !couponForm.value) { setCouponMsg('Code and value required.'); return; }
+              if (!couponForm.code) { setCouponMsg('Code is required.'); return; }
+              if (couponForm.type === 'free' && !couponForm.free_months) { setCouponMsg('Free-for-months is required.'); return; }
+              if (couponForm.type !== 'free' && !couponForm.value) { setCouponMsg('Value is required.'); return; }
               setCouponSaving(true);
               // Marketing can create coupons but they stay inactive and
               // unapproved until the owner signs off (with password
@@ -5834,7 +5836,9 @@ function AdminPanel({ user, userProfile }) {
               // affect revenue.
               const needsApproval = myRole === 'marketing';
               const payload = {
-                ...couponForm, code: couponForm.code.toUpperCase(), value: parseFloat(couponForm.value),
+                ...couponForm, code: couponForm.code.toUpperCase(),
+                value: couponForm.type === 'free' ? null : parseFloat(couponForm.value),
+                free_months: couponForm.type === 'free' ? parseInt(couponForm.free_months) : null,
                 max_uses: parseInt(couponForm.max_uses) || null, uses: 0,
                 active: !needsApproval, approved: !needsApproval,
                 submitted_by_email: needsApproval ? user.email : null,
@@ -5924,12 +5928,20 @@ function AdminPanel({ user, userProfile }) {
                       <select style={S.select} value={couponForm.type} onChange={e => setCF('type', e.target.value)}>
                         <option value="percent">% Percentage</option>
                         <option value="flat">₹ Flat Amount</option>
+                        <option value="free">🎉 100% Free (no payment)</option>
                       </select>
                     </div>
-                    <div>
-                      <label style={S.label}>Value * ({couponForm.type === 'percent' ? '%' : '₹'})</label>
-                      <input style={S.input} type="number" placeholder={couponForm.type === 'percent' ? '20' : '500'} value={couponForm.value} onChange={e => setCF('value', e.target.value)} />
-                    </div>
+                    {couponForm.type === 'free' ? (
+                      <div>
+                        <label style={S.label}>Free for (months) *</label>
+                        <input style={S.input} type="number" min="1" placeholder="3" value={couponForm.free_months || ''} onChange={e => setCF('free_months', e.target.value)} />
+                      </div>
+                    ) : (
+                      <div>
+                        <label style={S.label}>Value * ({couponForm.type === 'percent' ? '%' : '₹'})</label>
+                        <input style={S.input} type="number" placeholder={couponForm.type === 'percent' ? '20' : '500'} value={couponForm.value} onChange={e => setCF('value', e.target.value)} />
+                      </div>
+                    )}
                     <div>
                       <label style={S.label}>Apply to Plan</label>
                       <select style={S.select} value={couponForm.plan_id} onChange={e => setCF('plan_id', e.target.value)}>
@@ -5974,7 +5986,7 @@ function AdminPanel({ user, userProfile }) {
                             <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px', background: status.bg, color: status.color }}>{status.label}</span>
                           </div>
                           <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
-                            {c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`} · {c.plan_id === 'all' ? 'All plans' : PLANS[c.plan_id]?.name}
+                            {c.type === 'free' ? `Free for ${c.free_months} month${c.free_months === 1 ? '' : 's'}` : c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`} · {c.plan_id === 'all' ? 'All plans' : PLANS[c.plan_id]?.name}
                             {c.expires_at ? ` · expires ${new Date(c.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
                             {c.submitted_by_email ? ` · submitted by ${c.submitted_by_email}` : ''}
                           </p>
@@ -6361,7 +6373,7 @@ function AdminPanel({ user, userProfile }) {
                     {pendingCoupons.map(c => (
                       <div key={c.id} style={{ ...S.card, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                         <div>
-                          <p style={{ fontWeight: 700, fontSize: '14px' }}>{c.code} <span style={{ fontWeight: 400, fontSize: '12px', color: '#94a3b8' }}>{c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`} · {c.plan_id}</span></p>
+                          <p style={{ fontWeight: 700, fontSize: '14px' }}>{c.code} <span style={{ fontWeight: 400, fontSize: '12px', color: '#94a3b8' }}>{c.type === 'free' ? `Free for ${c.free_months} month${c.free_months === 1 ? '' : 's'}` : c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`} · {c.plan_id}</span></p>
                           <p style={{ fontSize: '11px', color: '#94a3b8' }}>submitted by {c.submitted_by_email || 'marketing'}{c.max_uses ? ` · max ${c.max_uses} uses` : ''}{c.expires_at ? ` · expires ${c.expires_at}` : ''}</p>
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -7951,6 +7963,59 @@ function SubscriptionPage({ user, userProfile }) {
   const [paymentMsg, setPaymentMsg] = useState('');
   const [activating, setActivating] = useState(false);
 
+  // Coupon state — validated server-side via the validate_coupon() RPC
+  // (never trust a client-computed discount). The actual amount charged is
+  // independently recomputed by /api/create-subscription-order too, so
+  // even a tampered client request can't get a discount it doesn't qualify for.
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState(null); // { discount_type, discount_value, free_months }
+  const [couponMsg, setCouponMsg] = useState('');
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [freeActivating, setFreeActivating] = useState(false);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim() || !selectedPlan) return;
+    setCouponChecking(true); setCouponMsg(''); setCouponApplied(null);
+    const { data, error } = await supabase.rpc('validate_coupon', { p_code: couponCode.trim(), p_plan_id: selectedPlan });
+    setCouponChecking(false);
+    const result = data && data[0];
+    if (error || !result || !result.valid) {
+      setCouponMsg(result?.message || 'Could not validate coupon.');
+      return;
+    }
+    setCouponApplied({ discount_type: result.discount_type, discount_value: result.discount_value, free_months: result.free_months });
+    setCouponMsg(result.discount_type === 'free'
+      ? `✅ Coupon applied — ${result.free_months} month${result.free_months === 1 ? '' : 's'} free`
+      : `✅ Coupon applied — ${result.discount_type === 'percent' ? result.discount_value + '% off' : '₹' + result.discount_value + ' off'}`);
+  };
+
+  const activateFreeCoupon = async () => {
+    if (!couponApplied || couponApplied.discount_type !== 'free' || !selectedPlan) return;
+    setFreeActivating(true); setPaymentMsg('');
+    const { data, error } = await supabase.rpc('redeem_free_coupon', { p_code: couponCode.trim(), p_plan_id: selectedPlan });
+    setFreeActivating(false);
+    const result = data && data[0];
+    if (error || !result || !result.success) {
+      setPaymentMsg('Error: ' + (result?.message || error?.message || 'Could not activate free plan.'));
+      return;
+    }
+    setPaymentMsg('✅ Free plan activated! Refreshing...');
+    setTimeout(() => window.location.reload(), 1200);
+  };
+
+  const removeCoupon = () => { setCouponCode(''); setCouponApplied(null); setCouponMsg(''); };
+
+  const displayedPrice = (base) => {
+    if (!couponApplied) return base;
+    if (couponApplied.discount_type === 'free') return 0;
+    const discounted = couponApplied.discount_type === 'percent'
+      ? Math.round(base * (1 - couponApplied.discount_value / 100))
+      : Math.max(0, base - couponApplied.discount_value);
+    // Mirrors the backend's ₹1 floor (Razorpay rejects ₹0 orders) so the
+    // price shown here always matches what actually gets charged.
+    return Math.max(1, discounted);
+  };
+
   const handleSubscribe = async () => {
     if (!selectedPlan) return;
 
@@ -7961,7 +8026,7 @@ function SubscriptionPage({ user, userProfile }) {
       const orderRes = await fetch('/api/create-subscription-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: selectedPlan, cycle, userId: user.id }),
+        body: JSON.stringify({ planId: selectedPlan, cycle, userId: user.id, couponCode: couponApplied ? couponCode.trim() : undefined }),
       });
       const order = await orderRes.json();
       if (!orderRes.ok) {
@@ -7999,6 +8064,7 @@ function SubscriptionPage({ user, userProfile }) {
                 userId: user.id,
                 planId: selectedPlan,
                 cycle,
+                couponCode: couponApplied ? couponCode.trim() : undefined,
               }),
             });
             const verify = await verifyRes.json();
@@ -8099,7 +8165,7 @@ function SubscriptionPage({ user, userProfile }) {
               const isSelected = selectedPlan === p.id;
               const isCurrent = currentPlanId === p.id && isActive;
               return (
-                <div key={p.id} onClick={() => !isCurrent && setSelectedPlan(p.id)}
+                <div key={p.id} onClick={() => !isCurrent && (setSelectedPlan(p.id), setCouponApplied(null), setCouponMsg(''))}
                   style={{ ...S.card, cursor: isCurrent ? 'default' : 'pointer', border: isSelected ? `2px solid ${p.color}` : isCurrent ? '2px solid #059669' : '1px solid #E5E3DA', position: 'relative', transition: 'all 0.15s', padding: '20px', background: isSelected ? '#fafbff' : '#fff' }}>
                   {p.popular && !isCurrent && (
                     <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#d97706', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>MOST POPULAR</div>
@@ -8127,13 +8193,58 @@ function SubscriptionPage({ user, userProfile }) {
                     <p style={{ fontWeight: 700, fontSize: '16px', color: '#0A0A0A' }}>{planList.find(p => p.id === selectedPlan)?.name}</p>
                     <p style={{ fontSize: '13px', color: '#64748b' }}>{cycle === 'monthly' ? 'Monthly billing' : cycle === 'quarterly' ? 'Quarterly billing' : 'Annual billing · best value'}</p>
                   </div>
-                  <p style={{ fontSize: '24px', fontWeight: 800, color: '#1e40af' }}>₹{prices[selectedPlan][cycle].toLocaleString('en-IN')}</p>
+                  <div style={{ textAlign: 'right' }}>
+                    {couponApplied && couponApplied.discount_type !== 'free' && (
+                      <p style={{ fontSize: '13px', color: '#94a3b8', textDecoration: 'line-through' }}>₹{prices[selectedPlan][cycle].toLocaleString('en-IN')}</p>
+                    )}
+                    {couponApplied?.discount_type === 'free' ? (
+                      <p style={{ fontSize: '20px', fontWeight: 800, color: '#059669' }}>Free for {couponApplied.free_months} month{couponApplied.free_months === 1 ? '' : 's'}</p>
+                    ) : (
+                      <p style={{ fontSize: '24px', fontWeight: 800, color: '#1e40af' }}>₹{displayedPrice(prices[selectedPlan][cycle]).toLocaleString('en-IN')}</p>
+                    )}
+                  </div>
                 </div>
+
+                {/* Coupon code */}
+                <div style={{ marginBottom: '12px' }}>
+                  {couponApplied ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#EAF3DE', borderRadius: '8px' }}>
+                      <p style={{ fontSize: '13px', color: '#27500A', fontWeight: 600 }}>🎟️ {couponCode.trim().toUpperCase()} applied</p>
+                      <button onClick={removeCoupon} style={{ background: 'none', border: 'none', color: '#27500A', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}>Remove</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        style={{ ...S.input, flex: 1, fontSize: '13px', textTransform: 'uppercase' }}
+                        placeholder="Have a coupon code?"
+                        value={couponCode}
+                        onChange={e => { setCouponCode(e.target.value); setCouponMsg(''); }}
+                        onKeyDown={e => e.key === 'Enter' && applyCoupon()}
+                      />
+                      <button onClick={applyCoupon} disabled={couponChecking || !couponCode.trim()} style={{ ...S.btn, ...S.btnSecondary, opacity: (couponChecking || !couponCode.trim()) ? 0.6 : 1 }}>
+                        {couponChecking ? 'Checking...' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
+                  {couponMsg && !couponApplied && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '6px' }}>{couponMsg}</p>}
+                </div>
+
                 {paymentMsg && <p style={{ fontSize: '13px', color: paymentMsg.startsWith('✅') ? '#059669' : '#dc2626', marginBottom: '12px', fontWeight: 600 }}>{paymentMsg}</p>}
-                <button onClick={handleSubscribe} disabled={activating} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', fontSize: '15px', padding: '13px', opacity: activating ? 0.7 : 1 }}>
-                  {activating ? 'Activating...' : '🔒 Proceed to Payment →'}
-                </button>
-                <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '10px' }}>Secured by Razorpay · UPI · Cards · Net Banking</p>
+                {couponApplied?.discount_type === 'free' ? (
+                  <>
+                    <button onClick={activateFreeCoupon} disabled={freeActivating} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', fontSize: '15px', padding: '13px', background: '#059669', opacity: freeActivating ? 0.7 : 1 }}>
+                      {freeActivating ? 'Activating...' : `🎉 Activate free plan — no payment needed`}
+                    </button>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '10px' }}>No card details required</p>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={handleSubscribe} disabled={activating} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', fontSize: '15px', padding: '13px', opacity: activating ? 0.7 : 1 }}>
+                      {activating ? 'Activating...' : '🔒 Proceed to Payment →'}
+                    </button>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '10px' }}>Secured by Razorpay · UPI · Cards · Net Banking</p>
+                  </>
+                )}
               </>
             ) : (
               <div style={{ textAlign: 'center', padding: '20px' }}>
