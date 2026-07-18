@@ -8178,6 +8178,7 @@ function SubscriptionPage({ user, userProfile }) {
 
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB' }}>
+      <FeaturedCouponBanner />
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
