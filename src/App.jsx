@@ -214,6 +214,7 @@ const calcPnL = (rec) => {
 // on the admin-entered CMP field.
 function useLivePrice(symbol, exchange, active) {
   const [price, setPrice] = useState(null);
+  const [series, setSeries] = useState(null);
   useEffect(() => {
     if (!active || !symbol) return;
     let cancelled = false;
@@ -226,15 +227,57 @@ function useLivePrice(symbol, exchange, active) {
           { headers: { 'Accept': 'application/json' } }
         );
         const data = await res.json();
-        const q = data?.chart?.result?.[0]?.meta;
+        const result = data?.chart?.result?.[0];
+        const q = result?.meta;
         if (q?.regularMarketPrice && !cancelled) setPrice(q.regularMarketPrice);
+        // Same response already carries the day's intraday closes — reusing it
+        // for a real sparkline instead of a second API call. Nulls (pre-market/
+        // gaps) are filtered so the line doesn't break.
+        const closes = result?.indicators?.quote?.[0]?.close;
+        if (Array.isArray(closes) && !cancelled) {
+          const clean = closes.filter(c => typeof c === 'number');
+          if (clean.length >= 2) setSeries(clean);
+        }
       } catch(e) {}
     };
     fetchPrice();
     const timer = setInterval(fetchPrice, 30000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [symbol, exchange, active]);
-  return price;
+  return { price, series };
+}
+
+// Small self-contained stroke icons — used instead of emoji in a few
+// higher-visibility spots (RecCard) so this card doesn't depend on any
+// icon font/webfont being loaded. currentColor-based, 1.5px stroke.
+const IconLock = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+);
+const IconChartLine = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l5-6 4 3 5-8 4 5"/></svg>
+);
+const IconFileText = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+);
+const IconShield = ({ size = 11 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+);
+
+// Sparkline built from a real intraday price series (Yahoo). Renders nothing
+// if there's no series yet — never fills in a fake trend line.
+function Sparkline({ series, width = 130, height = 28 }) {
+  if (!series || series.length < 2) return null;
+  const min = Math.min(...series), max = Math.max(...series);
+  const range = max - min || 1;
+  const step = width / (series.length - 1);
+  const points = series.map((v, i) => `${(i * step).toFixed(1)},${(height - ((v - min) / range) * height).toFixed(1)}`).join(' ');
+  const rising = series[series.length - 1] >= series[0];
+  const color = rising ? '#059669' : '#dc2626';
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 // Suggests an effective status from CMP vs target/SL/expiry without overwriting
@@ -2108,7 +2151,8 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
   const effStatus = rec.status || 'live';
   const isLiveish = ['live', 'near_target', 'near_sl'].includes(effStatus);
   const isEquity = (rec.segment || 'equity').toLowerCase() === 'equity';
-  const livePrice = useLivePrice(rec.symbol, rec.exchange, isLiveish && isEquity && !isLocked);
+  const livePriceData = useLivePrice(rec.symbol, rec.exchange, isLiveish && isEquity && !isLocked);
+  const livePrice = livePriceData.price;
   const pnl = calcPnL(livePrice ? { ...rec, cmp: livePrice } : rec);
 
   // Status badge config
@@ -2135,7 +2179,7 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
       {/* Lock overlay — full card, tier-lock only */}
       {isFullLocked && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', flexDirection: 'column', gap: '10px' }}>
-          <span style={{ fontSize: '24px' }}>🔒</span>
+          <span style={{ color: '#94a3b8' }}><IconLock size={22} /></span>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A' }}>{PLANS[rec.plan_required || 'basic']?.name} Required</p>
           <button onClick={e => { e.stopPropagation(); navigate('/subscription'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>Upgrade Plan</button>
         </div>
@@ -2145,7 +2189,7 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
           visible; only the trade details (row 3+) get covered further down. */}
       {isQuotaTeaser && (
         <div style={{ background: '#FAECE7', border: '1px solid #F0997B', borderRadius: '8px', padding: '6px 10px', marginBottom: '10px', fontSize: '11px', color: '#712B13', fontWeight: 600 }}>
-          🔒 New call published — monthly limit reached
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><IconLock size={12} />New call published — monthly limit reached</span>
         </div>
       )}
 
@@ -2153,7 +2197,7 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isQuotaTeaser ? (
-            <span style={{ ...S.badge, background: '#f1f5f9', color: '#94a3b8', fontSize: '11px', padding: '3px 10px' }}>🔒 LOCKED</span>
+            <span style={{ ...S.badge, background: '#f1f5f9', color: '#94a3b8', fontSize: '11px', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><IconLock size={11} />LOCKED</span>
           ) : (
             <span style={{ ...S.badge, ...actionStyle(rec.action), fontSize: '11px', padding: '3px 10px' }}>{rec.action}</span>
           )}
@@ -2177,6 +2221,14 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
         <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: '4px' }}>{TIME_HORIZON_LABELS[rec.time_horizon] || rec.time_horizon}</span>
       </div>
 
+      {/* Today's intraday move, real Yahoo data — only renders once a series
+          has actually loaded, never a placeholder trend. */}
+      {!isLocked && livePriceData.series && (
+        <div style={{ marginBottom: '10px' }}>
+          <Sparkline series={livePriceData.series} width={260} height={26} />
+        </div>
+      )}
+
       {/* Row 3 — Price grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', background: '#FAF9F5', borderRadius: '10px', border: '1px solid #E5E3DA', overflow: 'hidden', position: 'relative' }}>
         {isQuotaTeaser && (
@@ -2193,7 +2245,7 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
         ].map((item, i) => (
           <div key={i} style={{ padding: '8px 10px', borderRight: i < 3 ? '1px solid #e2e8f0' : 'none', textAlign: 'center' }}>
             <p style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>{item.label}</p>
-            <p style={{ fontSize: '13px', fontWeight: 700, color: item.color }}>₹{item.value}</p>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: item.color, fontVariantNumeric: 'tabular-nums' }}>₹{item.value}</p>
           </div>
         ))}
       </div>
@@ -2202,20 +2254,20 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {pnl.points !== null && !isQuotaTeaser && (
-            <span style={{ fontSize: '12px', fontWeight: 700, color: pnl.points >= 0 ? '#059669' : '#dc2626' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: pnl.points >= 0 ? '#059669' : '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
               {pnl.points >= 0 ? '+' : ''}{pnl.points} pts ({pnl.pct >= 0 ? '+' : ''}{pnl.pct}%)
               {livePrice && <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>● Delayed · Yahoo</span>}
             </span>
           )}
           {rec.risk_level && (
-            <span style={{ fontSize: '10px', fontWeight: 700, color: riskColor(rec.risk_level), textTransform: 'capitalize' }}>
-              ● {rec.risk_level} risk
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: 700, color: riskColor(rec.risk_level), textTransform: 'capitalize' }}>
+              <IconShield size={11} />{rec.risk_level} risk
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {rec.chart_url && <a href={rec.chart_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600, textDecoration: 'none' }}>📈 Chart</a>}
-          {rec.report_url && <a href={rec.report_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600, textDecoration: 'none' }}>📄 Report</a>}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {rec.chart_url && <a href={rec.chart_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#1e40af', fontWeight: 600, textDecoration: 'none' }}><IconChartLine size={13} />Chart</a>}
+          {rec.report_url && <a href={rec.report_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#1e40af', fontWeight: 600, textDecoration: 'none' }}><IconFileText size={13} />Report</a>}
         </div>
       </div>
     </div>
