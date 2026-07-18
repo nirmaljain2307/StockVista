@@ -636,21 +636,25 @@ function Navbar({ user, userProfile, onLogout }) {
 
 // ─── LANDING PAGE ─────────────────────────────────────────────────────────────
 // ─── FEATURED COUPON BANNER ────────────────────────────────────────────────────
-// Shows whichever coupon the admin has marked "featured" in the Coupons tab.
-// Admin can turn this on/off or swap which coupon shows just by toggling it
-// there — no code change needed. Renders nothing if no coupon is featured.
+// Shows the most recent coupon the admin has marked "featured" in the
+// Coupons tab, plus a "+N more" hint if several are running at once — the
+// full list shows in <CouponOffersBox/> next to the plan picker. Admin can
+// turn any of this on/off just by toggling "Feature" there — no code
+// change needed. Renders nothing if nothing is featured.
 function FeaturedCouponBanner() {
-  const [coupon, setCoupon] = useState(null);
+  const [coupons, setCoupons] = useState([]);
   const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    supabase.rpc('get_featured_coupon').then(({ data }) => {
-      if (data && data[0]) setCoupon(data[0]);
+    supabase.rpc('get_featured_coupons').then(({ data }) => {
+      if (data && data.length > 0) setCoupons(data);
     });
   }, []);
 
-  if (!coupon || dismissed) return null;
+  if (coupons.length === 0 || dismissed) return null;
+  const coupon = coupons[0];
+  const moreCount = coupons.length - 1;
 
   const planName = coupon.plan_id === 'all' ? 'every plan' : PLANS[coupon.plan_id]?.name || coupon.plan_id;
   const title = coupon.type === 'free'
@@ -660,6 +664,7 @@ function FeaturedCouponBanner() {
   const urgencyParts = [];
   if (coupon.expires_at) urgencyParts.push(`Ends ${new Date(coupon.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`);
   if (coupon.max_uses) urgencyParts.push(`limited to first ${coupon.max_uses} signups`);
+  if (moreCount > 0) urgencyParts.push(`+${moreCount} more offer${moreCount === 1 ? '' : 's'}`);
 
   const copyCode = () => {
     navigator.clipboard?.writeText(coupon.code);
@@ -668,22 +673,69 @@ function FeaturedCouponBanner() {
   };
 
   return (
-    <div style={{ background: '#1e40af', borderRadius: '0', padding: '12px 44px 12px 16px', display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', flexWrap: 'wrap' }}>
-      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <span style={{ fontSize: '18px' }}>🎁</span>
+    <div style={{ background: 'linear-gradient(90deg, #1e3a8a 0%, #1e40af 60%, #2563eb 100%)', padding: '12px 44px 12px 16px', display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', flexWrap: 'wrap' }}>
+      <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+        <span style={{ fontSize: '19px' }}>🎁</span>
       </div>
       <div style={{ flex: '1 1 200px', minWidth: 0 }}>
         <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', margin: 0 }}>{title}</p>
         {urgencyParts.length > 0 && (
-          <p style={{ fontSize: '12px', color: '#fff', opacity: 0.8, margin: '2px 0 0' }}>{urgencyParts.join(' · ')}</p>
+          <p style={{ fontSize: '12px', color: '#fff', opacity: 0.85, margin: '2px 0 0' }}>{urgencyParts.join(' · ')}</p>
         )}
       </div>
-      <button onClick={copyCode} style={{ background: '#fff', color: '#1e40af', border: 'none', padding: '8px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0, fontWeight: 700 }}>
+      <button onClick={copyCode} style={{ background: '#fff', color: '#1e40af', border: 'none', padding: '8px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0, fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
         <span style={{ fontFamily: 'monospace', fontSize: '13px', letterSpacing: '0.05em' }}>{copied ? 'Copied!' : coupon.code}</span>
         {!copied && <span style={{ fontSize: '13px' }}>⧉</span>}
       </button>
       <button onClick={() => setDismissed(true)} aria-label="Dismiss"
         style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer', opacity: 0.7 }}>✕</button>
+    </div>
+  );
+}
+
+// ─── ACTIVE OFFERS BOX ─────────────────────────────────────────────────────────
+// Sits next to the plan picker on the checkout page and lists EVERY
+// featured coupon (not just the top one the banner shows) — grows or
+// shrinks automatically as admin features/unfeatures coupons, no code
+// change ever needed. Renders nothing if none are featured.
+function CouponOffersBox() {
+  const [coupons, setCoupons] = useState([]);
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  useEffect(() => {
+    supabase.rpc('get_featured_coupons').then(({ data }) => setCoupons(data || []));
+  }, []);
+
+  if (coupons.length === 0) return null;
+
+  const copyCode = (code) => {
+    navigator.clipboard?.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 1500);
+  };
+
+  return (
+    <div style={{ ...S.card, position: 'sticky', top: '80px' }}>
+      <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>🎁 Active offers</p>
+      <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>{coupons.length} offer{coupons.length === 1 ? '' : 's'} running right now</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {coupons.map(c => {
+          const planName = c.plan_id === 'all' ? 'every plan' : PLANS[c.plan_id]?.name || c.plan_id;
+          const desc = c.type === 'free'
+            ? `${c.free_months} month${c.free_months === 1 ? '' : 's'} free`
+            : c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`;
+          return (
+            <div key={c.code} style={{ border: '1px solid #E5E3DA', borderRadius: '10px', padding: '10px 12px' }}>
+              <p style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A', margin: 0 }}>{desc}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 8px' }}>{planName}{c.expires_at ? ` · ends ${new Date(c.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</p>
+              <button onClick={() => copyCode(c.code)} style={{ width: '100%', background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '8px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>{copiedCode === c.code ? 'Copied!' : c.code}</span>
+                {copiedCode !== c.code && <span style={{ fontSize: '12px', color: '#94a3b8' }}>⧉</span>}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -5934,14 +5986,11 @@ function AdminPanel({ user, userProfile }) {
               setTimeout(() => setCouponMsg(''), 1500);
             };
 
-            // Only one coupon is ever featured at a time — turning one on
-            // automatically turns any other off, so the site banner never
-            // shows two conflicting offers.
+            // Multiple coupons can be featured at once — they all show in
+            // the "Active offers" box on the checkout page, and the top
+            // banner shows a summary. Nothing exclusive here anymore.
             const toggleFeaturedCoupon = async (c) => {
               const turningOn = !c.featured;
-              if (turningOn) {
-                await supabase.from('coupons').update({ featured: false }).eq('featured', true);
-              }
               await supabase.from('coupons').update({ featured: turningOn }).eq('id', c.id);
               await logAudit(turningOn ? 'FEATURE_COUPON' : 'UNFEATURE_COUPON', 'coupon', c.id, { code: c.code });
               fetchData();
@@ -7978,6 +8027,7 @@ function SubscriptionPage({ user, userProfile }) {
   const isActive = userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [cycle, setCycle] = useState('monthly');
+  const isMobile = useIsMobile(900);
   const COOLOFF_MS = 10 * 60 * 1000;
   const [cooloff, setCooloff] = useState(null); // { paymentId, createdAt }
   const [cooloffNow, setCooloffNow] = useState(Date.now());
@@ -8180,7 +8230,7 @@ function SubscriptionPage({ user, userProfile }) {
     <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#FEFDFB' }}>
       <FeaturedCouponBanner />
       <div style={{ ...S.section, paddingTop: '40px' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
 
           {/* Current plan banner */}
           <div style={{ ...S.card, marginBottom: '28px', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
@@ -8223,6 +8273,8 @@ function SubscriptionPage({ user, userProfile }) {
             </div>
           )}
 
+          <div style={{ display: isMobile ? 'block' : 'flex', gap: '24px', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ ...S.h3, marginBottom: '6px' }}>Choose Your Plan</h2>
           <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>Select a plan and billing cycle to subscribe.</p>
 
@@ -8332,6 +8384,11 @@ function SubscriptionPage({ user, userProfile }) {
                 <p style={{ color: '#94a3b8', fontSize: '14px' }}>← Select a plan above to continue</p>
               </div>
             )}
+          </div>
+          </div>
+          <div style={{ width: isMobile ? '100%' : '280px', flexShrink: 0, marginTop: isMobile ? '24px' : 0 }}>
+            <CouponOffersBox />
+          </div>
           </div>
 
           <div style={{ ...S.disclaimer, marginTop: '20px' }}>
