@@ -1492,28 +1492,29 @@ function LoginPage({ setUser, setUserProfile }) {
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your StockVista account.">
       {err && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{err}</div>}
-      <div style={S.formGroup}>
-        <label style={S.label}>Email</label>
-        <input style={S.input} type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
-      </div>
-      <div style={S.formGroup}>
-        <div style={{ ...S.flexBetween, marginBottom: '6px' }}>
-          <label style={{ ...S.label, marginBottom: 0 }}>Password</label>
-          <button onClick={() => navigate('/forgot-password')} style={{ background: 'none', border: 'none', color: '#1e40af', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Forgot password?</button>
+      <form onSubmit={e => { e.preventDefault(); handleLogin(); }}>
+        <div style={S.formGroup}>
+          <label style={S.label}>Email</label>
+          <input style={S.input} type="email" name="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
         </div>
-        <input style={S.input} type="password" placeholder="Enter your password" value={pw} onChange={e => setPw(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleLogin()} />
-      </div>
-      <button onClick={handleLogin} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '12px', opacity: loading ? 0.7 : 1, fontSize: '15px', padding: '13px' }}>
-        {loading ? 'Signing in...' : 'Sign In →'}
-      </button>
+        <div style={S.formGroup}>
+          <div style={{ ...S.flexBetween, marginBottom: '6px' }}>
+            <label style={{ ...S.label, marginBottom: 0 }}>Password</label>
+            <button type="button" onClick={() => navigate('/forgot-password')} style={{ background: 'none', border: 'none', color: '#1e40af', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Forgot password?</button>
+          </div>
+          <input style={S.input} type="password" name="password" autoComplete="current-password" placeholder="Enter your password" value={pw} onChange={e => setPw(e.target.value)} />
+        </div>
+        <button type="submit" disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '12px', opacity: loading ? 0.7 : 1, fontSize: '15px', padding: '13px' }}>
+          {loading ? 'Signing in...' : 'Sign In →'}
+        </button>
+      </form>
       <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '12px', margin: '14px 0' }}>OR</div>
-      <button onClick={handleGoogle} style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center', marginBottom: '20px', padding: '11px' }}>
+      <button type="button" onClick={handleGoogle} style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center', marginBottom: '20px', padding: '11px' }}>
         <span style={{ fontWeight: 800, fontSize: '15px', marginRight: '4px' }}>G</span> Continue with Google
       </button>
       <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
         Don't have an account?{' '}
-        <button onClick={() => navigate('/register')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Create account →</button>
+        <button type="button" onClick={() => navigate('/register')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Create account →</button>
       </p>
     </AuthLayout>
   );
@@ -1553,50 +1554,52 @@ function RegisterPage({ setUser, setUserProfile }) {
   return (
     <AuthLayout title="Create account" subtitle="Start your research journey with StockVista.">
       {err && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{err}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
-        <div style={S.formGroup}>
-          <label style={S.label}>Full Name *</label>
-          <input style={S.input} placeholder="Nishit Jain" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
+      <form onSubmit={e => { e.preventDefault(); handleRegister(); }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Full Name *</label>
+            <input style={S.input} name="name" autoComplete="name" placeholder="Nishit Jain" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Mobile (optional)</label>
+            <input style={S.input} type="tel" name="tel" autoComplete="tel" placeholder="+91 98765 43210" value={form.mobile} onChange={e => set('mobile', e.target.value)} />
+          </div>
         </div>
         <div style={S.formGroup}>
-          <label style={S.label}>Mobile (optional)</label>
-          <input style={S.input} type="tel" placeholder="+91 98765 43210" value={form.mobile} onChange={e => set('mobile', e.target.value)} />
+          <label style={S.label}>Email *</label>
+          <input style={S.input} type="email" name="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
         </div>
-      </div>
-      <div style={S.formGroup}>
-        <label style={S.label}>Email *</label>
-        <input style={S.input} type="email" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
-        <div style={S.formGroup}>
-          <label style={S.label}>Password *</label>
-          <input style={S.input} type="password" placeholder="Min 8 chars" value={form.password} onChange={e => set('password', e.target.value)} />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Password *</label>
+            <input style={S.input} type="password" name="new-password" autoComplete="new-password" placeholder="Min 8 chars" value={form.password} onChange={e => set('password', e.target.value)} />
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Confirm Password *</label>
+            <input style={{ ...S.input, borderColor: form.confirm && form.confirm !== form.password ? '#fca5a5' : '#e2e8f0' }}
+              type="password" name="confirm-password" autoComplete="new-password" placeholder="Re-enter" value={form.confirm} onChange={e => set('confirm', e.target.value)} />
+          </div>
         </div>
-        <div style={S.formGroup}>
-          <label style={S.label}>Confirm Password *</label>
-          <input style={{ ...S.input, borderColor: form.confirm && form.confirm !== form.password ? '#fca5a5' : '#e2e8f0' }}
-            type="password" placeholder="Re-enter" value={form.confirm} onChange={e => set('confirm', e.target.value)} />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '18px' }}>
+          <input type="checkbox" id="agree" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '15px', height: '15px', cursor: 'pointer', marginTop: '2px', flexShrink: 0 }} />
+          <label htmlFor="agree" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
+            I agree to the{' '}
+            <button type="button" onClick={() => navigate('/terms')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Terms</button>
+            {' '}and{' '}
+            <button type="button" onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Privacy Policy</button>
+          </label>
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '18px' }}>
-        <input type="checkbox" id="agree" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '15px', height: '15px', cursor: 'pointer', marginTop: '2px', flexShrink: 0 }} />
-        <label htmlFor="agree" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
-          I agree to the{' '}
-          <button onClick={() => navigate('/terms')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Terms</button>
-          {' '}and{' '}
-          <button onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Privacy Policy</button>
-        </label>
-      </div>
-      <button onClick={handleRegister} disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '10px', opacity: loading ? 0.7 : 1, fontSize: '15px', padding: '13px' }}>
-        {loading ? 'Creating Account...' : 'Create Account →'}
-      </button>
-      <button onClick={async () => await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/dashboard' } })}
+        <button type="submit" disabled={loading} style={{ ...S.btn, ...S.btnPrimary, width: '100%', justifyContent: 'center', marginBottom: '10px', opacity: loading ? 0.7 : 1, fontSize: '15px', padding: '13px' }}>
+          {loading ? 'Creating Account...' : 'Create Account →'}
+        </button>
+      </form>
+      <button type="button" onClick={async () => await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/dashboard' } })}
         style={{ ...S.btn, ...S.btnSecondary, width: '100%', justifyContent: 'center', marginBottom: '16px', padding: '11px' }}>
         <span style={{ fontWeight: 800, fontSize: '15px', marginRight: '4px' }}>G</span> Continue with Google
       </button>
       <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
         Already have an account?{' '}
-        <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Sign in →</button>
+        <button type="button" onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Sign in →</button>
       </p>
     </AuthLayout>
   );
