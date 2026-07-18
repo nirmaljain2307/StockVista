@@ -1071,6 +1071,9 @@ function LandingPage() {
                 </div>
               ))}
             </div>
+            <p style={{ ...S.disclaimer, marginTop: '20px' }}>
+              ⚠️ Free calls are exemplary, not personalised recommendations. Investment in securities market is subject to market risks. Read all related documents carefully before investing. Past performance is not indicative of future results. {APP_NAME} (SEBI RA Reg: {SEBI_REG}) provides research analysis for educational purposes only.
+            </p>
           </div>
         </section>
       )}
@@ -2443,7 +2446,11 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
     setLoading(false);
   };
 
-  if (!riskAccepted && user) return <DisclaimerPopup onAccept={() => setRiskAccepted(true)} />;
+  // Previously skipped for anonymous visitors (only logged-in users hit this
+  // gate) — that was fine when nothing was viewable without an account, but
+  // free calls now expose real entry/target/stop-loss data to anonymous
+  // visitors too, so they need the same mandatory disclosure before seeing it.
+  if (!riskAccepted) return <DisclaimerPopup onAccept={() => setRiskAccepted(true)} />;
   if (fnoGate) return <FnoRiskGate onAccept={acceptFnoRisk} onDecline={declineFnoRisk} />;
 
   // Scoped to whichever group this page is showing — Live Calls and Past
