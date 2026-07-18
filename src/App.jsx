@@ -280,6 +280,52 @@ function Sparkline({ series, width = 130, height = 28 }) {
   );
 }
 
+// Animates a number counting up from 0 to `target` — used on the landing
+// hero stats, which are real DB-backed numbers already; this only changes
+// how they arrive on screen, never the value itself. Non-numeric targets
+// (e.g. "Growing", "—") just render as-is, no animation.
+function useCountUp(target, duration = 900) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    const num = typeof target === 'number' ? target : parseInt(target, 10);
+    if (!Number.isFinite(num)) { setDisplay(target); return; }
+    let start = null;
+    let raf;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      setDisplay(Math.round(num * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return display;
+}
+
+const IconFileCheck = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 14l1.5 1.5 3-3"/></svg>
+);
+const IconHistory = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v5l3 2"/></svg>
+);
+const IconGift = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 8c-1.5 0-3-1-3-2.5A2.5 2.5 0 0 1 11.5 3c1.5 0 2.5 2.5 2.5 5M12 8c1.5 0 3-1 3-2.5A2.5 2.5 0 0 0 12.5 3c-1.5 0-2.5 2.5-2.5 5"/></svg>
+);
+
+// One credentials-bar stat with its own count-up — a real DB-backed number
+// (or a non-numeric fallback like "Growing") animating from 0 on mount.
+function StatCounter({ value, suffix = '', label }) {
+  const display = useCountUp(value);
+  return (
+    <div>
+      <div style={{ fontSize: '28px', fontWeight: 800, color: '#1d4ed8' }}>{display}{typeof display === 'number' ? suffix : ''}</div>
+      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>{label}</div>
+    </div>
+  );
+}
+
+
 // Suggests an effective status from CMP vs target/SL/expiry without overwriting
 // the admin's manually-set status. Used for display badges and the admin
 // "Auto-check Status" bulk action.
@@ -1037,19 +1083,32 @@ function LandingPage() {
       <section style={{ background: '#FEFDFB', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '28px 20px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '24px', textAlign: 'center' }}>
           {[
-            { value: liveStats.calls > 0 ? liveStats.calls + '+' : 'Growing', label: 'Research Calls Published', real: true },
-            { value: liveStats.live > 0 ? liveStats.live : '—', label: 'Live Calls Right Now', real: true },
-            { value: liveStats.segments > 0 ? liveStats.segments : '4', label: 'Market Segments Covered', real: true },
-          ].map((s, i) => (
-            <div key={i}>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#1d4ed8' }}>{s.value}</div>
-              <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>{s.label}</div>
-            </div>
-          ))}
+            { value: liveStats.calls > 0 ? liveStats.calls : 'Growing', suffix: '+', label: 'Research Calls Published' },
+            { value: liveStats.live > 0 ? liveStats.live : '—', suffix: '', label: 'Live Calls Right Now' },
+            { value: liveStats.segments > 0 ? liveStats.segments : '4', suffix: '', label: 'Market Segments Covered' },
+          ].map((s, i) => <StatCounter key={i} value={s.value} suffix={s.suffix} label={s.label} />)}
         </div>
         <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '16px' }}>
           * All statistics are real-time and updated live from our database. We do not inflate or estimate any metric.
         </p>
+
+        <div style={{ maxWidth: '1000px', margin: '24px auto 0', paddingTop: '24px', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
+          {[
+            { Icon: IconFileCheck, color: '#1d4ed8', bg: '#E6F1FB', title: 'Full disclosure', desc: 'Every call, every risk' },
+            { Icon: IconHistory, color: '#3B6D11', bg: '#EAF3DE', title: 'Public track record', desc: 'Wins and losses shown' },
+            { Icon: IconGift, color: '#534AB7', bg: '#EEEDFE', title: 'Free calls', desc: 'No signup needed' },
+          ].map((t, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: t.bg, color: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <t.Icon size={16} />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: '#0A0A0A', margin: 0 }}>{t.title}</p>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>{t.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Free Calls Preview — real data only. Free-tagged calls show in full;
