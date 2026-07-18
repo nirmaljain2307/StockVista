@@ -1057,13 +1057,14 @@ function LandingPage() {
             <span style={{ color: '#10b981' }}>●</span> SEBI Registered Research Analyst · {SEBI_REG}
           </div>
           <h1 style={{ ...S.h1, marginBottom: '24px' }}>
+            <style>{`@keyframes heroGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
             Expert Stock Market Research for{' '}
-            <span style={{ background: 'linear-gradient(135deg, #3b82f6, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              NSE & BSE
+            <span style={{ background: 'linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #3b82f6)', backgroundSize: '300% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'heroGradient 6s ease infinite' }}>
+              NSE, BSE & MCX
             </span>
           </h1>
           <p style={{ fontSize: '18px', ...S.muted, marginBottom: '40px', lineHeight: 1.7, maxWidth: '600px', margin: '0 auto 40px' }}>
-            Research-backed buy/sell/hold calls for equity, F&O, and intraday trading. Not tips — rigorous analysis with entry, targets, and stop-loss.
+            Research-backed buy/sell/hold calls for equity, F&O, commodity, and intraday trading. Not tips — rigorous analysis with entry, targets, and stop-loss.
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
