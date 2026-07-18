@@ -874,6 +874,25 @@ function LandingPage() {
       });
   }, []);
 
+  // Real free calls for the public homepage preview — replaces what used to be
+  // hardcoded sample numbers. Free ones show in full; if there aren't 4 of
+  // those yet, real (non-free) live calls fill the remaining slots as a
+  // locked teaser so nothing shown here is fabricated.
+  const [freeRecs, setFreeRecs] = useState([]);
+  const [teaserRecs, setTeaserRecs] = useState([]);
+  useEffect(() => {
+    supabase.from('recommendations_feed').select('*')
+      .in('status', ['live', 'near_target', 'near_sl'])
+      .order('published_at', { ascending: false })
+      .then(({ data }) => {
+        const all = data || [];
+        const free = all.filter(r => r.is_free);
+        const rest = all.filter(r => !r.is_free);
+        setFreeRecs(free.slice(0, 4));
+        setTeaserRecs(rest.slice(0, Math.max(0, 4 - free.slice(0, 4).length)));
+      });
+  }, []);
+
   const steps = [
     { n: '01', title: 'Create Account', desc: 'Sign up and complete your risk profile in minutes.' },
     { n: '02', title: 'Choose Plan', desc: 'Select a research subscription that fits your trading style.' },
@@ -933,60 +952,71 @@ function LandingPage() {
         </p>
       </section>
 
-      {/* Latest Calls Preview */}
-      <section style={{ ...S.section, background: '#f1f5f9' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ ...S.flexBetween, marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h2 style={S.h2}>Latest Research Calls</h2>
-              <p style={{ ...S.muted, marginTop: '8px' }}>Sample recommendations — subscribe for full analysis</p>
+      {/* Free Calls Preview — real data only. Free-tagged calls show in full;
+          if fewer than 4 exist, real non-free live calls fill the rest as a
+          locked teaser. Nothing on this public page is fabricated. */}
+      {(freeRecs.length > 0 || teaserRecs.length > 0) && (
+        <section style={{ ...S.section, background: '#f1f5f9' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ ...S.flexBetween, marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 style={S.h2}>Free Recommendations</h2>
+                <p style={{ ...S.muted, marginTop: '8px' }}>Real live calls, open to everyone — no signup needed</p>
+              </div>
+              <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary }}>View All →</button>
             </div>
-            <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary }}>View All →</button>
-          </div>
-          <div style={S.grid2}>
-            {[
-              { stock: 'RELIANCE', name: 'Reliance Industries', action: 'BUY', entry: 2456.80, target: 2650, sl: 2380, segment: 'Equity', horizon: 'Positional', risk: 'medium', pct: '+7.9%' },
-              { stock: 'TCS', name: 'Tata Consultancy Services', action: 'BUY', entry: 3421.50, target: 3800, sl: 3290, segment: 'Equity', horizon: 'Long Term', risk: 'low', pct: '+11.1%' },
-              { stock: 'HDFCBANK', name: 'HDFC Bank', action: 'HOLD', entry: 1654.25, target: 1800, sl: 1580, segment: 'Equity', horizon: 'Positional', risk: 'low', pct: '+8.8%' },
-              { stock: 'NIFTY 50', name: 'Index Option', action: 'BUY', entry: 320, target: 450, sl: 200, segment: 'Options', horizon: 'Intraday', risk: 'high', pct: '+40.6%' },
-            ].map((r, i) => (
-              <div key={i} style={{ ...S.card, ...S.cardHover, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#1e293b'}
-                onClick={() => navigate('/register')}>
-                {i >= 2 && (
+            <div style={S.grid2}>
+              {freeRecs.map(r => (
+                <div key={r.id} style={{ ...S.card, ...S.cardHover, cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = '#1e293b'}
+                  onClick={() => navigate('/recommendations/' + r.id)}>
+                  <div style={{ ...S.flexBetween, marginBottom: '12px' }}>
+                    <div style={{ ...S.flex, gap: '8px' }}>
+                      <span style={{ ...S.badge, ...actionStyle(r.action) }}>{r.action}</span>
+                      <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', textTransform: 'capitalize' }}>{r.segment}</span>
+                    </div>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#047857', background: '#ecfdf5', padding: '3px 9px', borderRadius: '20px' }}>FREE</span>
+                  </div>
+                  <h3 style={{ ...S.h4, marginBottom: '2px' }}>{r.symbol}</h3>
+                  <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>{r.stock_name}</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div><span style={{ fontSize: '11px', ...S.muted }}>Entry</span><p style={{ fontWeight: 600, fontSize: '14px' }}>{fmt(r.entry_price)}</p></div>
+                    <div><span style={{ fontSize: '11px', ...S.muted }}>Target</span><p style={{ fontWeight: 600, fontSize: '14px', color: '#10b981' }}>{fmt(r.target1)}</p></div>
+                    <div><span style={{ fontSize: '11px', ...S.muted }}>Stop Loss</span><p style={{ fontWeight: 600, fontSize: '14px', color: '#ef4444' }}>{fmt(r.stop_loss)}</p></div>
+                    <div><span style={{ fontSize: '11px', ...S.muted }}>Horizon</span><p style={{ fontWeight: 600, fontSize: '14px', textTransform: 'capitalize' }}>{(TIME_HORIZON_LABELS && TIME_HORIZON_LABELS[r.time_horizon]) || r.time_horizon}</p></div>
+                  </div>
+                  <div style={{ ...S.flex, gap: '6px', marginTop: '12px' }}>
+                    <span style={{ fontSize: '11px', ...S.muted }}>Risk:</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: riskColor(r.risk_level), textTransform: 'capitalize' }}>{r.risk_level}</span>
+                  </div>
+                </div>
+              ))}
+              {teaserRecs.map(r => (
+                <div key={r.id} style={{ ...S.card, position: 'relative', overflow: 'hidden', cursor: 'pointer' }} onClick={() => navigate('/register')}>
                   <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(4px)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '16px' }}>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔒</div>
-                      <p style={{ fontWeight: 700, color: '#0A0A0A', marginBottom: '12px' }}>Subscribe to View</p>
-                      <button onClick={e => { e.stopPropagation(); navigate('/pricing'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>View Plans</button>
+                      <p style={{ fontWeight: 700, color: '#0A0A0A', marginBottom: '12px' }}>Subscribe to view</p>
+                      <button onClick={e => { e.stopPropagation(); navigate('/pricing'); }} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>View plans</button>
                     </div>
                   </div>
-                )}
-                <div style={{ ...S.flexBetween, marginBottom: '12px' }}>
-                  <div style={{ ...S.flex, gap: '8px' }}>
+                  <div style={{ ...S.flexBetween, marginBottom: '12px' }}>
                     <span style={{ ...S.badge, ...actionStyle(r.action) }}>{r.action}</span>
-                    <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>{r.segment}</span>
+                    <span style={{ fontSize: '11px', ...S.muted, background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', textTransform: 'capitalize' }}>{r.segment}</span>
                   </div>
-                  <span style={{ fontWeight: 700, color: r.action === 'SELL' ? '#ef4444' : '#10b981', fontSize: '14px' }}>{r.pct}</span>
+                  <h3 style={{ ...S.h4, marginBottom: '2px' }}>{r.symbol}</h3>
+                  <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>{r.stock_name}</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div><span style={{ fontSize: '11px', ...S.muted }}>Entry</span><p style={{ fontWeight: 600, fontSize: '14px' }}>—</p></div>
+                    <div><span style={{ fontSize: '11px', ...S.muted }}>Target</span><p style={{ fontWeight: 600, fontSize: '14px' }}>—</p></div>
+                  </div>
                 </div>
-                <h3 style={{ ...S.h4, marginBottom: '2px' }}>{r.stock}</h3>
-                <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>{r.name}</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div><span style={{ fontSize: '11px', ...S.muted }}>Entry</span><p style={{ fontWeight: 600, fontSize: '14px' }}>{fmt(r.entry)}</p></div>
-                  <div><span style={{ fontSize: '11px', ...S.muted }}>Target</span><p style={{ fontWeight: 600, fontSize: '14px', color: '#10b981' }}>{fmt(r.target)}</p></div>
-                  <div><span style={{ fontSize: '11px', ...S.muted }}>Stop Loss</span><p style={{ fontWeight: 600, fontSize: '14px', color: '#ef4444' }}>{fmt(r.sl)}</p></div>
-                  <div><span style={{ fontSize: '11px', ...S.muted }}>Horizon</span><p style={{ fontWeight: 600, fontSize: '14px' }}>{r.horizon}</p></div>
-                </div>
-                <div style={{ ...S.flex, gap: '6px', marginTop: '12px' }}>
-                  <span style={{ fontSize: '11px', ...S.muted }}>Risk:</span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: riskColor(r.risk), textTransform: 'capitalize' }}>{r.risk}</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Features */}
       <section style={{ ...S.section, background: '#FEFDFB' }}>
@@ -2347,7 +2377,13 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
   if (!riskAccepted && user) return <DisclaimerPopup onAccept={() => setRiskAccepted(true)} />;
   if (fnoGate) return <FnoRiskGate onAccept={acceptFnoRisk} onDecline={declineFnoRisk} />;
 
-  const stats = { live: recs.filter(r => r.status === 'live' || r.status === 'near_target' || r.status === 'near_sl').length, target_hit: recs.filter(r => r.status === 'target_hit').length, sl_hit: recs.filter(r => r.status === 'sl_hit').length, total: recs.length };
+  // Scoped to whichever group this page is showing — Live Calls and Past
+  // Recommendations are different slices of the same feed, so their stat
+  // cards shouldn't both report the site-wide totals.
+  const statsScope = forceStatus === 'live-group' ? recs.filter(r => LIVE_GROUP.includes(r.status))
+    : forceStatus === 'past-group' ? recs.filter(r => PAST_GROUP.includes(r.status))
+    : recs;
+  const stats = { live: statsScope.filter(r => r.status === 'live' || r.status === 'near_target' || r.status === 'near_sl').length, target_hit: statsScope.filter(r => r.status === 'target_hit').length, sl_hit: statsScope.filter(r => r.status === 'sl_hit').length, total: statsScope.length };
 
   return (
     <div style={{ paddingTop: '80px', minHeight: '100vh' }}>
@@ -6931,7 +6967,7 @@ function AdminPanel({ user, userProfile }) {
 }
 
 function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole }) {
-  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '' };
+  const empty = { stock_name: '', symbol: '', exchange: 'NSE', segment: 'equity', commodity_type: '', action: 'BUY', entry_price: '', target1: '', target2: '', target3: '', stop_loss: '', exit_price: '', time_horizon: 'swing', risk_level: 'medium', conviction: 'medium', plan_required: 'basic', rationale: '', technical_notes: '', fundamental_notes: '', chart_url: '', report_url: '', status: 'draft', expiry_at: '', is_free: false };
   const [form, setForm] = useState(existingRec || empty);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
@@ -7011,7 +7047,7 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
   // Fields we track for edit-history purposes — the ones that actually change
   // what the call means (price levels, direction, status, plan tier). We don't
   // bother tracking every text-note field to keep the audit log readable.
-  const TRACKED_FIELDS = ['action', 'entry_price', 'target1', 'target2', 'target3', 'stop_loss', 'exit_price', 'status', 'plan_required'];
+  const TRACKED_FIELDS = ['action', 'entry_price', 'target1', 'target2', 'target3', 'stop_loss', 'exit_price', 'status', 'plan_required', 'is_free'];
 
   const handleSave = async () => {
     if (!form.stock_name || !form.symbol || !form.action) { setMsg('Stock name, symbol and action are required.'); return; }
@@ -7142,6 +7178,13 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
       <div style={S.formGroup}>
         <label style={S.label}>Expiry Date/Time (call auto-marks expired after this)</label>
         <input style={S.input} type="datetime-local" value={form.expiry_at || ''} onChange={e => set('expiry_at', e.target.value)} />
+      </div>
+
+      <div style={{ ...S.formGroup, background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <input type="checkbox" id="is_free_toggle" checked={!!form.is_free} onChange={e => set('is_free', e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+        <label htmlFor="is_free_toggle" style={{ fontSize: '13px', color: '#047857', cursor: 'pointer' }}>
+          <strong>Free call</strong> — shown publicly on the homepage to non-subscribers (still needs the same disclosures as any other call)
+        </label>
       </div>
 
       <div style={{ ...S.card, marginBottom: '16px', background: '#faf5ff', border: '1.5px solid #c084fc' }}>
