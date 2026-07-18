@@ -1056,12 +1056,9 @@ function LandingPage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#334155' }}>
             <span style={{ color: '#10b981' }}>●</span> SEBI Registered Research Analyst · {SEBI_REG}
           </div>
-          <h1 style={{ ...S.h1, marginBottom: '24px' }}>
+          <h1 style={{ ...S.h1, marginBottom: '24px', background: 'linear-gradient(90deg, #0A0A0A, #3b82f6, #10b981, #f59e0b, #0A0A0A)', backgroundSize: '300% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'heroGradient 6s ease infinite' }}>
             <style>{`@keyframes heroGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
-            Expert Stock Market Research for{' '}
-            <span style={{ background: 'linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #3b82f6)', backgroundSize: '300% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'heroGradient 6s ease infinite' }}>
-              NSE, BSE & MCX
-            </span>
+            Expert Stock Market Research for NSE, BSE & MCX
           </h1>
           <p style={{ fontSize: '18px', ...S.muted, marginBottom: '40px', lineHeight: 1.7, maxWidth: '600px', margin: '0 auto 40px' }}>
             Research-backed buy/sell/hold calls for equity, F&O, commodity, and intraday trading. Not tips — rigorous analysis with entry, targets, and stop-loss.
