@@ -734,6 +734,62 @@ function FeaturedCouponBanner() {
 // featured coupon (not just the top one the banner shows) — grows or
 // shrinks automatically as admin features/unfeatures coupons, no code
 // change ever needed. Renders nothing if none are featured.
+// Compact variant of CouponOffersBox that cycles through one offer at a time
+// (dots + auto-advance, same pattern as FeaturedCouponBanner) instead of
+// stacking every coupon — used where space is tighter, like the pricing
+// preview strip, so 2+ offers don't push the plan cards too far down.
+function RotatingOfferCard() {
+  const [coupons, setCoupons] = useState([]);
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    supabase.rpc('get_featured_coupons').then(({ data }) => setCoupons(data || []));
+  }, []);
+
+  useEffect(() => {
+    if (coupons.length < 2 || paused) return;
+    const t = setInterval(() => setActive(i => (i + 1) % coupons.length), 4000);
+    return () => clearInterval(t);
+  }, [coupons.length, paused]);
+
+  if (coupons.length === 0) return null;
+  const c = coupons[active];
+  const theme = offerTheme(c.type);
+  const planName = c.plan_id === 'all' ? 'every plan' : PLANS[c.plan_id]?.name || c.plan_id;
+  const desc = c.type === 'free'
+    ? `${c.free_months} month${c.free_months === 1 ? '' : 's'} free`
+    : c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`;
+
+  const copyCode = () => {
+    navigator.clipboard?.writeText(c.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      style={{ border: `1px solid ${theme.ring}`, background: theme.bg, borderRadius: '12px', padding: '14px 16px', position: 'relative' }}>
+      <span style={{ position: 'absolute', top: '12px', right: '14px', fontSize: '11px', fontWeight: 700, color: theme.text, background: '#fff', padding: '2px 8px', borderRadius: '20px' }}>{couponBadge(c)}</span>
+      <p style={{ fontSize: '13px', fontWeight: 700, color: theme.text, margin: '0 70px 0 0' }} key={c.code}>{desc}</p>
+      <p style={{ fontSize: '11px', color: theme.text, opacity: 0.75, margin: '2px 0 10px' }}>{planName}{c.expires_at ? ` · ends ${new Date(c.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</p>
+      <button onClick={copyCode} style={{ width: '100%', background: '#fff', border: `1px solid ${theme.ring}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+        <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', color: '#0A0A0A' }}>{copied ? 'Copied!' : c.code}</span>
+        {!copied && <span style={{ fontSize: '12px', color: '#94a3b8' }}>⧉</span>}
+      </button>
+      {coupons.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginTop: '10px' }}>
+          {coupons.map((cc, i) => (
+            <button key={cc.code} onClick={() => setActive(i)} aria-label={`Show offer ${i + 1}`}
+              style={{ width: i === active ? '16px' : '6px', height: '5px', borderRadius: '3px', border: 'none', cursor: 'pointer', background: i === active ? theme.text : theme.ring, transition: 'width 0.2s' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CouponOffersBox() {
   const [coupons, setCoupons] = useState([]);
   const [copiedCode, setCopiedCode] = useState(null);
@@ -1060,7 +1116,7 @@ function LandingPage() {
           <h2 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h2>
           <p style={{ color: '#64748b', marginBottom: '24px' }}>Flexible plans for traders of all experience levels.</p>
           <div style={{ maxWidth: '340px', margin: '0 auto 32px', textAlign: 'left' }}>
-            <CouponOffersBox />
+            <RotatingOfferCard />
           </div>
           <PricingCards compact={true} />
           <button onClick={() => navigate('/pricing')} style={{ ...S.btn, ...S.btnSecondary, marginTop: '24px' }}>View Full Plan Comparison →</button>
@@ -1328,7 +1384,7 @@ function PricingPage() {
           <p style={{ color: '#64748b', marginBottom: '12px', fontSize: '15px' }}>Flexible plans for every type of trader. Quality over quantity — every call is high-conviction.</p>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '32px' }}>⚠️ Call counts are monthly ranges. We publish only when high-conviction setups exist. No padding, no quota-filling.</p>
           <div style={{ maxWidth: '340px', margin: '0 auto 32px', textAlign: 'left' }}>
-            <CouponOffersBox />
+            <RotatingOfferCard />
           </div>
         </div>
 
