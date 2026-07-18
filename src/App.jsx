@@ -641,10 +641,33 @@ function Navbar({ user, userProfile, onLogout }) {
 // full list shows in <CouponOffersBox/> next to the plan picker. Admin can
 // turn any of this on/off just by toggling "Feature" there — no code
 // change needed. Renders nothing if nothing is featured.
+// Per-offer-type accent so different coupon kinds are visually distinct
+// instead of everything looking the same blue. Used by the banner, the
+// offers box, and the popup toast so the palette stays consistent
+// everywhere a coupon renders.
+const OFFER_THEME = {
+  free:    { bg: '#ecfdf5', ring: '#a7f3d0', text: '#047857', icon: '#059669', dot: '#059669' },
+  percent: { bg: '#fffbeb', ring: '#fde68a', text: '#b45309', icon: '#d97706', dot: '#d97706' },
+  flat:    { bg: '#eff6ff', ring: '#bfdbfe', text: '#1d4ed8', icon: '#2563eb', dot: '#2563eb' },
+};
+function offerTheme(type) { return OFFER_THEME[type] || OFFER_THEME.flat; }
+
+function couponTitle(coupon) {
+  const planName = coupon.plan_id === 'all' ? 'every plan' : PLANS[coupon.plan_id]?.name || coupon.plan_id;
+  return coupon.type === 'free'
+    ? `${coupon.free_months} month${coupon.free_months === 1 ? '' : 's'} free on ${planName}`
+    : coupon.type === 'percent' ? `${coupon.value}% off ${planName}` : `₹${coupon.value} off ${planName}`;
+}
+function couponBadge(coupon) {
+  return coupon.type === 'free' ? `${coupon.free_months}mo free` : coupon.type === 'percent' ? `${coupon.value}% off` : `₹${coupon.value} off`;
+}
+
 function FeaturedCouponBanner() {
   const [coupons, setCoupons] = useState([]);
   const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     supabase.rpc('get_featured_coupons').then(({ data }) => {
@@ -652,19 +675,23 @@ function FeaturedCouponBanner() {
     });
   }, []);
 
-  if (coupons.length === 0 || dismissed) return null;
-  const coupon = coupons[0];
-  const moreCount = coupons.length - 1;
+  // Auto-rotate through every featured coupon (not just the top one) so
+  // running multiple offers together actually gets each of them seen.
+  // Pauses while the visitor is hovering so they can read/copy in peace.
+  useEffect(() => {
+    if (coupons.length < 2 || paused) return;
+    const t = setInterval(() => setActive(i => (i + 1) % coupons.length), 4500);
+    return () => clearInterval(t);
+  }, [coupons.length, paused]);
 
-  const planName = coupon.plan_id === 'all' ? 'every plan' : PLANS[coupon.plan_id]?.name || coupon.plan_id;
-  const title = coupon.type === 'free'
-    ? `${coupon.free_months} month${coupon.free_months === 1 ? '' : 's'} free on ${planName}`
-    : coupon.type === 'percent' ? `${coupon.value}% off ${planName}` : `₹${coupon.value} off ${planName}`;
+  if (coupons.length === 0 || dismissed) return null;
+  const coupon = coupons[active];
+  const theme = offerTheme(coupon.type);
+  const title = couponTitle(coupon);
 
   const urgencyParts = [];
   if (coupon.expires_at) urgencyParts.push(`Ends ${new Date(coupon.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`);
   if (coupon.max_uses) urgencyParts.push(`limited to first ${coupon.max_uses} signups`);
-  if (moreCount > 0) urgencyParts.push(`+${moreCount} more offer${moreCount === 1 ? '' : 's'}`);
 
   const copyCode = () => {
     navigator.clipboard?.writeText(coupon.code);
@@ -673,22 +700,31 @@ function FeaturedCouponBanner() {
   };
 
   return (
-    <div style={{ background: 'linear-gradient(90deg, #1e3a8a 0%, #1e40af 60%, #2563eb 100%)', padding: '12px 44px 12px 16px', display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', flexWrap: 'wrap' }}>
-      <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      style={{ background: '#0f172a', padding: coupons.length > 1 ? '12px 44px 20px 16px' : '12px 44px 12px 16px', display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', flexWrap: 'wrap' }}>
+      <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <span style={{ fontSize: '19px' }}>🎁</span>
       </div>
-      <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+      <div style={{ flex: '1 1 200px', minWidth: 0 }} key={coupon.code}>
         <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', margin: 0 }}>{title}</p>
         {urgencyParts.length > 0 && (
-          <p style={{ fontSize: '12px', color: '#fff', opacity: 0.85, margin: '2px 0 0' }}>{urgencyParts.join(' · ')}</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0' }}>{urgencyParts.join(' · ')}</p>
         )}
       </div>
-      <button onClick={copyCode} style={{ background: '#fff', color: '#1e40af', border: 'none', padding: '8px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0, fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
+      <button onClick={copyCode} style={{ background: theme.bg, color: theme.text, border: `1px solid ${theme.ring}`, padding: '8px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0, fontWeight: 700 }}>
         <span style={{ fontFamily: 'monospace', fontSize: '13px', letterSpacing: '0.05em' }}>{copied ? 'Copied!' : coupon.code}</span>
         {!copied && <span style={{ fontSize: '13px' }}>⧉</span>}
       </button>
       <button onClick={() => setDismissed(true)} aria-label="Dismiss"
         style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer', opacity: 0.7 }}>✕</button>
+      {coupons.length > 1 && (
+        <div style={{ position: 'absolute', bottom: '7px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '5px' }}>
+          {coupons.map((c, i) => (
+            <button key={c.code} onClick={() => setActive(i)} aria-label={`Show offer ${i + 1}`}
+              style={{ width: i === active ? '16px' : '6px', height: '5px', borderRadius: '3px', border: 'none', cursor: 'pointer', background: i === active ? '#fff' : 'rgba(255,255,255,0.35)', transition: 'width 0.2s' }} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -721,20 +757,96 @@ function CouponOffersBox() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {coupons.map(c => {
           const planName = c.plan_id === 'all' ? 'every plan' : PLANS[c.plan_id]?.name || c.plan_id;
+          const theme = offerTheme(c.type);
           const desc = c.type === 'free'
             ? `${c.free_months} month${c.free_months === 1 ? '' : 's'} free`
             : c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`;
           return (
-            <div key={c.code} style={{ border: '1px solid #E5E3DA', borderRadius: '10px', padding: '10px 12px' }}>
-              <p style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A', margin: 0 }}>{desc}</p>
-              <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 8px' }}>{planName}{c.expires_at ? ` · ends ${new Date(c.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</p>
-              <button onClick={() => copyCode(c.code)} style={{ width: '100%', background: '#FAF9F5', border: '1px solid #E5E3DA', borderRadius: '8px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>{copiedCode === c.code ? 'Copied!' : c.code}</span>
+            <div key={c.code} style={{ border: `1px solid ${theme.ring}`, background: theme.bg, borderRadius: '10px', padding: '10px 12px', position: 'relative' }}>
+              <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '11px', fontWeight: 700, color: theme.text, background: '#fff', padding: '2px 8px', borderRadius: '20px' }}>{couponBadge(c)}</span>
+              <p style={{ fontSize: '13px', fontWeight: 700, color: theme.text, margin: '0 70px 0 0' }}>{desc}</p>
+              <p style={{ fontSize: '11px', color: theme.text, opacity: 0.75, margin: '2px 0 8px' }}>{planName}{c.expires_at ? ` · ends ${new Date(c.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</p>
+              <button onClick={() => copyCode(c.code)} style={{ width: '100%', background: '#fff', border: `1px solid ${theme.ring}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', color: '#0A0A0A' }}>{copiedCode === c.code ? 'Copied!' : c.code}</span>
                 {copiedCode !== c.code && <span style={{ fontSize: '12px', color: '#94a3b8' }}>⧉</span>}
               </button>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ─── PERIODIC OFFER POPUP ───────────────────────────────────────────────────
+// Surfaces featured coupons as a dismissible corner toast that resurfaces on
+// its own timer, instead of only living in the banner/offers box a visitor
+// might scroll past. Skips the subscription page (offers already shown
+// there) and stays off for the rest of the tab session once dismissed, so
+// it nudges without nagging.
+function OfferPopupToast() {
+  const [coupons, setCoupons] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [offForSession, setOffForSession] = useState(() => {
+    try { return sessionStorage.getItem('sv_offer_popup_off') === 'true'; } catch (e) { return false; }
+  });
+
+  useEffect(() => {
+    supabase.rpc('get_featured_coupons').then(({ data }) => {
+      if (data && data.length > 0) setCoupons(data);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (coupons.length === 0 || offForSession) return;
+    let cycle;
+    const showNext = () => {
+      if (window.location.pathname === '/subscription') return;
+      setIdx(i => (i + 1) % coupons.length);
+      setVisible(true);
+      setTimeout(() => setVisible(false), 9000);
+    };
+    const first = setTimeout(showNext, 12000);
+    cycle = setInterval(showNext, 60000);
+    return () => { clearTimeout(first); clearInterval(cycle); };
+  }, [coupons.length, offForSession]);
+
+  const dismiss = () => {
+    setVisible(false);
+    setOffForSession(true);
+    try { sessionStorage.setItem('sv_offer_popup_off', 'true'); } catch (e) {}
+  };
+
+  if (coupons.length === 0 || offForSession || !visible) return null;
+  const coupon = coupons[idx];
+  const theme = offerTheme(coupon.type);
+
+  const copyCode = () => {
+    navigator.clipboard?.writeText(coupon.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9998, width: '270px', background: '#fff', border: `1px solid ${theme.ring}`, borderRadius: '14px', padding: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+      <button onClick={dismiss} aria-label="Dismiss"
+        style={{ position: 'absolute', top: '8px', right: '10px', background: 'none', border: 'none', color: '#94a3b8', fontSize: '13px', cursor: 'pointer' }}>✕</button>
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ fontSize: '16px' }}>🎁</span>
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0A', margin: '0 14px 2px 0' }}>{couponTitle(coupon)}</p>
+          {coupon.expires_at && (
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px' }}>Ends {new Date(coupon.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+          )}
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button onClick={copyCode} style={{ background: theme.bg, color: theme.text, border: `1px solid ${theme.ring}`, borderRadius: '6px', padding: '5px 8px', fontFamily: 'monospace', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>{copied ? 'Copied!' : coupon.code}</button>
+            <button onClick={() => { navigate('/subscription'); dismiss(); }} style={{ background: '#0f172a', color: '#fff', border: 'none', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Claim now</button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -8599,6 +8711,7 @@ function AppInner() {
       <div style={S.page}>
         <Navbar user={user} userProfile={userProfile} onLogout={handleLogout} />
         {renderPage()}
+        <OfferPopupToast />
         <PWAInstallPrompt />
       </div>
     </LanguageProvider>
