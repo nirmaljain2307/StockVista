@@ -265,6 +265,24 @@ const IconShield = ({ size = 11 }) => (
 
 // Sparkline built from a real intraday price series (Yahoo). Renders nothing
 // if there's no series yet — never fills in a fake trend line.
+// One-time shimmer keyframe + a skeleton block matching RecCard's shape —
+// used wherever the recs list is loading, instead of a plain "Loading..."
+// line. Purely a placeholder shape; no real data implied.
+function RecCardSkeleton() {
+  return (
+    <div style={{ ...S.card, padding: '16px 18px' }}>
+      <style>{`@keyframes svShimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }`}</style>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div style={{ width: '90px', height: '20px', borderRadius: '8px', background: 'linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%)', backgroundSize: '400px 100%', animation: 'svShimmer 1.4s linear infinite' }} />
+        <div style={{ width: '50px', height: '16px', borderRadius: '20px', background: 'linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%)', backgroundSize: '400px 100%', animation: 'svShimmer 1.4s linear infinite' }} />
+      </div>
+      <div style={{ width: '140px', height: '12px', borderRadius: '4px', background: 'linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%)', backgroundSize: '400px 100%', animation: 'svShimmer 1.4s linear infinite', marginBottom: '16px' }} />
+      <div style={{ width: '100%', height: '52px', borderRadius: '10px', background: 'linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%)', backgroundSize: '400px 100%', animation: 'svShimmer 1.4s linear infinite' }} />
+    </div>
+  );
+}
+
+
 function Sparkline({ series, width = 130, height = 28 }) {
   if (!series || series.length < 2) return null;
   const min = Math.min(...series), max = Math.max(...series);
@@ -1057,8 +1075,8 @@ function LandingPage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '24px', fontSize: '13px', color: '#334155' }}>
             <span style={{ color: '#10b981' }}>●</span> SEBI Registered Research Analyst · {SEBI_REG}
           </div>
+          <style>{`@keyframes heroGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
           <h1 style={{ ...S.h1, marginBottom: '24px', background: 'linear-gradient(90deg, #0A0A0A, #3b82f6, #10b981, #f59e0b, #0A0A0A)', backgroundSize: '300% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'heroGradient 6s ease infinite' }}>
-            <style>{`@keyframes heroGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
             Expert Stock Market Research for NSE, BSE & MCX
           </h1>
           <p style={{ fontSize: '18px', ...S.muted, marginBottom: '40px', lineHeight: 1.7, maxWidth: '600px', margin: '0 auto 40px' }}>
@@ -2216,15 +2234,15 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
 
   // Status badge config
   const statusConfig = {
-    live:        { label: 'LIVE',        bg: '#dbeafe', color: '#1e40af' },
-    near_target: { label: 'NEAR TARGET', bg: '#d1fae5', color: '#065f46' },
-    near_sl:     { label: 'NEAR SL',     bg: '#fef3c7', color: '#92400e' },
-    target_hit:  { label: 'TARGET HIT ✓', bg: '#d1fae5', color: '#065f46' },
-    sl_hit:      { label: 'SL HIT',      bg: '#fee2e2', color: '#991b1b' },
-    expired:     { label: 'EXPIRED',     bg: '#f1f5f9', color: '#64748b' },
-    closed:      { label: 'CLOSED',      bg: '#f1f5f9', color: '#64748b' },
-    draft:       { label: 'DRAFT',       bg: '#f1f5f9', color: '#64748b' },
-    archived:    { label: 'ARCHIVED',    bg: '#f1f5f9', color: '#64748b' },
+    live:        { label: 'LIVE',        bg: '#dbeafe', color: '#1e40af', strip: '#1e40af' },
+    near_target: { label: 'NEAR TARGET', bg: '#d1fae5', color: '#065f46', strip: '#059669' },
+    near_sl:     { label: 'NEAR SL',     bg: '#fef3c7', color: '#92400e', strip: '#d97706' },
+    target_hit:  { label: 'TARGET HIT ✓', bg: '#d1fae5', color: '#065f46', strip: '#059669' },
+    sl_hit:      { label: 'SL HIT',      bg: '#fee2e2', color: '#991b1b', strip: '#dc2626' },
+    expired:     { label: 'EXPIRED',     bg: '#f1f5f9', color: '#64748b', strip: '#cbd5e1' },
+    closed:      { label: 'CLOSED',      bg: '#f1f5f9', color: '#64748b', strip: '#cbd5e1' },
+    draft:       { label: 'DRAFT',       bg: '#f1f5f9', color: '#64748b', strip: '#cbd5e1' },
+    archived:    { label: 'ARCHIVED',    bg: '#f1f5f9', color: '#64748b', strip: '#cbd5e1' },
   };
   const sc = statusConfig[effStatus] || statusConfig.live;
 
@@ -2234,6 +2252,11 @@ function RecCard({ rec, userProfile, onClick, quotaLocked }) {
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(29,78,216,0.10)'; }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(29,78,216,0.05), 0 4px 16px rgba(29,78,216,0.03)'; }}
       onClick={onClick || (() => { if (!isLocked) navigate('/recommendations/' + rec.id); })}>
+
+      {/* Status strip — colored left edge so a scrolling list is scannable
+          without reading every badge. Clips to the card's rounded corners
+          automatically via the card's own overflow:hidden. */}
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: sc.strip, zIndex: 1 }} />
 
       {/* Lock overlay — full card, tier-lock only */}
       {isFullLocked && (
@@ -2692,7 +2715,9 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
           )}
 
           {loading ? (
-            <div style={{ ...S.card, textAlign: 'center', padding: '60px', ...S.muted }}>Loading research calls...</div>
+            <div style={S.grid2}>
+              {[1, 2, 3, 4].map(i => <RecCardSkeleton key={i} />)}
+            </div>
           ) : filtered.length === 0 ? (
             <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
               <p style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</p>
