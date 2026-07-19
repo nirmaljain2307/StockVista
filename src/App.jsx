@@ -26,12 +26,14 @@ const GRIEVANCE_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_PHONE = '+91-7003950585';
 // Fill in real handles/links here — empty string hides that icon from the footer.
+// WhatsApp is derived from CONTACT_PHONE above (strip everything but digits) so
+// there's one number to update, not two — change CONTACT_PHONE and this follows.
 const SOCIAL_LINKS = {
   instagram: '',
   twitter: '',
   youtube: '',
   telegram: '',
-  whatsapp: '', // e.g. 'https://wa.me/917003950585' — a click-to-chat link, not the alert bot
+  whatsapp: CONTACT_PHONE ? `https://wa.me/${CONTACT_PHONE.replace(/\D/g, '')}` : '',
 };
 
 // Staff role → which admin panel tabs they can see. 'owner' is implicit for
