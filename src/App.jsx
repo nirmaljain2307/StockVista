@@ -219,24 +219,29 @@ function useLivePrice(symbol, exchange, active) {
     if (!active || !symbol) return;
     let cancelled = false;
     const fetchPrice = async () => {
-      const exch = (exchange || 'NSE').toUpperCase();
-      const yhSym = exch === 'BSE' ? symbol + '.BO' : symbol + '.NS';
+      // Symbols stored with spaces or punctuation (e.g. "COAL INDIA" typed in
+      // the admin form instead of the NSE ticker "COALINDIA") break the Yahoo
+      // lookup outright — strip anything that isn't a letter/number before
+      // it's ever sent, whether that's here or server-side.
+      const cleanSymbol = (symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (!cleanSymbol) return;
       try {
-        const res = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=1d&range=1d`,
-          { headers: { 'Accept': 'application/json' } }
-        );
+        // Goes through our own /api/get-price instead of calling Yahoo
+        // directly from the browser — Yahoo's endpoint doesn't reliably send
+        // CORS headers, so direct calls fail intermittently. The serverless
+        // function fetches server-side (no CORS involved) and just relays
+        // price + series back to us.
+        const res = await fetch(`/api/get-price?symbol=${encodeURIComponent(cleanSymbol)}&exchange=${encodeURIComponent(exchange || 'NSE')}`);
+        if (!res.ok) return;
         const data = await res.json();
-        const result = data?.chart?.result?.[0];
-        const q = result?.meta;
-        if (q?.regularMarketPrice && !cancelled) setPrice(q.regularMarketPrice);
-        // Same response already carries the day's intraday closes — reusing it
-        // for a real sparkline instead of a second API call. Nulls (pre-market/
-        // gaps) are filtered so the line doesn't break.
-        const closes = result?.indicators?.quote?.[0]?.close;
-        if (Array.isArray(closes) && !cancelled) {
-          const clean = closes.filter(c => typeof c === 'number');
-          if (clean.length >= 2) setSeries(clean);
+        if (!cancelled) {
+          if (typeof data.price === 'number') setPrice(data.price);
+          // Sparkline just needs values in order, not aligned to timestamps —
+          // filter nulls out here rather than relying on the API to do it.
+          if (Array.isArray(data.closes)) {
+            const clean = data.closes.filter(c => typeof c === 'number');
+            if (clean.length >= 2) setSeries(clean);
+          }
         }
       } catch(e) {}
     };
@@ -2802,20 +2807,20 @@ function YahooLineChart({ rec }) {
 
   const sym = (rec?.symbol || '').toUpperCase().trim();
   const exch = (rec?.exchange || 'NSE').toUpperCase();
-  const yhSym = exch === 'BSE' ? sym + '.BO' : sym + '.NS';
 
   useEffect(() => {
     if (!sym) { setErr('No symbol set for this call.'); setLoading(false); return; }
     let cancelled = false;
     setLoading(true); setErr('');
-    fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=1d&range=${range}`, { headers: { 'Accept': 'application/json' } })
+    // Goes through /api/get-price (server-side) instead of calling Yahoo
+    // directly from the browser — Yahoo's endpoint doesn't reliably send
+    // CORS headers, which was blocking this chart intermittently.
+    fetch(`/api/get-price?symbol=${encodeURIComponent(sym)}&exchange=${encodeURIComponent(exch)}&range=${encodeURIComponent(range)}`)
       .then(r => r.json())
       .then(json => {
         if (cancelled) return;
-        const result = json?.chart?.result?.[0];
-        const closes = result?.indicators?.quote?.[0]?.close;
-        const timestamps = result?.timestamp;
-        if (!result || !closes || !timestamps) { setErr('No chart data available for this symbol yet.'); setPoints(null); setLoading(false); return; }
+        const { closes, timestamps } = json || {};
+        if (!closes || !timestamps) { setErr('No chart data available for this symbol yet.'); setPoints(null); setLoading(false); return; }
         const pts = timestamps.map((t, i) => ({ t, close: closes[i] })).filter(p => p.close != null);
         setPoints(pts);
         setLoading(false);
@@ -3909,7 +3914,8 @@ function WatchlistPage({ user }) {
     fetchAlerts();
   };
 
-  // Fetch Yahoo Finance prices for all symbols
+  // Fetch Yahoo Finance prices for all symbols — via /api/get-price
+  // (server-side), same CORS fix as the other two price lookups.
   useEffect(() => {
     if (!watchlist.length) return;
     const fetchPrices = async () => {
@@ -3917,17 +3923,13 @@ function WatchlistPage({ user }) {
       await Promise.all(watchlist.map(async (item) => {
         const sym = item.sym || item;
         const exch = item.exch || 'NSE';
-        const yhSym = exch === 'BSE' ? sym + '.BO' : exch === 'MCX' ? sym + '.MCX' : sym + '.NS';
         try {
-          const res = await fetch(
-            `https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=1d&range=1d`,
-            { headers: { 'Accept': 'application/json' } }
-          );
+          const res = await fetch(`/api/get-price?symbol=${encodeURIComponent(sym)}&exchange=${encodeURIComponent(exch)}`);
+          if (!res.ok) return;
           const data = await res.json();
-          const q = data?.chart?.result?.[0]?.meta;
-          if (q) {
-            const prev = q.previousClose || q.chartPreviousClose || q.regularMarketPrice;
-            const curr = q.regularMarketPrice;
+          if (typeof data.price === 'number') {
+            const prev = data.previousClose || data.price;
+            const curr = data.price;
             const chg = curr - prev;
             const chgPct = (chg / prev) * 100;
             results[sym] = { price: curr, change: +chg.toFixed(2), changePct: +chgPct.toFixed(2) };
