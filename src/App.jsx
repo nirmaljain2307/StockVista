@@ -7931,10 +7931,18 @@ function PerformancePage() {
 }
 
 // ─── LEGAL PAGES ──────────────────────────────────────────────────────────────
-function LegalSection({ title, children, icon }) {
+function LegalSection({ title, children, icon, checked, onToggle }) {
   return (
-    <div style={{ background: '#fff', border: '2px solid #dbeafe', borderRadius: '12px', padding: '24px', marginBottom: '16px', borderLeft: '4px solid #1d4ed8' }}>
-      {title && <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1d4ed8', marginBottom: '12px' }}>{icon} {title}</h3>}
+    <div style={{ background: '#fff', border: checked ? '2px solid #10b981' : '2px solid #dbeafe', borderRadius: '12px', padding: '24px', marginBottom: '16px', borderLeft: checked ? '4px solid #10b981' : '4px solid #1d4ed8', transition: 'border-color 0.2s' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: title ? '12px' : 0 }}>
+        {title && <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1d4ed8', margin: 0 }}>{icon} {title}</h3>}
+        {onToggle && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0, fontSize: '12px', fontWeight: 700, color: checked ? '#059669' : '#94a3b8' }}>
+            <input type="checkbox" checked={!!checked} onChange={onToggle} style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#10b981' }} />
+            {checked ? 'Accepted' : 'Accept'}
+          </label>
+        )}
+      </div>
       <div style={{ fontSize: '14px', lineHeight: 1.9, color: '#1e293b' }}>{children}</div>
     </div>
   );
@@ -8373,19 +8381,31 @@ function FAQPage() {
   );
 }
 
-function RiskDisclosurePage() {
+function RiskDisclosurePage({ riskAccepted, setRiskAccepted }) {
+  // "Accept" here is one atomic acknowledgement of the whole disclosure, not
+  // 8 separate ones — so every checkbox reflects the same boolean, and
+  // toggling any single one toggles all of them together. Also feeds the
+  // app-wide risk_accepted flag (same one gating /recommendations etc.) so
+  // accepting on this page satisfies that gate too, not just a local UI state.
+  const [accepted, setAccepted] = useState(!!riskAccepted);
+  const toggle = () => {
+    const next = !accepted;
+    setAccepted(next);
+    if (next && setRiskAccepted) setRiskAccepted();
+  };
+
   return (
     <LegalPage title="Risk Disclosure Document" icon="⚠️">
       <div style={{ background: '#fef2f2', border: '2px solid #fecaca', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
         <p style={{ fontWeight: 700, color: '#b91c1c', fontSize: '15px' }}>MANDATORY RISK DISCLOSURE — AS REQUIRED BY SEBI (RESEARCH ANALYSTS) REGULATIONS, 2014</p>
       </div>
-      <LegalSection title="General Market Risk" icon="📉">
+      <LegalSection title="General Market Risk" icon="📉" checked={accepted} onToggle={toggle}>
         <p>Investment in securities market is subject to market risks. The value of investments may increase or decrease based on market conditions, economic factors, political events, and other variables outside our control. <strong>You may lose some or all of your invested capital.</strong></p>
       </LegalSection>
-      <LegalSection title="Equity Risk" icon="📊">
+      <LegalSection title="Equity Risk" icon="📊" checked={accepted} onToggle={toggle}>
         <p>Equity investments are subject to company-specific risks including poor earnings, management changes, regulatory actions, and sector downturns. Small-cap and mid-cap stocks carry higher volatility and liquidity risk compared to large-cap stocks.</p>
       </LegalSection>
-      <LegalSection title="F&O Risk (High Risk Warning)" icon="⚡">
+      <LegalSection title="F&O Risk (High Risk Warning)" icon="⚡" checked={accepted} onToggle={toggle}>
         <p><strong style={{ color: '#b91c1c' }}>Futures and Options are highly complex leveraged instruments.</strong></p>
         <ul style={{ marginTop: '12px', paddingLeft: '20px', lineHeight: 2 }}>
           <li>Options buyers can lose 100% of the premium paid</li>
@@ -8395,19 +8415,19 @@ function RiskDisclosurePage() {
           <li>F&O is not suitable for inexperienced or risk-averse investors</li>
         </ul>
       </LegalSection>
-      <LegalSection title="Commodity Risk" icon="🏅">
+      <LegalSection title="Commodity Risk" icon="🏅" checked={accepted} onToggle={toggle}>
         <p>MCX commodity prices (Gold, Silver, Crude Oil, Natural Gas) are influenced by global supply-demand, geopolitical events, currency fluctuations, and weather conditions. Commodity derivatives carry leverage risk similar to equity F&O.</p>
       </LegalSection>
-      <LegalSection title="Research Risk" icon="🔬">
+      <LegalSection title="Research Risk" icon="🔬" checked={accepted} onToggle={toggle}>
         <p>Research calls are based on analysis available at the time of publication. Market conditions can change rapidly and without warning. Past accuracy of research calls does not guarantee future accuracy. Stop-losses must be strictly followed to limit downside.</p>
       </LegalSection>
-      <LegalSection title="Liquidity Risk" icon="💧">
+      <LegalSection title="Liquidity Risk" icon="💧" checked={accepted} onToggle={toggle}>
         <p>Certain securities, especially small-cap stocks and far-OTM options, may have limited liquidity. You may not be able to exit positions at the recommended prices during high volatility or low-volume periods.</p>
       </LegalSection>
-      <LegalSection title="Regulatory Risk" icon="🏛️">
+      <LegalSection title="Regulatory Risk" icon="🏛️" checked={accepted} onToggle={toggle}>
         <p>SEBI, RBI, or government regulatory changes can impact securities markets significantly and without prior notice. Tax laws applicable to securities transactions may change.</p>
       </LegalSection>
-      <LegalSection title="Investor Acknowledgement" icon="✅">
+      <LegalSection title="Investor Acknowledgement" icon="✅" checked={accepted} onToggle={toggle}>
         <p>By using {APP_NAME}, you acknowledge that:</p>
         <ul style={{ marginTop: '8px', paddingLeft: '20px', lineHeight: 2 }}>
           <li>You have read and understood all risk disclosures above</li>
@@ -8418,6 +8438,16 @@ function RiskDisclosurePage() {
         </ul>
         <p style={{ marginTop: '12px', fontWeight: 600, color: '#0A0A0A' }}>SEBI RA Registration: {SEBI_REG} · {COMPANY_NAME} · Analyst: {ANALYST_NAME}</p>
       </LegalSection>
+
+      <div style={{ position: 'sticky', bottom: '16px', marginTop: '24px', background: accepted ? '#ecfdf5' : '#fff', border: `2px solid ${accepted ? '#10b981' : '#e2e8f0'}`, borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+          <input type="checkbox" checked={accepted} onChange={toggle} style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#10b981' }} />
+          <span style={{ fontSize: '14px', fontWeight: 700, color: accepted ? '#059669' : '#0A0A0A' }}>
+            {accepted ? 'You have accepted all risk disclosures above' : 'I have read and accept all risk disclosures above'}
+          </span>
+        </label>
+        {accepted && <span style={{ fontSize: '12px', color: '#059669', fontWeight: 600 }}>✓ Saved</span>}
+      </div>
     </LegalPage>
   );
 }
@@ -9020,7 +9050,7 @@ function AppInner() {
     if (path === '/investor-charter') return <InvestorCharterPage />;
     if (path === '/disclosure' || path === '/sebi-disclosure') return <SEBIDisclosurePage />;
     if (path === '/faq') return <FAQPage />;
-    if (path === '/risk-disclosure') return <RiskDisclosurePage />;
+    if (path === '/risk-disclosure') return <RiskDisclosurePage riskAccepted={riskAccepted} setRiskAccepted={handleRiskAccept} />;
     if (path === '/dashboard') return protectedPage(Dashboard);
     if (path === '/subscription') return protectedPage(SubscriptionPage);
     if (path === '/admin') return protectedPage(AdminPanel);
