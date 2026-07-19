@@ -1155,7 +1155,7 @@ function LandingPage() {
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ ...S.flexBetween, marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <h2 style={S.h2}>Free Recommendations</h2>
+                <GradientHeading as="h2" style={S.h2}>Free Recommendations</GradientHeading>
                 <p style={{ ...S.muted, marginTop: '8px' }}>Real live calls, open to everyone — no signup needed</p>
               </div>
               <button onClick={() => navigate('/recommendations')} style={{ ...S.btn, ...S.btnSecondary }}>View All →</button>
@@ -1220,7 +1220,7 @@ function LandingPage() {
       <section style={{ ...S.section, background: '#FEFDFB' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>WHY CHOOSE US</p>
-          <h2 style={{ ...S.h2, marginBottom: '48px' }}>Research You Can Trust</h2>
+          <GradientHeading as="h2" style={{ ...S.h2, marginBottom: '48px' }}>Research You Can Trust</GradientHeading>
           <div style={S.grid3}>
             {features.map((f, i) => (
               <div key={i} style={{ ...S.card, textAlign: 'left', transition: 'all 0.2s', borderTop: '3px solid #1d4ed8' }}
@@ -1238,7 +1238,7 @@ function LandingPage() {
       <section style={{ ...S.section, background: '#FAF9F5' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>HOW IT WORKS</p>
-          <h2 style={{ ...S.h2, marginBottom: '48px' }}>Simple Steps to Start</h2>
+          <GradientHeading as="h2" style={{ ...S.h2, marginBottom: '48px' }}>Simple Steps to Start</GradientHeading>
           <div style={S.grid4}>
             {steps.map((s, i) => (
               <div key={i} style={{ ...S.card, textAlign: 'center', padding: '32px 20px', borderTop: '3px solid #e2e8f0' }}>
@@ -1255,7 +1255,7 @@ function LandingPage() {
       <section style={{ ...S.section, background: '#FEFDFB' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>PRICING</p>
-          <h2 style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</h2>
+          <GradientHeading as="h2" style={{ ...S.h2, marginBottom: '8px' }}>Choose Your Research Plan</GradientHeading>
           <p style={{ color: '#64748b', marginBottom: '24px' }}>Flexible plans for traders of all experience levels.</p>
           <div style={{ maxWidth: '340px', margin: '0 auto 32px', textAlign: 'left' }}>
             <RotatingOfferCard />
@@ -1269,7 +1269,7 @@ function LandingPage() {
       <section style={{ ...S.section, background: '#FAF9F5' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h2 style={S.h2}>Risk Management Framework</h2>
+            <GradientHeading as="h2" style={S.h2}>Risk Management Framework</GradientHeading>
             <p style={{ color: '#64748b', marginTop: '8px' }}>We follow strict risk management principles in all our research</p>
           </div>
           <div style={S.grid2}>
@@ -1297,7 +1297,7 @@ function LandingPage() {
       {/* CTA */}
       <section style={{ ...S.section, background: 'linear-gradient(160deg, #eff6ff 0%, #dbeafe 100%)', textAlign: 'center' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <h2 style={{ ...S.h2, marginBottom: '16px', color: '#0A0A0A' }}>Ready to Start Your Research Journey?</h2>
+          <GradientHeading as="h2" style={{ ...S.h2, marginBottom: '16px' }}>Ready to Start Your Research Journey?</GradientHeading>
           <p style={{ color: '#334155', marginBottom: '32px', lineHeight: 1.7, fontSize: '15px' }}>Join thousands of informed investors. Pick the research plan that fits how you trade.</p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/register')} style={{ ...S.btn, ...S.btnPrimary, fontSize: '16px', padding: '14px 32px' }}>
@@ -1539,7 +1539,7 @@ function PricingPage() {
           <div style={{ display: 'inline-block', background: 'rgba(29,78,216,0.08)', color: '#1e40af', borderRadius: '20px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, marginBottom: '16px', letterSpacing: '0.04em' }}>
             SEBI Registered Research Analyst · {SEBI_REG}
           </div>
-          <h1 style={{ ...S.h2, marginBottom: '12px' }}>Choose Your Research Plan</h1>
+          <GradientHeading as="h1" style={{ ...S.h2, marginBottom: '12px' }}>Choose Your Research Plan</GradientHeading>
           <p style={{ color: '#64748b', marginBottom: '12px', fontSize: '15px' }}>Flexible plans for every type of trader. Quality over quantity — every call is high-conviction.</p>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '32px' }}>⚠️ Call counts are monthly ranges. We publish only when high-conviction setups exist. No padding, no quota-filling.</p>
           <div style={{ maxWidth: '340px', margin: '0 auto 32px', textAlign: 'left' }}>
