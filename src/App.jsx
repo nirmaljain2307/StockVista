@@ -25,6 +25,14 @@ const COMPANY_NAME = 'NRJ Info Edge Pvt Ltd';
 const GRIEVANCE_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_EMAIL = 'nirmaljain2307@gmail.com';
 const CONTACT_PHONE = '+91-7003950585';
+// Fill in real handles/links here — empty string hides that icon from the footer.
+const SOCIAL_LINKS = {
+  instagram: '',
+  twitter: '',
+  youtube: '',
+  telegram: '',
+  whatsapp: '', // e.g. 'https://wa.me/917003950585' — a click-to-chat link, not the alert bot
+};
 
 // Staff role → which admin panel tabs they can see. 'owner' is implicit for
 // any existing admin (is_admin=true) that hasn't been assigned an explicit
@@ -158,6 +166,7 @@ const S = {
   red: { color: '#dc2626' },
 
   disclaimer: { background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px 16px', fontSize: '12px', color: '#92400e', lineHeight: 1.6 },
+  footerSocialIcon: { width: '34px', height: '34px', borderRadius: '50%', background: '#fff', border: '1px solid #B5D4F4', color: '#185FA5', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' },
 
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' },
   grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' },
@@ -1406,6 +1415,35 @@ function Footer() {
         </div>
         <div style={{ borderTop: '1px solid #B5D4F4', padding: '24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <p style={{ fontSize: '12px', color: '#185FA5' }}>© {new Date().getFullYear()} {APP_NAME} · {COMPANY_NAME} · All rights reserved.</p>
+          {Object.values(SOCIAL_LINKS).some(Boolean) && (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {SOCIAL_LINKS.instagram && (
+                <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noreferrer" aria-label="Instagram" style={{ ...S.footerSocialIcon }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+                </a>
+              )}
+              {SOCIAL_LINKS.twitter && (
+                <a href={SOCIAL_LINKS.twitter} target="_blank" rel="noreferrer" aria-label="X (Twitter)" style={{ ...S.footerSocialIcon }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4l16 16M20 4L4 20"/></svg>
+                </a>
+              )}
+              {SOCIAL_LINKS.youtube && (
+                <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noreferrer" aria-label="YouTube" style={{ ...S.footerSocialIcon }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="12" rx="4"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
+                </a>
+              )}
+              {SOCIAL_LINKS.telegram && (
+                <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noreferrer" aria-label="Telegram channel" style={{ ...S.footerSocialIcon }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 4L3 11l6 2m12-9l-4 17-8-6m12-11L9 13"/></svg>
+                </a>
+              )}
+              {SOCIAL_LINKS.whatsapp && (
+                <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noreferrer" aria-label="Chat on WhatsApp" style={{ ...S.footerSocialIcon }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 21l1.5-4.5A8 8 0 1 1 8.5 19.5z"/><path d="M8.5 8.5c0 4 3 7 7 7"/></svg>
+                </a>
+              )}
+            </div>
+          )}
           <p style={{ fontSize: '11px', color: '#185FA5', maxWidth: '600px', textAlign: 'right', lineHeight: 1.5 }}>
             Investment in securities market is subject to market risk. Past performance does not guarantee future returns. Not SEBI investment advice.
           </p>
@@ -1969,6 +2007,7 @@ function LoginPage({ setUser, setUserProfile }) {
 function RegisterPage({ setUser, setUserProfile }) {
   const [form, setForm] = useState({ fullName: '', email: '', mobile: '', password: '', confirm: '' });
   const [agreed, setAgreed] = useState(false);
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const isMobile = useIsMobile(860);
@@ -1986,7 +2025,9 @@ function RegisterPage({ setUser, setUserProfile }) {
     });
     if (error) { setErr(error.message); setLoading(false); return; }
     if (form.mobile && data.user) {
-      await supabase.from('users').update({ mobile: form.mobile }).eq('id', data.user.id);
+      // whatsapp_opt_in is only meaningful alongside a number to send to —
+      // if they didn't give one, there's nothing to opt in for yet.
+      await supabase.from('users').update({ mobile: form.mobile, whatsapp_opt_in: whatsappOptIn }).eq('id', data.user.id);
     }
     setUser(data.user);
     const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
@@ -2011,6 +2052,14 @@ function RegisterPage({ setUser, setUserProfile }) {
             <input style={S.input} type="tel" name="tel" autoComplete="tel" placeholder="+91 98765 43210" value={form.mobile} onChange={e => set('mobile', e.target.value)} />
           </div>
         </div>
+        {form.mobile && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '12px', marginTop: '-4px' }}>
+            <input type="checkbox" id="whatsapp-optin" checked={whatsappOptIn} onChange={e => setWhatsappOptIn(e.target.checked)} style={{ width: '15px', height: '15px', cursor: 'pointer', marginTop: '2px', flexShrink: 0 }} />
+            <label htmlFor="whatsapp-optin" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
+              Send me new-call alerts on WhatsApp (only for calls included in my active plan — you can turn this off anytime from your profile)
+            </label>
+          </div>
+        )}
         <div style={S.formGroup}>
           <label style={S.label}>Email *</label>
           <input style={S.input} type="email" name="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
@@ -3606,6 +3655,7 @@ function ProfilePage({ user, userProfile }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(userProfile?.full_name || '');
   const [mobile, setMobile] = useState(userProfile?.mobile || '');
+  const [whatsappOptIn, setWhatsappOptIn] = useState(userProfile?.whatsapp_opt_in || false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(userProfile?.avatar_url || null);
@@ -3630,7 +3680,7 @@ function ProfilePage({ user, userProfile }) {
 
   const save = async () => {
     setSaving(true);
-    const { error } = await supabase.from('users').update({ full_name: name, mobile }).eq('id', user.id);
+    const { error } = await supabase.from('users').update({ full_name: name, mobile, whatsapp_opt_in: mobile ? whatsappOptIn : false }).eq('id', user.id);
     setSaving(false);
     if (error) { setMsg('Error: ' + error.message); return; }
     setMsg('✅ Profile updated!');
@@ -3698,6 +3748,12 @@ function ProfilePage({ user, userProfile }) {
               <>
                 <div style={S.formGroup}><label style={S.label}>Full Name</label><input style={S.input} value={name} onChange={e => setName(e.target.value)} /></div>
                 <div style={S.formGroup}><label style={S.label}>Mobile</label><input style={S.input} value={mobile} onChange={e => setMobile(e.target.value)} /></div>
+                {mobile && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <input type="checkbox" id="profile-whatsapp-optin" checked={whatsappOptIn} onChange={e => setWhatsappOptIn(e.target.checked)} style={{ width: '15px', height: '15px', cursor: 'pointer', marginTop: '2px', flexShrink: 0 }} />
+                    <label htmlFor="profile-whatsapp-optin" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>Send me new-call alerts on WhatsApp (only for calls included in my active plan)</label>
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                   <button onClick={save} disabled={saving} style={{ ...S.btn, ...S.btnPrimary, ...S.btnSm }}>{saving ? 'Saving...' : 'Save Changes'}</button>
                   <button onClick={() => setEditing(false)} style={{ ...S.btn, ...S.btnSecondary, ...S.btnSm }}>Cancel</button>
@@ -3709,6 +3765,7 @@ function ProfilePage({ user, userProfile }) {
                   { label: 'Email', value: user?.email },
                   { label: 'Full Name', value: userProfile?.full_name || '—' },
                   { label: 'Mobile', value: userProfile?.mobile || '—' },
+                  { label: 'WhatsApp Alerts', value: userProfile?.mobile ? (userProfile?.whatsapp_opt_in ? 'On' : 'Off') : '— (add mobile first)' },
                   { label: 'Member Since', value: userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—' },
                   { label: 'Plan Expires', value: userProfile?.plan_expires_at ? new Date(userProfile.plan_expires_at).toLocaleDateString('en-IN') : '—' },
                 ].map((item, i) => (
