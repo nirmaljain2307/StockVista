@@ -283,6 +283,19 @@ function RecCardSkeleton() {
 }
 
 
+// Shared shimmer-gradient heading treatment — same animation as the landing
+// hero, reused across page titles so the motion language is consistent
+// instead of one-off per page. `as` picks the heading tag so semantics
+// (h1 vs h2) stay correct per page.
+function GradientHeading({ as: Tag = 'h1', style, children }) {
+  return (
+    <Tag style={{ ...style, background: 'linear-gradient(90deg, #0A0A0A, #3b82f6, #10b981, #f59e0b, #0A0A0A)', backgroundSize: '300% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'svHeadingGradient 6s ease infinite' }}>
+      {children}
+    </Tag>
+  );
+}
+
+
 function Sparkline({ series, width = 130, height = 28 }) {
   if (!series || series.length < 2) return null;
   const min = Math.min(...series), max = Math.max(...series);
@@ -1573,7 +1586,7 @@ function PricingPage() {
       {/* Comparison Table */}
       <section style={{ ...S.section, background: '#FEFDFB', paddingTop: '60px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h2 style={{ ...S.h2, textAlign: 'center', marginBottom: '8px' }}>Full Comparison</h2>
+          <GradientHeading as="h2" style={{ ...S.h2, textAlign: 'center', marginBottom: '8px' }}>Full Comparison</GradientHeading>
           <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '40px' }}>Every feature, every plan — no surprises</p>
 
           <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #E5E3DA', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
@@ -2435,7 +2448,7 @@ function ScreenersPage({ user, userProfile }) {
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
 
           <div style={{ background: '#E6F1FB', border: '1px solid #B5D4F4', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
-            <h2 style={{ ...S.h3, color: '#042C53', marginBottom: '2px' }}>{t('section_screeners')}</h2>
+            <GradientHeading as="h2" style={{ ...S.h3, marginBottom: '2px' }}>{t('section_screeners')}</GradientHeading>
             <p style={{ fontSize: '13px', color: '#0C447C' }}>
               Breakouts and momentum are scanned daily across our Nifty 100 universe{asOfDate ? ` · as of ${new Date(asOfDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}. Other screens are filtered from our published research calls.
             </p>
@@ -2617,7 +2630,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
       <div style={{ ...S.section, paddingTop: '40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ marginBottom: '32px' }}>
-            <h1 style={S.h2}>{forceStatus === 'live-group' ? 'Live Calls' : forceStatus === 'past-group' ? 'Past Recommendations' : 'Research Calls'}</h1>
+            <GradientHeading as="h1" style={S.h2}>{forceStatus === 'live-group' ? 'Live Calls' : forceStatus === 'past-group' ? 'Past Recommendations' : 'Research Calls'}</GradientHeading>
             <p style={{ ...S.muted, marginTop: '4px' }}>{forceStatus === 'past-group' ? 'Closed, expired, target-hit, and stop-loss-hit calls with full track record.' : 'Expert stock picks with detailed analysis and entry/exit levels'}</p>
           </div>
 
@@ -3425,7 +3438,7 @@ function BlogPage() {
           ) : (
             <>
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                <h1 style={{ ...S.h2, marginBottom: '8px' }}>Research & Education</h1>
+                <GradientHeading as="h1" style={{ ...S.h2, marginBottom: '8px' }}>Research & Education</GradientHeading>
                 <p style={{ color: '#64748b' }}>Market insights, trading education, and research methodology — free for all.</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
@@ -7718,7 +7731,7 @@ function PerformancePage() {
 
           {/* Header */}
           <div style={{ marginBottom: '32px' }}>
-            <h1 style={{ ...S.h2, marginBottom: '8px' }}>📊 Performance Report</h1>
+            <GradientHeading as="h1" style={{ ...S.h2, marginBottom: '8px' }}>📊 Performance Report</GradientHeading>
             <p style={{ ...S.muted }}>Complete transparent track record of all research calls. Updated in real-time.</p>
           </div>
 
@@ -8984,6 +8997,7 @@ function AppInner() {
   return (
     <LanguageProvider>
       <div style={S.page}>
+        <style>{`@keyframes svHeadingGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
         <Navbar user={user} userProfile={userProfile} onLogout={handleLogout} />
         {renderPage()}
         <OfferPopupToast />
