@@ -1037,15 +1037,16 @@ function OfferPopupToast() {
 
 function LandingPage() {
   const features = [
-    { icon: '🎯', title: 'Accurate Recommendations', desc: 'Research-backed stock calls with detailed technical and fundamental analysis.' },
-    { icon: '📊', title: 'All Market Segments', desc: 'Coverage across Equity, F&O, Intraday, Swing, and Long-term positions.' },
-    { icon: '🛡️', title: 'SEBI Compliant', desc: 'Registered Research Analyst following all SEBI RA Regulations 2014 (amended 2025) guidelines.' },
-    { icon: '⚡', title: 'Real-time Alerts', desc: 'Instant notifications on entry, target, and stop-loss updates.' },
-    { icon: '📈', title: 'Performance Tracking', desc: 'Transparent track record with detailed P&L analytics and reports.' },
-    { icon: '📚', title: 'Market Education', desc: 'Learn with comprehensive articles, tutorials, and market insights.' },
+    { icon: '🎯', title: 'Accurate Recommendations', desc: 'Research-backed stock calls with detailed technical and fundamental analysis.', path: '/recommendations' },
+    { icon: '📊', title: 'All Market Segments', desc: 'Coverage across Equity, F&O, Intraday, Swing, and Long-term positions.', path: '/recommendations' },
+    { icon: '🛡️', title: 'SEBI Compliant', desc: 'Registered Research Analyst following all SEBI RA Regulations 2014 (amended 2025) guidelines.', path: '/disclosure' },
+    { icon: '⚡', title: 'Real-time Alerts', desc: 'Instant notifications on entry, target, and stop-loss updates.', path: '/pricing' },
+    { icon: '📈', title: 'Performance Tracking', desc: 'Transparent track record with detailed P&L analytics and reports.', path: '/performance' },
+    { icon: '📚', title: 'Market Education', desc: 'Learn with comprehensive articles, tutorials, and market insights.', path: '/blog' },
   ];
 
   const [liveStats, setLiveStats] = useState({ calls: 0, live: 0, segments: 0 });
+  const [riskModal, setRiskModal] = useState(null);
 
   useEffect(() => {
     supabase.from('recommendations_feed').select('id, status, segment', { count: 'exact' })
@@ -1077,10 +1078,10 @@ function LandingPage() {
   }, []);
 
   const steps = [
-    { n: '01', title: 'Create Account', desc: 'Sign up and complete your risk profile in minutes.' },
-    { n: '02', title: 'Choose Plan', desc: 'Select a research subscription that fits your trading style.' },
-    { n: '03', title: 'Accept Risk Disclosure', desc: 'Read and acknowledge our SEBI-mandated risk disclosures.' },
-    { n: '04', title: 'Access Research', desc: 'View expert calls with detailed analysis and track performance.' },
+    { n: '01', title: 'Create Account', desc: 'Sign up and complete your risk profile in minutes.', path: '/register' },
+    { n: '02', title: 'Choose Plan', desc: 'Select a research subscription that fits your trading style.', path: '/pricing' },
+    { n: '03', title: 'Accept Risk Disclosure', desc: 'Read and acknowledge our SEBI-mandated risk disclosures.', path: '/risk-disclosure' },
+    { n: '04', title: 'Access Research', desc: 'View expert calls with detailed analysis and track performance.', path: '/recommendations' },
   ];
 
   return (
@@ -1223,12 +1224,15 @@ function LandingPage() {
           <GradientHeading as="h2" style={{ ...S.h2, marginBottom: '48px' }}>Research You Can Trust</GradientHeading>
           <div style={S.grid3}>
             {features.map((f, i) => (
-              <div key={i} style={{ ...S.card, textAlign: 'left', transition: 'all 0.2s', borderTop: '3px solid #1d4ed8' }}
+              <div key={i} onClick={() => navigate(f.path)} role="link" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter') navigate(f.path); }}
+                style={{ ...S.card, textAlign: 'left', transition: 'all 0.2s', borderTop: '3px solid #1d4ed8', cursor: 'pointer' }}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'; }}>
                 <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '16px' }}>{f.icon}</div>
                 <h4 style={{ ...S.h4, marginBottom: '8px', color: '#0A0A0A' }}>{f.title}</h4>
-                <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7 }}>{f.desc}</p>
+                <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7, marginBottom: '10px' }}>{f.desc}</p>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8' }}>Learn more →</span>
               </div>
             ))}
           </div>
@@ -1241,7 +1245,11 @@ function LandingPage() {
           <GradientHeading as="h2" style={{ ...S.h2, marginBottom: '48px' }}>Simple Steps to Start</GradientHeading>
           <div style={S.grid4}>
             {steps.map((s, i) => (
-              <div key={i} style={{ ...S.card, textAlign: 'center', padding: '32px 20px', borderTop: '3px solid #e2e8f0' }}>
+              <div key={i} onClick={() => navigate(s.path)} role="link" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter') navigate(s.path); }}
+                style={{ ...S.card, textAlign: 'center', padding: '32px 20px', borderTop: '3px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'; }}>
                 <div style={{ fontSize: '40px', fontWeight: 800, color: '#dbeafe', lineHeight: 1, marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>{s.n}</div>
                 <h3 style={{ ...S.h4, marginBottom: '8px', color: '#0A0A0A' }}>{s.title}</h3>
                 <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{s.desc}</p>
@@ -1274,16 +1282,25 @@ function LandingPage() {
           </div>
           <div style={S.grid2}>
             {[
-              { icon: '📏', title: 'Position Sizing', desc: 'Never risk more than 2-3% of capital on a single trade. We specify lot sizes for F&O trades.' },
-              { icon: '🛑', title: 'Stop-Loss Discipline', desc: 'Every research call includes a mandatory stop-loss. Respect it without exception.' },
-              { icon: '⚖️', title: 'Risk-Reward Ratio', desc: 'We only publish calls with minimum 1:2 risk-reward ratio. Better setups, better outcomes.' },
-              { icon: '🎯', title: 'Capital Allocation', desc: 'Diversify across segments. Avoid concentrating more than 20% in a single stock or sector.' },
+              { icon: '📏', title: 'Position Sizing', desc: 'Never risk more than 2-3% of capital on a single trade. We specify lot sizes for F&O trades.',
+                detail: 'Example: on ₹1,00,000 capital, a 2-3% risk cap means you never lose more than ₹2,000-3,000 on one trade, even if the stop-loss is hit. For F&O calls, we specify the exact lot size that keeps you within this cap — you never have to work it out yourself.' },
+              { icon: '🛑', title: 'Stop-Loss Discipline', desc: 'Every research call includes a mandatory stop-loss. Respect it without exception.',
+                detail: 'A stop-loss only protects you if you actually exit when it\u2019s hit. Moving it further away "to give the trade more room" is the single most common way a small, planned loss turns into a large, unplanned one. Every call we publish has one set in advance — treat it as non-negotiable.' },
+              { icon: '⚖️', title: 'Risk-Reward Ratio', desc: 'We only publish calls with minimum 1:2 risk-reward ratio. Better setups, better outcomes.',
+                detail: '1:2 means the potential gain is at least double the potential loss — e.g. risking ₹1 to target ₹2. With this ratio, a strategy can be profitable overall even if fewer than half the calls hit target, as long as losses are cut on the ones that don\u2019t.' },
+              { icon: '🎯', title: 'Capital Allocation', desc: 'Diversify across segments. Avoid concentrating more than 20% in a single stock or sector.',
+                detail: 'Putting more than a fifth of your capital into one stock or sector means a single bad move can do outsized damage, no matter how strong the individual setup looked. Spreading exposure across segments (equity, F&O, commodity) and sectors keeps any one call from being able to sink the whole portfolio.' },
             ].map((r, i) => (
-              <div key={i} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'flex-start', borderLeft: '4px solid #1d4ed8' }}>
+              <div key={i} onClick={() => setRiskModal(r)} role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter') setRiskModal(r); }}
+                style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'flex-start', borderLeft: '4px solid #1d4ed8', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'; }}>
                 <div style={{ fontSize: '28px', flexShrink: 0 }}>{r.icon}</div>
                 <div>
                   <h4 style={{ ...S.h4, marginBottom: '4px', color: '#0A0A0A' }}>{r.title}</h4>
-                  <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{r.desc}</p>
+                  <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6, marginBottom: '8px' }}>{r.desc}</p>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8' }}>See example →</span>
                 </div>
               </div>
             ))}
@@ -1293,6 +1310,20 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Risk framework detail modal — expands the clicked card in place
+          instead of navigating away, since this is disclosure content the
+          visitor should read right here. */}
+      {riskModal && (
+        <div onClick={() => setRiskModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '16px', padding: '28px', maxWidth: '440px', width: '100%', position: 'relative' }}>
+            <button onClick={() => setRiskModal(null)} aria-label="Close" style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>{riskModal.icon}</div>
+            <h3 style={{ ...S.h3, marginBottom: '10px' }}>{riskModal.title}</h3>
+            <p style={{ fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>{riskModal.detail}</p>
+          </div>
+        </div>
+      )}
 
       {/* CTA */}
       <section style={{ ...S.section, background: 'linear-gradient(160deg, #eff6ff 0%, #dbeafe 100%)', textAlign: 'center' }}>
