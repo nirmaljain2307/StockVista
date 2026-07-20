@@ -7841,8 +7841,10 @@ function PerformancePage() {
 
   const withReturn = closedWithReturn.filter(r => r.ret !== null);
   const avgReturn = withReturn.length ? (withReturn.reduce((s, r) => s + r.ret, 0) / withReturn.length).toFixed(2) : 0;
-  const bestCall = withReturn.length ? withReturn.reduce((a, b) => a.ret > b.ret ? a : b) : null;
-  const worstCall = withReturn.length ? withReturn.reduce((a, b) => a.ret < b.ret ? a : b) : null;
+  const profitCalls = withReturn.filter(r => r.ret > 0);
+  const lossCalls = withReturn.filter(r => r.ret < 0);
+  const bestCall = profitCalls.length ? profitCalls.reduce((a, b) => a.ret > b.ret ? a : b) : null;
+  const worstCall = lossCalls.length ? lossCalls.reduce((a, b) => a.ret < b.ret ? a : b) : null;
 
   // Cumulative return chart data
   let cumulative = 0;
