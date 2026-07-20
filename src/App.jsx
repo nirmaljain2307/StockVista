@@ -88,28 +88,47 @@ const PLANS = {
   basic: { name: 'Basic Equity', color: '#334155', monthly: 999, callLimit: 10, screenerResultLimit: 5 },
   premium: { name: 'Premium Equity', color: '#3b82f6', monthly: 2499, callLimit: 25, screenerResultLimit: null },
   fno: { name: 'F&O Pro', color: '#f59e0b', monthly: 3999, callLimit: 40, screenerResultLimit: null },
+  commodity_basic: { name: 'Commodity Basic', color: '#0d9488', monthly: 4999, callLimit: 10, screenerResultLimit: 5 },
+  commodity: { name: 'Commodity Pro', color: '#10b981', monthly: 9999, callLimit: 25, screenerResultLimit: 5 },
   elite: { name: 'Elite All Access', color: '#a78bfa', monthly: 5999, callLimit: null, screenerResultLimit: null },
 };
 
+// Commodity Pro is a PARALLEL plan, not part of the basic→elite ladder:
+//  - Commodity calls (plan_required = 'commodity') are visible ONLY to
+//    Commodity Pro subscribers — Elite does NOT include commodity.
+//  - Commodity Pro subscribers also get basic-tier equity content (rank 1).
+const PLAN_RANK = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4, commodity_basic: 0, commodity: 1 };
+// Commodity ladder is separate from the equity ladder: Commodity Basic <
+// Commodity Pro. Commodity Pro also unlocks basic-tier equity content
+// (PLAN_RANK 1); Commodity Basic gets commodity + free content only.
+const COMMODITY_RANK = { commodity_basic: 1, commodity: 2 };
+const planTierEligible = (userPlanId, reqPlan) => {
+  const req = reqPlan || 'basic';
+  if (req === 'free') return true;
+  if (COMMODITY_RANK[req]) return (COMMODITY_RANK[userPlanId] ?? -1) >= COMMODITY_RANK[req];
+  return (PLAN_RANK[userPlanId || 'basic'] ?? -1) >= (PLAN_RANK[req] ?? 1);
+};
+
 const PLAN_FEATURES = [
-  { key: 'equity_calls',      label: 'Equity Calls / Month',       values: ['4–6', '8–12', '8–12', '8–12'] },
-  { key: 'fno_calls',         label: 'F&O Calls / Month',           values: ['—', '—', '4–6', '6–8'] },
-  { key: 'intraday_calls',    label: 'Intraday Calls / Month',      values: ['—', '—', '2–4', '5–8'] },
-  { key: 'commodity_calls',   label: 'Commodity Calls / Month',     values: ['—', '—', '—', '3–5'] },
-  { key: 'ipo_calls',         label: 'IPO Calls / Month',           values: ['—', '2–3', '2–3', '2–3'] },
-  { key: 'total_calls',       label: 'Total Calls / Month',         values: ['4–6', '10–15', '14–21', '24–36'] },
-  { key: 'stocks_covered',    label: 'Stocks Covered',              values: ['Large Cap', 'All Caps', 'All Caps', 'All Caps'] },
-  { key: 'call_targets',      label: 'Call Targets',                values: ['T1 only', 'T1, T2, T3', 'T1, T2, T3', 'T1, T2, T3'] },
-  { key: 'pdf_report',        label: 'PDF Research Report per Call', values: [false, true, true, true] },
-  { key: 'weekly_market',     label: 'Weekly Market View',          values: [true, true, true, true] },
-  { key: 'blog_access',       label: 'Blog & Education',            values: [true, true, true, true] },
-  { key: 'options_strategy',  label: 'Options Strategies',          values: ['—', '—', 'Buy only', 'Buy + Sell'] },
-  { key: 'lot_size',          label: 'Lot Size Specified (F&O)',    values: [false, false, true, true] },
-  { key: 'telegram',          label: 'Telegram Signal Alerts',      values: [false, false, true, true] },
-  { key: 'performance_rpt',   label: 'Monthly Performance Report',  values: [false, true, true, true] },
-  { key: 'email_support',     label: 'Email Support',               values: ['—', '24hr response', '12hr response', 'WhatsApp direct'] },
-  { key: 'one_on_one',        label: '1-on-1 Monthly Session',      values: [false, false, false, '30 min/mo'] },
-  { key: 'portfolio_review',  label: 'Portfolio Review on Request', values: [false, false, false, true] },
+  // Column order: Basic, Premium, F&O Pro, Commodity Basic, Commodity Pro, Elite
+  { key: 'equity_calls',      label: 'Equity Calls / Month',       values: ['4–6', '8–12', '8–12', '—', '4–6', '8–12'] },
+  { key: 'fno_calls',         label: 'F&O Calls / Month',           values: ['—', '—', '4–6', '—', '—', '6–8'] },
+  { key: 'intraday_calls',    label: 'Intraday Calls / Month',      values: ['—', '—', '2–4', '—', '—', '5–8'] },
+  { key: 'commodity_calls',   label: 'MCX Commodity Calls / Month', values: ['—', '—', '—', '4–6', '6–10', '—'] },
+  { key: 'ipo_calls',         label: 'IPO Calls / Month',           values: ['—', '2–3', '2–3', '—', '—', '2–3'] },
+  { key: 'total_calls',       label: 'Total Calls / Month',         values: ['4–6', '10–15', '14–21', '4–6', '10–16', '21–31'] },
+  { key: 'stocks_covered',    label: 'Stocks Covered',              values: ['Large Cap', 'All Caps', 'All Caps', '—', 'Large Cap', 'All Caps'] },
+  { key: 'call_targets',      label: 'Call Targets',                values: ['T1 only', 'T1, T2, T3', 'T1, T2, T3', 'T1 only', 'T1, T2, T3', 'T1, T2, T3'] },
+  { key: 'pdf_report',        label: 'PDF Research Report per Call', values: [false, true, true, false, true, true] },
+  { key: 'weekly_market',     label: 'Weekly Market View',          values: [true, true, true, true, true, true] },
+  { key: 'blog_access',       label: 'Blog & Education',            values: [true, true, true, true, true, true] },
+  { key: 'options_strategy',  label: 'Options Strategies',          values: ['—', '—', 'Buy only', '—', '—', 'Buy + Sell'] },
+  { key: 'lot_size',          label: 'Lot Size Specified (F&O/MCX)', values: [false, false, true, true, true, true] },
+  { key: 'telegram',          label: 'Telegram Signal Alerts',      values: [false, false, true, false, true, true] },
+  { key: 'performance_rpt',   label: 'Monthly Performance Report',  values: [false, true, true, false, true, true] },
+  { key: 'email_support',     label: 'Email Support',               values: ['—', '24hr response', '12hr response', '24hr response', '12hr response', 'WhatsApp direct'] },
+  { key: 'one_on_one',        label: '1-on-1 Monthly Session',      values: [false, false, false, false, false, '30 min/mo'] },
+  { key: 'portfolio_review',  label: 'Portfolio Review on Request', values: [false, false, false, false, false, true] },
 ];
 
 const BILLING_CYCLES = [
@@ -1476,14 +1495,18 @@ function PricingCards({ compact = false }) {
     basic: { monthly: 999, quarterly: 2697, halfyearly: 5094, yearly: 8991 },
     premium: { monthly: 2499, quarterly: 6747, halfyearly: 12744, yearly: 22491 },
     fno: { monthly: 3999, quarterly: 10797, halfyearly: 20394, yearly: 35991 },
+    commodity_basic: { monthly: 4999, quarterly: 13497, halfyearly: 25494, yearly: 44991 },
+    commodity: { monthly: 9999, quarterly: 26997, halfyearly: 50994, yearly: 89991 },
     elite: { monthly: 5999, quarterly: 16197, halfyearly: 30594, yearly: 53991 },
   };
 
   const planDefs = [
-    { id: 'basic', name: 'Basic Equity', desc: 'Core equity research to get started', color: '#334155', features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations'] },
-    { id: 'premium', name: 'Premium Equity', desc: 'Deeper research for serious equity investors', color: '#3b82f6', popular: false, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'ipo_recommendations', 'priority_support'] },
-    { id: 'fno', name: 'F&O Pro', desc: 'Most popular for active derivatives traders', color: '#f59e0b', popular: true, features: ['basic_recommendations', 'market_updates', 'blog_access', 'equity_recommendations', 'fno_recommendations', 'intraday_calls', 'options_strategies', 'priority_support'] },
-    { id: 'elite', name: 'Elite All Access', desc: 'Complete research suite across every segment', color: '#a78bfa', popular: false, features: Object.keys(PLAN_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {})) },
+    { id: 'basic', name: 'Basic Equity', desc: 'Core equity research to get started', color: '#334155', features: ['equity_calls', 'total_calls', 'stocks_covered', 'call_targets', 'weekly_market', 'blog_access'] },
+    { id: 'premium', name: 'Premium Equity', desc: 'Deeper research for serious equity investors', color: '#3b82f6', popular: false, features: ['equity_calls', 'ipo_calls', 'total_calls', 'stocks_covered', 'call_targets', 'pdf_report', 'weekly_market', 'blog_access', 'performance_rpt', 'email_support'] },
+    { id: 'fno', name: 'F&O Pro', desc: 'Most popular for active derivatives traders', color: '#f59e0b', popular: true, features: ['equity_calls', 'fno_calls', 'intraday_calls', 'ipo_calls', 'total_calls', 'stocks_covered', 'call_targets', 'pdf_report', 'weekly_market', 'blog_access', 'options_strategy', 'lot_size', 'telegram', 'performance_rpt', 'email_support'] },
+    { id: 'commodity_basic', name: 'Commodity Basic', desc: 'Start with core MCX commodity calls', color: '#0d9488', popular: false, features: ['commodity_calls', 'total_calls', 'call_targets', 'weekly_market', 'blog_access', 'lot_size', 'email_support'] },
+    { id: 'commodity', name: 'Commodity Pro', desc: 'Full MCX commodity research desk', color: '#10b981', popular: false, features: ['equity_calls', 'commodity_calls', 'total_calls', 'stocks_covered', 'call_targets', 'pdf_report', 'weekly_market', 'blog_access', 'lot_size', 'telegram', 'performance_rpt', 'email_support'] },
+    { id: 'elite', name: 'Elite All Access', desc: 'Complete equity + F&O + intraday research suite', color: '#a78bfa', popular: false, features: Object.keys(PLAN_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {})).filter(k => k !== 'commodity_calls') },
   ];
 
   const CYCLE_MONTHS = { monthly: 1, quarterly: 3, halfyearly: 6, yearly: 12 };
@@ -1514,15 +1537,16 @@ function PricingCards({ compact = false }) {
           const fullPrice = prices[plan.id].monthly * months;
           const saved = fullPrice - prices[plan.id][activeCycle];
           return (
-          <div key={plan.id} style={{ ...S.card, position: 'relative', borderColor: plan.popular ? '#f59e0b' : '#1e293b', transition: 'all 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+          <div key={plan.id} style={{ ...S.card, position: 'relative', overflow: 'hidden', paddingTop: '26px', borderRadius: '18px', borderColor: plan.popular ? '#f59e0b' : '#e2e8f0', boxShadow: plan.popular ? '0 6px 24px rgba(245,158,11,0.15)' : '0 2px 10px rgba(15,23,42,0.05)', transition: 'transform 0.25s ease, box-shadow 0.25s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 14px 34px rgba(15,23,42,0.14)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = plan.popular ? '0 6px 24px rgba(245,158,11,0.15)' : '0 2px 10px rgba(15,23,42,0.05)'; }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: `linear-gradient(90deg, ${PLANS[plan.id]?.color || plan.color}, transparent)` }} />
             {plan.popular && (
               <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: '#f59e0b', color: '#000', fontSize: '11px', fontWeight: 800, padding: '4px 14px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
                 ⭐ MOST POPULAR
               </div>
             )}
-            <div style={{ fontSize: '24px', marginBottom: '4px' }}>{plan.id === 'basic' ? '📊' : plan.id === 'premium' ? '📈' : plan.id === 'fno' ? '⚡' : '💎'}</div>
+            <div style={{ fontSize: '24px', marginBottom: '4px' }}>{plan.id === 'basic' ? '📊' : plan.id === 'premium' ? '📈' : plan.id === 'fno' ? '⚡' : plan.id === 'commodity_basic' ? '🪙' : plan.id === 'commodity' ? '🏅' : '💎'}</div>
             <h3 style={{ ...S.h3, color: plan.color, marginBottom: '4px' }}>{plan.name}</h3>
             <p style={{ fontSize: '12px', ...S.muted, marginBottom: '16px' }}>{plan.desc}</p>
             <div style={{ marginBottom: saved > 0 ? '4px' : '20px' }}>
@@ -1560,9 +1584,10 @@ function PricingCards({ compact = false }) {
 // ─── PRICING PAGE ─────────────────────────────────────────────────────────────
 function PricingPage() {
   const faqs = [
-    { q: 'How many calls will I get per month?', a: 'Basic: 4–6 equity calls. Premium: 10–15 calls (equity + IPO). F&O Pro: 14–21 calls (equity + F&O + intraday). Elite: 24–36 calls across all segments. These are ranges — we publish calls only when there are high-conviction setups. We never publish low-quality calls just to meet a number.' },
+    { q: 'How many calls will I get per month?', a: 'Basic: 4–6 equity calls. Premium: 10–15 calls (equity + IPO). F&O Pro: 14–21 calls (equity + F&O + intraday). Commodity Basic: 4–6 MCX commodity calls. Commodity Pro: 10–16 calls (6–10 MCX commodity + 4–6 large-cap equity). Elite: 21–31 calls (equity + F&O + intraday + IPO). These are ranges — we publish calls only when there are high-conviction setups. We never publish low-quality calls just to meet a number.' },
     { q: 'What is the difference between Basic and Premium?', a: 'Basic covers large-cap equity with 1 target level. Premium adds mid & small cap, 3 target levels (T1/T2/T3), IPO calls, PDF research reports, priority support, and monthly performance reports. The service layer — not just call count — is what makes Premium worth the upgrade.' },
     { q: 'Can F&O beginners subscribe to F&O Pro?', a: 'F&O Pro is recommended for investors with prior F&O experience. Each F&O call includes lot size, margin required, and max loss possible. Please read our Risk Disclosure before subscribing. If you are new to F&O, start with Basic or Premium and build experience first.' },
+    { q: 'Which plans cover MCX commodity calls?', a: 'Commodity Basic (₹4,999/mo, 4–6 calls) and Commodity Pro (₹9,999/mo, 6–10 calls + 4–6 large-cap equity calls included). These are dedicated, parallel plans — commodity calls are not part of F&O Pro or Elite All Access. Coverage: Gold, Silver, Crude Oil, Natural Gas and base metals on MCX, with lot size and margin specified on every call.' },
     { q: 'Can I change my plan later?', a: 'Yes. Upgrades are applied immediately. Downgrades apply from the next billing cycle.' },
     { q: 'What payment methods do you accept?', a: 'All major credit/debit cards, UPI, Net Banking, Paytm, PhonePe, and Google Pay via Razorpay.' },
     { q: 'Can I get a refund?', a: 'We have a strict no-refund policy. All subscription fees are non-refundable. Please review our Performance page track record and Refund Policy before subscribing.' },
@@ -1592,11 +1617,25 @@ function PricingPage() {
       notIncluded: ['Commodity calls', '1-on-1 sessions'],
     },
     {
+      id: 'commodity_basic', name: 'Commodity Basic', price: '₹4,999', color: '#115e59', bg: '#f0fdfa', border: '#99f6e4',
+      calls: '4–6', callType: 'commodity calls/month', icon: '🪙',
+      headline: 'Start with core MCX commodity calls.',
+      highlights: ['4–6 MCX Commodity calls/mo', 'Gold, Silver, Crude Oil focus', 'Entry + Target 1 + Stop Loss', 'Lot size + margin specified', 'Weekly market view', 'Email support (24hr response)'],
+      notIncluded: ['Equity calls', 'T2/T3 targets', 'PDF reports', 'Telegram alerts'],
+    },
+    {
+      id: 'commodity', name: 'Commodity Pro', price: '₹9,999', color: '#065f46', bg: '#ecfdf5', border: '#a7f3d0',
+      calls: '10–16', callType: 'total calls/month', icon: '🏅',
+      headline: 'Full MCX commodity research desk.',
+      highlights: ['6–10 MCX Commodity calls/mo', 'Gold, Silver, Crude, Natural Gas, Base metals', 'Lot size + margin specified', 'Entry + T1, T2, T3 + Stop Loss', '4–6 Large Cap equity calls included', 'PDF research report per call', 'Telegram signal alerts', 'Priority email (12hr response)'],
+      notIncluded: ['F&O calls', 'IPO calls', '1-on-1 sessions'],
+    },
+    {
       id: 'elite', name: 'Elite All Access', price: '₹5,999', color: '#5b21b6', bg: '#faf5ff', border: '#c4b5fd',
-      calls: '24–36', callType: 'total calls/month', icon: '💎',
-      headline: 'Complete research suite — every segment, every service.',
-      highlights: ['Everything in F&O Pro', '3–5 MCX Commodity calls/mo (Gold, Silver, Crude)', '5–8 Intraday calls/month', 'Options: Buy + Sell strategies', '1 monthly 30-min 1-on-1 session', 'Portfolio review on request', 'Dedicated WhatsApp support', 'Quarterly accuracy report'],
-      notIncluded: [],
+      calls: '21–31', callType: 'total calls/month', icon: '💎',
+      headline: 'Complete equity + F&O + intraday suite — top-tier service.',
+      highlights: ['Everything in F&O Pro', '5–8 Intraday calls/month', 'Options: Buy + Sell strategies', '1 monthly 30-min 1-on-1 session', 'Portfolio review on request', 'Dedicated WhatsApp support', 'Quarterly accuracy report'],
+      notIncluded: ['Commodity calls (see Commodity Pro)'],
     },
   ];
 
@@ -1612,6 +1651,11 @@ function PricingPage() {
           </div>
           <GradientHeading as="h1" style={{ ...S.h2, marginBottom: '12px' }}>Choose Your Research Plan</GradientHeading>
           <p style={{ color: '#64748b', marginBottom: '12px', fontSize: '15px' }}>Flexible plans for every type of trader. Quality over quantity — every call is high-conviction.</p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
+            {['📊 Equity', '⚡ F&O', '⏱️ Intraday', '🆕 IPO', '🏅 MCX Commodity'].map(t => (
+              <span key={t} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '20px', padding: '5px 13px', fontSize: '12px', fontWeight: 600, color: '#334155', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>{t}</span>
+            ))}
+          </div>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '32px' }}>⚠️ Call counts are monthly ranges. We publish only when high-conviction setups exist. No padding, no quota-filling.</p>
           <div style={{ maxWidth: '340px', margin: '0 auto 32px', textAlign: 'left' }}>
             <RotatingOfferCard />
@@ -1621,10 +1665,15 @@ function PricingPage() {
         {/* Plan cards */}
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
           {planDetails.map(p => (
-            <div key={p.id} style={{ background: '#fff', border: `2px solid ${p.popular ? '#f59e0b' : p.border}`, borderRadius: '16px', padding: '24px', textAlign: 'left', position: 'relative', boxShadow: p.popular ? '0 4px 20px rgba(245,158,11,0.15)' : '0 1px 4px rgba(0,0,0,0.04)' }}>
-              {p.popular && <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: '#d97706', color: '#fff', fontSize: '11px', fontWeight: 800, padding: '4px 12px', borderRadius: '20px', whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>⭐ MOST POPULAR</div>}
-              <div style={{ fontSize: '24px', marginBottom: '10px' }}>{p.icon}</div>
-              <p style={{ fontWeight: 800, fontSize: '15px', color: p.color, marginBottom: '2px' }}>{p.name}</p>
+            <div key={p.id}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = `0 16px 40px ${p.popular ? 'rgba(217,119,6,0.22)' : 'rgba(15,23,42,0.14)'}`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = p.popular ? '0 8px 28px rgba(245,158,11,0.18)' : '0 2px 12px rgba(15,23,42,0.06)'; }}
+              style={{ background: `linear-gradient(180deg, ${p.bg} 0%, #ffffff 34%)`, border: `1.5px solid ${p.popular ? '#f59e0b' : p.border}`, borderRadius: '20px', padding: '26px 24px 24px', textAlign: 'left', position: 'relative', overflow: 'hidden', boxShadow: p.popular ? '0 8px 28px rgba(245,158,11,0.18)' : '0 2px 12px rgba(15,23,42,0.06)', transition: 'transform 0.25s ease, box-shadow 0.25s ease' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: `linear-gradient(90deg, ${p.color}, ${p.border})` }} />
+              {p.popular && <div style={{ position: 'absolute', top: '14px', right: '-34px', transform: 'rotate(38deg)', background: 'linear-gradient(90deg, #d97706, #f59e0b)', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '5px 38px', letterSpacing: '0.06em', boxShadow: '0 2px 8px rgba(217,119,6,0.35)' }}>POPULAR</div>}
+              {(p.id === 'commodity' || p.id === 'commodity_basic') && <div style={{ position: 'absolute', top: '14px', right: '-38px', transform: 'rotate(38deg)', background: 'linear-gradient(90deg, #047857, #10b981)', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '5px 40px', letterSpacing: '0.06em', boxShadow: '0 2px 8px rgba(4,120,87,0.35)' }}>NEW</div>}
+              <div style={{ width: '46px', height: '46px', borderRadius: '13px', background: p.bg, border: `1px solid ${p.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '23px', marginBottom: '12px', boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.7)' }}>{p.icon}</div>
+              <p style={{ fontWeight: 800, fontSize: '16px', color: p.color, marginBottom: '2px', letterSpacing: '-0.01em' }}>{p.name}</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px', lineHeight: 1.4 }}>{p.headline}</p>
 
               {/* Call count highlight */}
@@ -1633,8 +1682,10 @@ function PricingPage() {
                 <span style={{ fontSize: '11px', color: p.color, fontWeight: 600, lineHeight: 1.4 }}>{p.callType}</span>
               </div>
 
-              <p style={{ fontSize: '28px', fontWeight: 800, color: '#0A0A0A', marginBottom: '2px' }}>{p.price}</p>
-              <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '18px' }}>per month</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '18px' }}>
+                <span style={{ fontSize: '32px', fontWeight: 900, color: '#0A0A0A', letterSpacing: '-0.02em' }}>{p.price}</span>
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>/month</span>
+              </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
                 {p.highlights.map((h, i) => (
@@ -1651,7 +1702,10 @@ function PricingPage() {
                 ))}
               </div>
 
-              <button onClick={() => navigate('/subscription')} style={{ ...S.btn, width: '100%', justifyContent: 'center', background: p.popular ? '#d97706' : p.color, color: '#fff', border: 'none', fontWeight: 700 }}>
+              <button onClick={() => navigate('/subscription')}
+                onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.12)'}
+                onMouseLeave={e => e.currentTarget.style.filter = 'none'}
+                style={{ ...S.btn, width: '100%', justifyContent: 'center', background: p.popular ? 'linear-gradient(90deg, #d97706, #f59e0b)' : `linear-gradient(90deg, ${p.color}, ${p.color}dd)`, color: '#fff', border: 'none', fontWeight: 700, boxShadow: `0 4px 14px ${p.popular ? 'rgba(217,119,6,0.3)' : 'rgba(15,23,42,0.18)'}`, transition: 'filter 0.15s' }}>
                 Subscribe →
               </button>
             </div>
@@ -1666,7 +1720,7 @@ function PricingPage() {
           <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '40px' }}>Every feature, every plan — no surprises</p>
 
           <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #E5E3DA', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '680px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '880px' }}>
               <thead>
                 <tr style={{ background: '#FAF9F5' }}>
                   <th style={{ padding: '14px 18px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#334155', fontWeight: 700, fontSize: '12px', width: '32%' }}>Feature</th>
@@ -1674,6 +1728,8 @@ function PricingPage() {
                     { name: 'Basic', sub: '₹999/mo', color: '#334155' },
                     { name: 'Premium', sub: '₹2,499/mo', color: '#1e40af' },
                     { name: 'F&O Pro ⭐', sub: '₹3,999/mo', color: '#92400e' },
+                    { name: 'Comm. Basic', sub: '₹4,999/mo', color: '#115e59' },
+                    { name: 'Comm. Pro', sub: '₹9,999/mo', color: '#065f46' },
                     { name: 'Elite', sub: '₹5,999/mo', color: '#5b21b6' },
                   ].map((c, i) => (
                     <th key={i} style={{ padding: '14px 12px', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>
@@ -1686,7 +1742,7 @@ function PricingPage() {
               <tbody>
                 {/* Section: Calls */}
                 <tr style={{ background: '#FAF9F5' }}>
-                  <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0' }}>Research Calls</td>
+                  <td colSpan={7} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0' }}>Research Calls</td>
                 </tr>
                 {PLAN_FEATURES.filter(f => ['equity_calls','fno_calls','intraday_calls','commodity_calls','ipo_calls','total_calls'].includes(f.key)).map((f, i) => (
                   <tr key={f.key} style={{ borderBottom: '1px solid #f1f5f9', background: f.key === 'total_calls' ? '#f0f9ff' : i % 2 === 0 ? '#fff' : '#fafafa' }}>
@@ -1698,7 +1754,7 @@ function PricingPage() {
                 ))}
                 {/* Section: Coverage */}
                 <tr style={{ background: '#FAF9F5' }}>
-                  <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Coverage & Targets</td>
+                  <td colSpan={7} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Coverage & Targets</td>
                 </tr>
                 {PLAN_FEATURES.filter(f => ['stocks_covered','call_targets','options_strategy','lot_size'].includes(f.key)).map((f, i) => (
                   <tr key={f.key} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
@@ -1714,7 +1770,7 @@ function PricingPage() {
                 ))}
                 {/* Section: Services */}
                 <tr style={{ background: '#FAF9F5' }}>
-                  <td colSpan={5} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Reports & Support</td>
+                  <td colSpan={7} style={{ padding: '8px 18px', fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid #e2e8f0', borderTop: '2px solid #e2e8f0' }}>Reports & Support</td>
                 </tr>
                 {PLAN_FEATURES.filter(f => ['pdf_report','weekly_market','blog_access','telegram','performance_rpt','email_support','one_on_one','portfolio_review'].includes(f.key)).map((f, i) => (
                   <tr key={f.key} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
@@ -1732,7 +1788,7 @@ function PricingPage() {
               <tfoot>
                 <tr style={{ background: '#0f172a' }}>
                   <td style={{ padding: '14px 18px', fontWeight: 700, color: '#fff', fontSize: '13px' }}>Monthly Price</td>
-                  {[{ price: '₹999', color: '#94a3b8' }, { price: '₹2,499', color: '#93c5fd' }, { price: '₹3,999', color: '#fde68a' }, { price: '₹5,999', color: '#c4b5fd' }].map((p, i) => (
+                  {[{ price: '₹999', color: '#94a3b8' }, { price: '₹2,499', color: '#93c5fd' }, { price: '₹3,999', color: '#fde68a' }, { price: '₹4,999', color: '#5eead4' }, { price: '₹9,999', color: '#6ee7b7' }, { price: '₹5,999', color: '#c4b5fd' }].map((p, i) => (
                     <td key={i} style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 900, fontSize: '17px', color: p.color }}>{p.price}</td>
                   ))}
                 </tr>
@@ -2237,8 +2293,6 @@ function MyPerformanceWidget({ userProfile }) {
       .then(({ data }) => { setRecs(data || []); setLoading(false); });
   }, []);
 
-  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
-  const userRank = planRank[userProfile?.plan_id || 'basic'] ?? 0;
   const now = new Date();
 
   const inPeriod = (r) => {
@@ -2247,7 +2301,7 @@ function MyPerformanceWidget({ userProfile }) {
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   };
 
-  const eligible = recs.filter(r => (planRank[r.plan_required || 'basic'] ?? 0) <= userRank && inPeriod(r));
+  const eligible = recs.filter(r => planTierEligible(userProfile?.plan_id || 'basic', r.plan_required) && inPeriod(r));
   const closed = eligible.filter(r => ['closed', 'target_hit', 'sl_hit', 'expired'].includes(r.status));
 
   const withReturn = closed.map(r => {
@@ -2309,14 +2363,11 @@ function MyPerformanceWidget({ userProfile }) {
 
 // ─── RECOMMENDATION CARD ──────────────────────────────────────────────────────
 function RecCard({ rec, userProfile, onClick, quotaLocked }) {
-  const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
-  const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
-  const reqRank = planRank[rec.plan_required || 'basic'] ?? 1;
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
   // Free calls (plan_required = 'free') are visible to everyone — subscribed
   // or not — so they skip the active-subscription check entirely.
-  const isFreeCall = reqRank === 0;
-  const hasTierAccess = isFreeCall || (hasActiveSub && userRank >= reqRank);
+  const isFreeCall = (rec.plan_required || 'basic') === 'free';
+  const hasTierAccess = isFreeCall || (hasActiveSub && planTierEligible(userProfile?.plan_id || 'basic', rec.plan_required));
   // Tier-lock (plan too low) keeps the full-card blur — nothing about the call
   // is shown. Quota-lock (plan is fine, monthly limit is used up) shows a
   // teaser instead — symbol, status and date stay visible so the subscriber
@@ -2498,7 +2549,7 @@ function ScreenersPage({ user, userProfile }) {
     });
   }, []);
 
-  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3 };
+  const planRank = { basic: 0, premium: 1, fno: 2, elite: 3, commodity_basic: -1, commodity: 0 };
   const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
 
@@ -2666,8 +2717,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
     // Earliest calls of the month are granted first, so quota fills consistently
     // as the month progresses rather than reshuffling on every new publish.
     if (forceStatus === 'live-group') {
-      const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
-      const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
+      const userPlan = userProfile?.plan_id || 'basic';
       const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
       const limit = PLANS[userProfile?.plan_id || 'basic']?.callLimit;
       if (hasActiveSub && limit != null) {
@@ -2676,13 +2726,13 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
         // Free calls never touch the quota — they're excluded from both the
         // eligible-count and the lock check below.
         const thisMonthTierEligible = data
-          .filter(r => r.plan_required !== 'free' && new Date(r.published_at) >= monthStart && (planRank[r.plan_required || 'basic'] ?? 1) <= userRank)
+          .filter(r => r.plan_required !== 'free' && new Date(r.published_at) >= monthStart && planTierEligible(userPlan, r.plan_required))
           .sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
         const allowedIds = new Set(thisMonthTierEligible.slice(0, limit).map(r => r.id));
         data = data.map(r => {
           if (r.plan_required === 'free') return { ...r, _quotaLocked: false };
           const inThisMonth = new Date(r.published_at) >= monthStart;
-          const tierEligible = (planRank[r.plan_required || 'basic'] ?? 1) <= userRank;
+          const tierEligible = planTierEligible(userPlan, r.plan_required);
           return { ...r, _quotaLocked: inThisMonth && tierEligible && !allowedIds.has(r.id) };
         });
       }
@@ -3216,9 +3266,8 @@ function RecommendationDetailPage({ id, userProfile }) {
   useEffect(() => {
     if (!rec) return;
     if (rec.plan_required === 'free') { setQuotaLocked(false); setQuotaChecked(true); return; }
-    const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
-    const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
-    const limit = PLANS[userProfile?.plan_id || 'basic']?.callLimit;
+    const userPlan = userProfile?.plan_id || 'basic';
+    const limit = PLANS[userPlan]?.callLimit;
     const LIVE_GROUP = ['live', 'near_target', 'near_sl'];
     const isLiveish = LIVE_GROUP.includes(rec.status);
     if (limit == null || !isLiveish) { setQuotaLocked(false); setQuotaChecked(true); return; }
@@ -3230,7 +3279,7 @@ function RecommendationDetailPage({ id, userProfile }) {
       .gte('published_at', monthStart.toISOString())
       .order('published_at', { ascending: true })
       .then(({ data }) => {
-        const eligible = (data || []).filter(r => r.plan_required !== 'free' && (planRank[r.plan_required || 'basic'] ?? 1) <= userRank);
+        const eligible = (data || []).filter(r => r.plan_required !== 'free' && planTierEligible(userPlan, r.plan_required));
         const allowedIds = new Set(eligible.slice(0, limit).map(r => r.id));
         setQuotaLocked(!allowedIds.has(rec.id));
         setQuotaChecked(true);
@@ -3240,12 +3289,9 @@ function RecommendationDetailPage({ id, userProfile }) {
   if (loading || (rec && !quotaChecked)) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Loading...</div>;
   if (!rec) return <div style={{ paddingTop: '100px', textAlign: 'center', ...S.muted }}>Recommendation not found.</div>;
 
-  const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
-  const userRank = planRank[userProfile?.plan_id || 'basic'] ?? -1;
-  const reqRank = planRank[rec.plan_required || 'basic'] ?? 1;
   const hasActiveSub = !!userProfile?.plan_id && userProfile?.plan_expires_at && new Date(userProfile.plan_expires_at) > new Date();
-  const isFreeCall = reqRank === 0;
-  const hasTierAccess = isFreeCall || (hasActiveSub && userRank >= reqRank);
+  const isFreeCall = (rec.plan_required || 'basic') === 'free';
+  const hasTierAccess = isFreeCall || (hasActiveSub && planTierEligible(userProfile?.plan_id || 'basic', rec.plan_required));
   const isLocked = !hasTierAccess || quotaLocked;
 
   if (isLocked) {
@@ -3835,10 +3881,7 @@ function ReportsPage({ user, userProfile }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {reports.map(r => {
-                const planRank = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4 };
-                const userRank = planRank[userProfile?.plan_id || 'basic'] ?? 0;
-                const reqRank = planRank[r.plan_required || 'basic'] ?? 1;
-                const hasAccess = reqRank === 0 || (isActive && userRank >= reqRank);
+                const hasAccess = (r.plan_required || 'basic') === 'free' || (isActive && planTierEligible(userProfile?.plan_id || 'basic', r.plan_required));
                 return (
                   <div key={r.id} style={{ ...S.card, display: 'flex', gap: '16px', alignItems: 'center', padding: '16px 20px', flexWrap: 'wrap' }}>
                     <div style={{ width: '48px', height: '48px', background: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>📄</div>
@@ -4317,7 +4360,8 @@ function OnboardingPage({ user, userProfile }) {
 
   const calcPlan = () => {
     const { experience, capital, segments, risk } = answers;
-    if (segments.includes('futures') || segments.includes('options') || segments.includes('commodity') || risk === 'high') return 'fno';
+    if (segments.includes('commodity')) return risk === 'high' ? 'commodity' : 'commodity_basic';
+    if (segments.includes('futures') || segments.includes('options') || risk === 'high') return 'fno';
     if (experience === 'advanced' || capital === 'large') return 'premium';
     return 'basic';
   };
@@ -4798,7 +4842,7 @@ function PortfolioPage({ user }) {
                   </tbody>
                   <tfoot>
                     <tr style={{ background: '#FAF9F5', borderTop: '2px solid #e2e8f0' }}>
-                      <td colSpan={6} style={{ ...tdStyle, fontWeight: 700, color: '#334155' }}>Total Realised P&L</td>
+                      <td colSpan={7} style={{ ...tdStyle, fontWeight: 700, color: '#334155' }}>Total Realised P&L</td>
                       <td style={{ ...tdStyle, fontWeight: 800, fontSize: '15px', color: realisedPnL >= 0 ? '#059669' : '#dc2626' }}>
                         {realisedPnL >= 0 ? '+' : '-'}₹{fmtCurr(Math.abs(realisedPnL))}
                       </td>
@@ -5342,9 +5386,9 @@ function AdminPanel({ user, userProfile }) {
     }).filter(Boolean);
     const avgReturn = withReturn.length ? (withReturn.reduce((a,b) => a+b,0)/withReturn.length).toFixed(2) : 0;
     const activeUsers = allUsers.filter(u => u.plan_expires_at && new Date(u.plan_expires_at) > now);
-    const planBreakdown = { basic: 0, premium: 0, fno: 0, elite: 0 };
+    const planBreakdown = { basic: 0, premium: 0, fno: 0, commodity_basic: 0, commodity: 0, elite: 0 };
     activeUsers.forEach(u => { if (planBreakdown[u.plan_id] !== undefined) planBreakdown[u.plan_id]++; });
-    const planRevenue = { basic: 999, premium: 2499, fno: 3999, elite: 5999 };
+    const planRevenue = { basic: 999, premium: 2499, fno: 3999, commodity_basic: 4999, commodity: 9999, elite: 5999 };
     const mrrEstimate = Object.entries(planBreakdown).reduce((s,[k,v]) => s + (planRevenue[k]||0)*v, 0);
     setAnalytics({
       totalRecs: allRecs.length, liveRecs: live.length, closedRecs: closed.length,
@@ -5401,7 +5445,7 @@ function AdminPanel({ user, userProfile }) {
     const { data: allUsers } = await supabase.from('users').select('id, plan_id, plan_expires_at, created_at');
     const users = allUsers || [];
     const now = new Date();
-    const planRevenue = { basic: 999, premium: 2499, fno: 3999, elite: 5999 };
+    const planRevenue = { basic: 999, premium: 2499, fno: 3999, commodity_basic: 4999, commodity: 9999, elite: 5999 };
     const active = users.filter(u => u.plan_id && u.plan_expires_at && new Date(u.plan_expires_at) > now);
     const mrr = active.reduce((s,u) => s + (planRevenue[u.plan_id] || 0), 0);
     const expiringWeek = active.filter(u => new Date(u.plan_expires_at) < new Date(now.getTime() + 7*24*60*60*1000));
@@ -5680,7 +5724,7 @@ function AdminPanel({ user, userProfile }) {
                       </thead>
                       <tbody>
                         {filtered.length === 0 ? (
-                          <tr><td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No users found.</td></tr>
+                          <tr><td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No users found.</td></tr>
                         ) : filtered.map(u => {
                           const active = isActive(u);
                           const isSelected = editUser?.id === u.id;
@@ -5744,7 +5788,7 @@ function AdminPanel({ user, userProfile }) {
                     <div style={S.formGroup}>
                       <label style={S.label}>Plan</label>
                       <select style={S.select} value={userEditForm.plan_id} onChange={e => setUserEditForm(f => ({ ...f, plan_id: e.target.value }))}>
-                        {[['basic','Basic Equity — ₹999'],['premium','Premium Equity — ₹2,499'],['fno','F&O Pro — ₹3,999'],['elite','Elite All Access — ₹5,999']].map(([v,l]) => (
+                        {[['basic','Basic Equity — ₹999'],['premium','Premium Equity — ₹2,499'],['fno','F&O Pro — ₹3,999'],['commodity_basic','Commodity Basic — ₹4,999'],['commodity','Commodity Pro — ₹9,999'],['elite','Elite All Access — ₹5,999']].map(([v,l]) => (
                           <option key={v} value={v}>{l}</option>
                         ))}
                       </select>
@@ -5890,6 +5934,8 @@ function AdminPanel({ user, userProfile }) {
                       <option value="basic">Basic Equity</option>
                       <option value="premium">Premium Equity</option>
                       <option value="fno">F&O Pro</option>
+                      <option value="commodity_basic">Commodity Basic</option>
+                      <option value="commodity">Commodity Pro</option>
                       <option value="elite">Elite All Access</option>
                     </select>
                   </div>
@@ -6269,7 +6315,7 @@ function AdminPanel({ user, userProfile }) {
                             </tbody>
                             <tfoot>
                               <tr style={{ background: '#FAF9F5', borderTop: '2px solid #e2e8f0' }}>
-                                <td colSpan={5} style={{ padding: '9px 12px', fontWeight: 700, color: '#334155' }}>Month Summary</td>
+                                <td colSpan={7} style={{ padding: '9px 12px', fontWeight: 700, color: '#334155' }}>Month Summary</td>
                                 <td style={{ padding: '9px 12px', fontWeight: 800, color: perfData.curMonthRecs.filter(r=>r.status==='target_hit').length / perfData.curMonthRecs.length >= 0.5 ? '#059669' : '#dc2626' }}>
                                   {((perfData.curMonthRecs.filter(r=>r.status==='target_hit').length / perfData.curMonthRecs.length) * 100).toFixed(1)}% win rate
                                 </td>
@@ -6378,6 +6424,8 @@ function AdminPanel({ user, userProfile }) {
                       <option value="basic">Basic Equity</option>
                       <option value="premium">Premium Equity</option>
                       <option value="fno">F&O Pro</option>
+                      <option value="commodity_basic">Commodity Basic</option>
+                      <option value="commodity">Commodity Pro</option>
                       <option value="elite">Elite All Access</option>
                     </select>
                   </div>
@@ -6554,6 +6602,8 @@ function AdminPanel({ user, userProfile }) {
                         <option value="basic">Basic Equity</option>
                         <option value="premium">Premium Equity</option>
                         <option value="fno">F&O Pro</option>
+                        <option value="commodity_basic">Commodity Basic</option>
+                      <option value="commodity">Commodity Pro</option>
                         <option value="elite">Elite All Access</option>
                       </select>
                     </div>
@@ -7447,7 +7497,7 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
     { k: 'time_horizon', label: 'Time Horizon', opts: ['intraday', 'swing', 'short_term', 'mid_term', 'long_term'] },
     { k: 'risk_level', label: 'Risk Level', opts: ['low', 'medium', 'high'] },
     { k: 'conviction', label: 'Conviction', opts: ['low', 'medium', 'high'] },
-    { k: 'plan_required', label: 'Plan Required', opts: ['free', 'basic', 'premium', 'fno', 'elite'] },
+    { k: 'plan_required', label: 'Plan Required', opts: ['free', 'basic', 'premium', 'fno', 'commodity_basic', 'commodity', 'elite'] },
     { k: 'status', label: 'Status', opts: ['draft', 'live', 'near_target', 'near_sl', 'target_hit', 'sl_hit', 'expired', 'closed', 'archived'] },
   ];
   const priceFields = [
@@ -8602,6 +8652,8 @@ function SubscriptionPage({ user, userProfile }) {
     basic:   { monthly: 999,  quarterly: 2697,  yearly: 8991 },
     premium: { monthly: 2499, quarterly: 6747,  yearly: 22491 },
     fno:     { monthly: 3999, quarterly: 10797, yearly: 35991 },
+    commodity_basic: { monthly: 4999, quarterly: 13497, yearly: 44991 },
+    commodity: { monthly: 9999, quarterly: 26997, yearly: 89991 },
     elite:   { monthly: 5999, quarterly: 16197, yearly: 53991 },
   };
 
@@ -8609,7 +8661,9 @@ function SubscriptionPage({ user, userProfile }) {
     { id: 'basic',   name: 'Basic Equity',     icon: '📊', color: '#334155', desc: 'Equity research calls' },
     { id: 'premium', name: 'Premium Equity',    icon: '📈', color: '#1d4ed8', desc: 'Equity + IPO + priority support' },
     { id: 'fno',     name: 'F&O Pro',           icon: '⚡', color: '#d97706', desc: 'Equity + F&O + intraday', popular: true },
-    { id: 'elite',   name: 'Elite All Access',  icon: '💎', color: '#7c3aed', desc: 'Everything + Telegram + 1-on-1' },
+    { id: 'commodity_basic', name: 'Commodity Basic', icon: '🪙', color: '#0d9488', desc: '4–6 MCX commodity calls', isNew: true },
+    { id: 'commodity', name: 'Commodity Pro',   icon: '🏅', color: '#059669', desc: 'Full MCX desk + equity included', isNew: true },
+    { id: 'elite',   name: 'Elite All Access',  icon: '💎', color: '#7c3aed', desc: 'Equity + F&O + Telegram + 1-on-1' },
   ];
 
   const [paymentMsg, setPaymentMsg] = useState('');
@@ -8824,7 +8878,10 @@ function SubscriptionPage({ user, userProfile }) {
                 <div key={p.id} onClick={() => !isCurrent && (setSelectedPlan(p.id), setCouponApplied(null), setCouponMsg(''))}
                   style={{ ...S.card, cursor: isCurrent ? 'default' : 'pointer', border: isSelected ? `2px solid ${p.color}` : isCurrent ? '2px solid #059669' : '1px solid #E5E3DA', position: 'relative', transition: 'all 0.15s', padding: '20px', background: isSelected ? '#fafbff' : '#fff' }}>
                   {p.popular && !isCurrent && (
-                    <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#d97706', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>MOST POPULAR</div>
+                    <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #d97706, #f59e0b)', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>MOST POPULAR</div>
+                  )}
+                  {p.isNew && !isCurrent && (
+                    <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #047857, #10b981)', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>NEW</div>
                   )}
                   {isCurrent && (
                     <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#059669', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>CURRENT PLAN</div>
