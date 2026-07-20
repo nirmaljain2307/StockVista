@@ -97,10 +97,10 @@ const PLANS = {
 //  - Commodity calls (plan_required = 'commodity') are visible ONLY to
 //    Commodity Pro subscribers — Elite does NOT include commodity.
 //  - Commodity Pro subscribers also get basic-tier equity content (rank 1).
-const PLAN_RANK = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4, commodity_basic: 0, commodity: 1 };
+const PLAN_RANK = { free: 0, basic: 1, premium: 2, fno: 3, elite: 4, commodity_basic: 0, commodity: 0 };
 // Commodity ladder is separate from the equity ladder: Commodity Basic <
-// Commodity Pro. Commodity Pro also unlocks basic-tier equity content
-// (PLAN_RANK 1); Commodity Basic gets commodity + free content only.
+// Commodity Pro. Both commodity plans are commodity-only — no equity
+// content; they see free content plus their commodity tier.
 const COMMODITY_RANK = { commodity_basic: 1, commodity: 2 };
 const planTierEligible = (userPlanId, reqPlan) => {
   const req = reqPlan || 'basic';
@@ -111,13 +111,13 @@ const planTierEligible = (userPlanId, reqPlan) => {
 
 const PLAN_FEATURES = [
   // Column order: Basic, Premium, F&O Pro, Commodity Basic, Commodity Pro, Elite
-  { key: 'equity_calls',      label: 'Equity Calls / Month',       values: ['4–6', '8–12', '8–12', '—', '4–6', '8–12'] },
+  { key: 'equity_calls',      label: 'Equity Calls / Month',       values: ['4–6', '8–12', '8–12', '—', '—', '8–12'] },
   { key: 'fno_calls',         label: 'F&O Calls / Month',           values: ['—', '—', '4–6', '—', '—', '6–8'] },
   { key: 'intraday_calls',    label: 'Intraday Calls / Month',      values: ['—', '—', '2–4', '—', '—', '5–8'] },
   { key: 'commodity_calls',   label: 'MCX Commodity Calls / Month', values: ['—', '—', '—', '4–6', '6–10', '—'] },
   { key: 'ipo_calls',         label: 'IPO Calls / Month',           values: ['—', '2–3', '2–3', '—', '—', '2–3'] },
-  { key: 'total_calls',       label: 'Total Calls / Month',         values: ['4–6', '10–15', '14–21', '4–6', '10–16', '21–31'] },
-  { key: 'stocks_covered',    label: 'Stocks Covered',              values: ['Large Cap', 'All Caps', 'All Caps', '—', 'Large Cap', 'All Caps'] },
+  { key: 'total_calls',       label: 'Total Calls / Month',         values: ['4–6', '10–15', '14–21', '4–6', '6–10', '21–31'] },
+  { key: 'stocks_covered',    label: 'Stocks Covered',              values: ['Large Cap', 'All Caps', 'All Caps', '—', '—', 'All Caps'] },
   { key: 'call_targets',      label: 'Call Targets',                values: ['T1 only', 'T1, T2, T3', 'T1, T2, T3', 'T1 only', 'T1, T2, T3', 'T1, T2, T3'] },
   { key: 'pdf_report',        label: 'PDF Research Report per Call', values: [false, true, true, false, true, true] },
   { key: 'weekly_market',     label: 'Weekly Market View',          values: [true, true, true, true, true, true] },
@@ -1505,7 +1505,7 @@ function PricingCards({ compact = false }) {
     { id: 'premium', name: 'Premium Equity', desc: 'Deeper research for serious equity investors', color: '#3b82f6', popular: false, features: ['equity_calls', 'ipo_calls', 'total_calls', 'stocks_covered', 'call_targets', 'pdf_report', 'weekly_market', 'blog_access', 'performance_rpt', 'email_support'] },
     { id: 'fno', name: 'F&O Pro', desc: 'Most popular for active derivatives traders', color: '#f59e0b', popular: true, features: ['equity_calls', 'fno_calls', 'intraday_calls', 'ipo_calls', 'total_calls', 'stocks_covered', 'call_targets', 'pdf_report', 'weekly_market', 'blog_access', 'options_strategy', 'lot_size', 'telegram', 'performance_rpt', 'email_support'] },
     { id: 'commodity_basic', name: 'Commodity Basic', desc: 'Start with core MCX commodity calls', color: '#0d9488', popular: false, features: ['commodity_calls', 'total_calls', 'call_targets', 'weekly_market', 'blog_access', 'lot_size', 'email_support'] },
-    { id: 'commodity', name: 'Commodity Pro', desc: 'Full MCX commodity research desk', color: '#10b981', popular: false, features: ['equity_calls', 'commodity_calls', 'total_calls', 'stocks_covered', 'call_targets', 'pdf_report', 'weekly_market', 'blog_access', 'lot_size', 'telegram', 'performance_rpt', 'email_support'] },
+    { id: 'commodity', name: 'Commodity Pro', desc: 'Full MCX commodity research desk', color: '#10b981', popular: false, features: ['commodity_calls', 'total_calls', 'call_targets', 'pdf_report', 'weekly_market', 'blog_access', 'lot_size', 'telegram', 'performance_rpt', 'email_support'] },
     { id: 'elite', name: 'Elite All Access', desc: 'Complete equity + F&O + intraday research suite', color: '#a78bfa', popular: false, features: Object.keys(PLAN_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {})).filter(k => k !== 'commodity_calls') },
   ];
 
@@ -1584,10 +1584,10 @@ function PricingCards({ compact = false }) {
 // ─── PRICING PAGE ─────────────────────────────────────────────────────────────
 function PricingPage() {
   const faqs = [
-    { q: 'How many calls will I get per month?', a: 'Basic: 4–6 equity calls. Premium: 10–15 calls (equity + IPO). F&O Pro: 14–21 calls (equity + F&O + intraday). Commodity Basic: 4–6 MCX commodity calls. Commodity Pro: 10–16 calls (6–10 MCX commodity + 4–6 large-cap equity). Elite: 21–31 calls (equity + F&O + intraday + IPO). These are ranges — we publish calls only when there are high-conviction setups. We never publish low-quality calls just to meet a number.' },
+    { q: 'How many calls will I get per month?', a: 'Basic: 4–6 equity calls. Premium: 10–15 calls (equity + IPO). F&O Pro: 14–21 calls (equity + F&O + intraday). Commodity Basic: 4–6 MCX commodity calls. Commodity Pro: 6–10 MCX commodity calls. Elite: 21–31 calls (equity + F&O + intraday + IPO). These are ranges — we publish calls only when there are high-conviction setups. We never publish low-quality calls just to meet a number.' },
     { q: 'What is the difference between Basic and Premium?', a: 'Basic covers large-cap equity with 1 target level. Premium adds mid & small cap, 3 target levels (T1/T2/T3), IPO calls, PDF research reports, priority support, and monthly performance reports. The service layer — not just call count — is what makes Premium worth the upgrade.' },
     { q: 'Can F&O beginners subscribe to F&O Pro?', a: 'F&O Pro is recommended for investors with prior F&O experience. Each F&O call includes lot size, margin required, and max loss possible. Please read our Risk Disclosure before subscribing. If you are new to F&O, start with Basic or Premium and build experience first.' },
-    { q: 'Which plans cover MCX commodity calls?', a: 'Commodity Basic (₹4,999/mo, 4–6 calls) and Commodity Pro (₹9,999/mo, 6–10 calls + 4–6 large-cap equity calls included). These are dedicated, parallel plans — commodity calls are not part of F&O Pro or Elite All Access. Coverage: Gold, Silver, Crude Oil, Natural Gas and base metals on MCX, with lot size and margin specified on every call.' },
+    { q: 'Which plans cover MCX commodity calls?', a: 'Commodity Basic (₹4,999/mo, 4–6 calls) and Commodity Pro (₹9,999/mo, 6–10 calls with T1/T2/T3, PDF reports and Telegram alerts). These are dedicated, parallel plans — commodity calls are not part of F&O Pro or Elite All Access. Coverage: Gold, Silver, Crude Oil, Natural Gas and base metals on MCX, with lot size and margin specified on every call.' },
     { q: 'Can I change my plan later?', a: 'Yes. Upgrades are applied immediately. Downgrades apply from the next billing cycle.' },
     { q: 'What payment methods do you accept?', a: 'All major credit/debit cards, UPI, Net Banking, Paytm, PhonePe, and Google Pay via Razorpay.' },
     { q: 'Can I get a refund?', a: 'We have a strict no-refund policy. All subscription fees are non-refundable. Please review our Performance page track record and Refund Policy before subscribing.' },
@@ -1625,10 +1625,10 @@ function PricingPage() {
     },
     {
       id: 'commodity', name: 'Commodity Pro', price: '₹9,999', color: '#065f46', bg: '#ecfdf5', border: '#a7f3d0',
-      calls: '10–16', callType: 'total calls/month', icon: '🏅',
+      calls: '6–10', callType: 'commodity calls/month', icon: '🏅',
       headline: 'Full MCX commodity research desk.',
-      highlights: ['6–10 MCX Commodity calls/mo', 'Gold, Silver, Crude, Natural Gas, Base metals', 'Lot size + margin specified', 'Entry + T1, T2, T3 + Stop Loss', '4–6 Large Cap equity calls included', 'PDF research report per call', 'Telegram signal alerts', 'Priority email (12hr response)'],
-      notIncluded: ['F&O calls', 'IPO calls', '1-on-1 sessions'],
+      highlights: ['6–10 MCX Commodity calls/mo', 'Gold, Silver, Crude, Natural Gas, Base metals', 'Lot size + margin specified', 'Entry + T1, T2, T3 + Stop Loss', 'PDF research report per call', 'Telegram signal alerts', 'Priority email (12hr response)'],
+      notIncluded: ['Equity calls', 'F&O calls', 'IPO calls', '1-on-1 sessions'],
     },
     {
       id: 'elite', name: 'Elite All Access', price: '₹5,999', color: '#5b21b6', bg: '#faf5ff', border: '#c4b5fd',
@@ -7360,7 +7360,17 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k, v) => setForm(f => {
+    const next = { ...f, [k]: v };
+    // Guard: commodity-segment calls must be gated by a commodity plan (or
+    // free) — and commodity plans can't gate non-commodity calls. Otherwise
+    // a mis-tagged call is visible to the wrong ladder and invisible to
+    // commodity subscribers.
+    const COMM_PLANS = ['commodity_basic', 'commodity'];
+    if (next.segment === 'commodity' && !COMM_PLANS.includes(next.plan_required) && next.plan_required !== 'free') next.plan_required = 'commodity_basic';
+    if (next.segment !== 'commodity' && COMM_PLANS.includes(next.plan_required)) next.plan_required = 'basic';
+    return next;
+  });
 
   const [history, setHistory] = useState([]);
   const [aiDraft, setAiDraft] = useState(null);
@@ -8662,7 +8672,7 @@ function SubscriptionPage({ user, userProfile }) {
     { id: 'premium', name: 'Premium Equity',    icon: '📈', color: '#1d4ed8', desc: 'Equity + IPO + priority support' },
     { id: 'fno',     name: 'F&O Pro',           icon: '⚡', color: '#d97706', desc: 'Equity + F&O + intraday', popular: true },
     { id: 'commodity_basic', name: 'Commodity Basic', icon: '🪙', color: '#0d9488', desc: '4–6 MCX commodity calls', isNew: true },
-    { id: 'commodity', name: 'Commodity Pro',   icon: '🏅', color: '#059669', desc: 'Full MCX desk + equity included', isNew: true },
+    { id: 'commodity', name: 'Commodity Pro',   icon: '🏅', color: '#059669', desc: 'Full MCX desk · T1/T2/T3 + PDF + Telegram', isNew: true },
     { id: 'elite',   name: 'Elite All Access',  icon: '💎', color: '#7c3aed', desc: 'Equity + F&O + Telegram + 1-on-1' },
   ];
 
