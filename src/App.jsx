@@ -2851,7 +2851,7 @@ function RecommendationsPage({ user, userProfile, riskAccepted, setRiskAccepted,
                     <label style={S.label}>{f.label}</label>
                     <select style={S.select} value={filters[f.key]} onChange={e => setFilters(p => ({ ...p, [f.key]: e.target.value }))}>
                       <option value="">All</option>
-                      {f.opts.map(o => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                      {f.opts.map(o => <option key={o} value={o}>{o.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>)}
                     </select>
                   </div>
                 ))}
@@ -7548,7 +7548,7 @@ function AddRecForm({ existingRec, onSave, adminId, adminEmail, logAudit, myRole
           <div key={f.k} style={S.formGroup}>
             <label style={S.label}>{f.label}</label>
             <select style={S.select} value={form[f.k]} onChange={e => set(f.k, e.target.value)}>
-              {f.opts.map(o => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+              {f.opts.map(o => <option key={o} value={o}>{o.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>)}
             </select>
           </div>
         ))}
