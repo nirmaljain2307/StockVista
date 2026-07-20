@@ -5434,8 +5434,8 @@ function AdminPanel({ user, userProfile }) {
     }).filter(s => s.total > 0);
     // Best and worst
     const sorted = [...withReturn].sort((a,b) => b.ret - a.ret);
-    const best = sorted.slice(0,5);
-    const worst = sorted.slice(-5).reverse();
+    const best = sorted.filter(r => r.ret > 0).slice(0, 5);
+    const worst = sorted.filter(r => r.ret < 0).slice(-5).reverse();
     // Current month calls
     const curMonthRecs = withReturn.filter(r => (r.updated_at || r.published_at || '').slice(0,7) === perfMonth);
     setPerfData({ months, segments, best, worst, curMonthRecs, total: withReturn.length, wins: withReturn.filter(r=>r.status==='target_hit').length, avgReturn: withReturn.length ? (withReturn.reduce((s,r)=>s+r.ret,0)/withReturn.length).toFixed(2) : 0 });
@@ -6247,13 +6247,13 @@ function AdminPanel({ user, userProfile }) {
                     {/* Best & Worst calls */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                       {[
-                        { title: '🏆 Best Calls (All Time)', calls: perfData.best, green: true },
-                        { title: '⚠️ Worst Calls (All Time)', calls: perfData.worst, green: false },
-                      ].map(({ title, calls, green }) => (
+                        { title: '🏆 Best Calls (All Time)', calls: perfData.best, green: true, emptyMsg: 'No profitable closed calls yet.' },
+                        { title: '⚠️ Worst Calls (All Time)', calls: perfData.worst, green: false, emptyMsg: 'No losing calls yet 🎉' },
+                      ].map(({ title, calls, green, emptyMsg }) => (
                         <div key={title} style={{ ...S.card }}>
                           <h3 style={{ ...S.h4, marginBottom: '12px' }}>{title}</h3>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {calls.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '13px' }}>No data yet.</p>
+                            {calls.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '13px' }}>{emptyMsg}</p>
                             : calls.map((r, i) => (
                               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: i === 0 ? (green ? '#f0fdf4' : '#fef2f2') : '#FAF9F5', borderRadius: '8px', border: '1px solid ' + (i === 0 ? (green ? '#bbf7d0' : '#fecaca') : '#f1f5f9') }}>
                                 <div>
