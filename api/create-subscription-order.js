@@ -9,6 +9,8 @@ const PRICES = {
   basic:   { monthly: 999,  quarterly: 2697,  yearly: 8991 },
   premium: { monthly: 2499, quarterly: 6747,  yearly: 22491 },
   fno:     { monthly: 3999, quarterly: 10797, yearly: 35991 },
+  commodity_basic: { monthly: 4999, quarterly: 13497, yearly: 44991 },
+  commodity:       { monthly: 9999, quarterly: 26997, yearly: 89991 },
   elite:   { monthly: 5999, quarterly: 16197, yearly: 53991 },
 };
 
@@ -73,6 +75,9 @@ export default async function handler(req, res) {
         amount: amountPaise,
         currency: 'INR',
         receipt,
+        // These notes are the source of truth for what this order is FOR.
+        // verify-subscription-payment.js reads them back from Razorpay and
+        // activates exactly this plan/cycle — never what the client claims.
         notes: { userId, planId, cycle, couponCode: couponCode || '', product: 'stockvista_subscription' },
       }),
     });
